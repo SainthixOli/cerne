@@ -1,0 +1,23 @@
+{
+  "name": "filiacao_sindicato",
+  "version": "1.0.0",
+  "description": "Esse projeto visa automatizar o processo de filiação e atualização de dados no Sindicato de Professores de Luziânia.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SainthixOli/filiacao_sindicato.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SainthixOli/filiacao_sindicato/issues"
+  },
+  "homepage": "https://github.com/SainthixOli/filiacao_sindicato#readme"
+}
