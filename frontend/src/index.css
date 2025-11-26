@@ -1,7 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
   @apply bg-slate-50 text-slate-900 antialiased;
+}
+/* Black Theme Overrides */
+.black body {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.black .bg-white {
+  background-color: #0a0a0a;
+  border-color: #1f1f1f;
+}
+
+.black .bg-gray-50 {
+  background-color: #000000;
+}
+
+.black .bg-gray-800 {
+  background-color: #0a0a0a;
+  border-color: #1f1f1f;
+}
+
+.black .border-gray-200, .black .border-gray-700 {
+  border-color: #1f1f1f;
 }

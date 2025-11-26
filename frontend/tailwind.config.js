@@ -1,6 +1,7 @@
 // frontend/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -11,10 +12,15 @@ export default {
         brand: {
           50: '#f0f9ff',
           100: '#e0f2fe',
-          500: '#0ea5e9', 
+          500: '#0ea5e9',
           600: '#0284c7',
           900: '#0c4a6e',
         }
+      },
+      backgroundColor: {
+        'black-base': '#000000',
+        'black-surface': '#0a0a0a',
+        'black-elevated': '#121212',
       }
     },
   },
