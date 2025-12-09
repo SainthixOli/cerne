@@ -13,15 +13,8 @@ const AdminHome = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await api.get('/affiliations');
-                const affiliations = response.data;
-
-                setStats({
-                    total: affiliations.length,
-                    pending: affiliations.filter(a => a.status === 'em_analise' || a.status === 'em_processamento').length,
-                    approved: affiliations.filter(a => a.status === 'concluido').length,
-                    today: 0 // Mock for now
-                });
+                const response = await api.get('/reports');
+                setStats(response.data);
             } catch (error) {
                 console.error('Error fetching stats:', error);
             }

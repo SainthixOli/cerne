@@ -42,6 +42,23 @@ const ProfessorProfile = () => {
         }
     };
 
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const data = new FormData();
+        data.append('photo', file);
+
+        try {
+            const response = await api.post('/profile/photo', data);
+            setUser({ ...user, photo_url: response.data.photoUrl });
+            toast.success('Foto atualizada!');
+        } catch (error) {
+            console.error('Error uploading photo:', error);
+            toast.error('Erro ao atualizar foto');
+        }
+    };
+
     if (loading) return <div className="text-center py-10 text-gray-500">Carregando perfil...</div>;
     if (!user) return null;
 
@@ -53,9 +70,25 @@ const ProfessorProfile = () => {
                 <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600"></div>
                 <div className="px-8 pb-8">
                     <div className="relative flex justify-between items-end -mt-12 mb-6">
-                        <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
-                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-400">
-                                {user.nome_completo?.charAt(0)}
+                        <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg relative group cursor-pointer">
+                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-400 overflow-hidden">
+                                {user.photo_url ? (
+                                    <img src={`http://localhost:3000/${user.photo_url}`} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    user.nome_completo?.charAt(0)
+                                )}
+                            </div>
+                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <label htmlFor="photo-upload" className="cursor-pointer text-white text-xs text-center">
+                                    Alterar<br />Foto
+                                </label>
+                                <input
+                                    type="file"
+                                    id="photo-upload"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handlePhotoUpload}
+                                />
                             </div>
                         </div>
                         <button

@@ -9,8 +9,11 @@ CREATE TABLE IF NOT EXISTS profiles (
     change_password_required BOOLEAN DEFAULT 0, -- Force password change
     telefone TEXT,
     matricula_funcional TEXT,
-    role TEXT CHECK (role IN ('admin', 'professor')) NOT NULL DEFAULT 'professor',
-    status_conta TEXT CHECK (status_conta IN ('pendente_docs', 'em_analise', 'ativo', 'inativo')) NOT NULL DEFAULT 'pendente_docs'
+    role TEXT CHECK (role IN ('admin', 'professor', 'super_admin')) NOT NULL DEFAULT 'professor',
+    status_conta TEXT CHECK (status_conta IN ('pendente_docs', 'em_analise', 'ativo', 'inativo')) NOT NULL DEFAULT 'pendente_docs',
+    reset_token TEXT,
+    reset_token_expires DATETIME,
+    photo_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS filiacoes (

@@ -43,3 +43,27 @@ exports.getMyDocuments = async (req, res) => {
         res.status(500).json({ error: 'Erro ao buscar documentos' });
     }
 };
+
+exports.uploadDocument = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const db = await getDb();
+        const userId = req.user.id;
+        const filePath = req.file.path;
+
+        // Find filiacao id (optional, but good to link if exists)
+        const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [userId]);
+        const filiacaoId = filiacao ? filiacao.id : null;
+
+        await db.run(
+            `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALUES (?, ?, ?, 'outro')`,
+            [userId, filiacaoId, filePath]
+        );
+
+        res.json({ message: 'Document uploaded', filename: req.file.filename });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error uploading document' });
+    }
+};

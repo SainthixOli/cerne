@@ -28,5 +28,32 @@ exports.generateAffiliationPDF = (data, res) => {
     doc.text('Assinatura do Professor', { align: 'center' });
 
     // Finalize the PDF and end the stream
+    // Finalize the PDF and end the stream
+    doc.end();
+};
+
+exports.generateCertificate = (user, res) => {
+    const doc = new PDFDocument({
+        layout: 'landscape',
+        size: [400, 250] // Card size
+    });
+
+    doc.pipe(res);
+
+    // Background or Border (Simple rect)
+    doc.rect(10, 10, 380, 230).stroke();
+
+    // Header
+    doc.fontSize(16).font('Helvetica-Bold').text('SINPRO - Carteira de Filiado', 20, 30, { align: 'center', width: 360 });
+
+    // Content
+    doc.fontSize(12).font('Helvetica').text(`Nome: ${user.nome_completo}`, 30, 80);
+    doc.text(`CPF: ${user.cpf}`, 30, 100);
+    doc.text(`Matrícula: ${user.matricula_funcional || 'N/A'}`, 30, 120);
+    doc.text(`Validade: Indeterminada`, 30, 140);
+
+    // Footer
+    doc.fontSize(10).text('Este documento comprova a filiação ao Sindicato.', 20, 200, { align: 'center', width: 360 });
+
     doc.end();
 };

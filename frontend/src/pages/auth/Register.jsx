@@ -3,6 +3,7 @@ import { Download, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import Loading from '../../components/Loading';
+import { maskCPF, maskPhone } from '../../utils/masks';
 
 const Register = () => {
     const [step, setStep] = useState(1);
@@ -15,7 +16,10 @@ const Register = () => {
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        let { name, value } = e.target;
+        if (name === 'cpf') value = maskCPF(value);
+        if (name === 'telefone') value = maskPhone(value);
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleRegister = async (e) => {
@@ -98,20 +102,20 @@ const Register = () => {
                             <form onSubmit={handleRegister} className="space-y-6">
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome Completo <span className="text-red-500">*</span></label>
                                         <input type="text" name="nome" onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" required />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CPF</label>
-                                        <input type="text" name="cpf" onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" required />
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CPF <span className="text-red-500">*</span></label>
+                                        <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" placeholder="000.000.000-00" required />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span className="text-red-500">*</span></label>
                                         <input type="email" name="email" onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" required />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
-                                        <input type="text" name="telefone" onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" />
+                                        <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition" placeholder="(00) 00000-0000" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Matrícula</label>

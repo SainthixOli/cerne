@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
 import Loading from '../../components/Loading';
+import { maskCPF } from '../../utils/masks';
 
 const Login = () => {
     const [credentials, setCredentials] = useState({ cpf: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setCredentials({ ...credentials, [e.target.name]: e.target.value });
+        let { name, value } = e.target;
+        if (name === 'cpf') value = maskCPF(value);
+        setCredentials({ ...credentials, [name]: value });
     };
 
     const handleSubmit = async (e) => {
@@ -30,8 +34,10 @@ const Login = () => {
                 return;
             }
 
-            if (user.role === 'admin') {
+            if (user.role === 'admin' || user.role === 'super_admin') {
                 navigate('/admin');
+            } else if (user.role === 'system_manager') {
+                navigate('/system');
             } else {
                 navigate('/professor');
             }
@@ -73,15 +79,24 @@ const Login = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-blue-100 mb-1">Senha</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={credentials.password}
-                            onChange={handleChange}
-                            className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition"
-                            placeholder="••••••••"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                value={credentials.password}
+                                onChange={handleChange}
+                                className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition pr-10"
+                                placeholder="••••••••"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-200 hover:text-white"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex justify-end">
@@ -105,8 +120,12 @@ const Login = () => {
                         to="/register"
                         className="inline-flex items-center justify-center w-full px-4 py-3 border-2 border-white/30 text-white rounded-xl font-semibold hover:bg-white/10 transition"
                     >
-                        <UserPlus className="mr-2" size={20} />
                         Filiar-se Agora
+                    </Link>
+                </div>
+                <div className="mt-4 text-center">
+                    <Link to="/check-status" className="text-sm text-blue-200 hover:text-white transition">
+                        Consultar Situação do Pedido
                     </Link>
                 </div>
             </div>

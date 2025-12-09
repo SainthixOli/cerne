@@ -20,3 +20,9 @@ exports.sendPasswordEmail = async (email, password) => {
     // await transporter.sendMail(...)
     return true;
 };
+
+exports.sendResetPasswordEmail = async (email, token) => {
+    console.log(`[EMAIL MOCK] Sending RESET PASSWORD email to ${email}`);
+    console.log(`[EMAIL MOCK] Link: http://localhost:5173/reset-password?token=${token}`);
+    return true;
+};

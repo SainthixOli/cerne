@@ -10,10 +10,6 @@ const ChangePassword = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setPasswords({ ...passwords, [e.target.name]: e.target.value });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (passwords.newPassword !== passwords.confirmPassword) {
@@ -41,7 +37,8 @@ const ChangePassword = () => {
             localStorage.setItem('user', JSON.stringify(user));
 
             setTimeout(() => {
-                if (user.role === 'admin') navigate('/admin');
+                if (user.role === 'admin' || user.role === 'super_admin') navigate('/admin');
+                else if (user.role === 'system_manager') navigate('/system');
                 else navigate('/professor');
             }, 2000);
 
@@ -68,44 +65,42 @@ const ChangePassword = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 px-4">
+            <div className="max-w-md w-full bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
                 <div className="text-center mb-8">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Lock className="text-blue-600" size={24} />
+                    <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock className="text-white" size={32} />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-800">Criar Nova Senha</h1>
-                    <p className="text-gray-500 mt-2">Para sua segurança, você precisa alterar sua senha no primeiro acesso.</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Definir Nova Senha</h1>
+                    <p className="text-blue-100">Por segurança, você precisa alterar sua senha temporária.</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center">
+                    <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-xl mb-6 text-sm text-center backdrop-blur-sm animate-shake">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+                        <label className="block text-sm font-medium text-blue-100 mb-1 ml-1">Nova Senha</label>
                         <input
                             type="password"
-                            name="newPassword"
                             value={passwords.newPassword}
-                            onChange={handleChange}
-                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="••••••••"
+                            onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                            className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition"
+                            placeholder="Mínimo 6 caracteres"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
+                        <label className="block text-sm font-medium text-blue-100 mb-1 ml-1">Confirmar Nova Senha</label>
                         <input
                             type="password"
-                            name="confirmPassword"
                             value={passwords.confirmPassword}
-                            onChange={handleChange}
-                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="••••••••"
+                            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                            className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition"
+                            placeholder="Repita a senha"
                             required
                         />
                     </div>
@@ -113,9 +108,9 @@ const ChangePassword = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                        className="w-full bg-white text-blue-700 py-4 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg transform hover:scale-[1.02] active:scale-[0.98] mt-4"
                     >
-                        {loading ? 'Salvando...' : 'Alterar Senha e Entrar'}
+                        {loading ? 'Salvando...' : 'Atualizar Senha e Entrar'}
                     </button>
                 </form>
             </div>

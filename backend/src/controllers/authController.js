@@ -1,6 +1,8 @@
 const { getDb } = require('../config/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
+const emailService = require('../services/emailService');
 
 const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key';
 
@@ -80,15 +82,50 @@ exports.forgotPassword = async (req, res) => {
             return res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
         }
 
-        // Mock sending email
-        console.log(`[EMAIL MOCK] Enviando email de recuperação para usuário ${user.id} (${user.nome_completo})`);
+        // Generate Reset Token
+        const resetToken = uuidv4();
+        const expires = new Date(Date.now() + 3600000); // 1 hour
 
-        // In a real app, generate a token, save to DB, send link.
-        // Here we just simulate success.
+        await db.run(
+            'UPDATE profiles SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+            [resetToken, expires.toISOString(), user.id]
+        );
+
+        // Send Email
+        const userEmail = user.email || `${user.cpf}@sinpro.com`; // Fallback if no email
+        await emailService.sendResetPasswordEmail(userEmail, resetToken);
 
         res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao processar solicitação' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        const db = await getDb();
+
+        const user = await db.get(
+            'SELECT * FROM profiles WHERE reset_token = ? AND reset_token_expires > ?',
+            [token, new Date().toISOString()]
+        );
+
+        if (!user) {
+            return res.status(400).json({ error: 'Token inválido ou expirado.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await db.run(
+            'UPDATE profiles SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, change_password_required = 0 WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        res.json({ message: 'Senha redefinida com sucesso! Agora você pode fazer login.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao redefinir senha' });
     }
 };
