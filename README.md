@@ -1,9 +1,11 @@
 # 🚀 Enterprise Member Management System
 
-![System Preview](docs/assets/img/logo.png)
+![System Preview](docs/assets/img/logo1.png)
 
 > **Next-Generation Digital Onboarding & Management Platform.**
 > A comprehensive, high-performance solution for managing member lifecycles, digital assets, and corporate communications.
+
+[🇺🇸 Read in English](README.md) | [🇧🇷 Leia em Português](README.pt-br.md)
 
 ---
 

@@ -1,7 +1,7 @@
 {
-    "name": "filiacao-sindicato-backend",
+    "name": "backend",
     "version": "1.0.0",
-    "description": "Backend for Digital Union Affiliation System",
+    "description": "Enterprise Member Management System Backend",
     "main": "src/server.js",
     "scripts": {
         "start": "node src/server.js",
