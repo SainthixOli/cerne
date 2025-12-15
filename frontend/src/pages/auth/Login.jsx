@@ -4,6 +4,7 @@ import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
 import Loading from '../../components/Loading';
 import { maskCPF } from '../../utils/masks';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const Login = () => {
     const [credentials, setCredentials] = useState({ cpf: '', password: '' });
@@ -49,50 +50,64 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 px-4">
+        <div className="min-h-screen flex items-center justify-center mesh-gradient-bg px-4 relative overflow-hidden transition-colors duration-500">
+            {/* Theme Toggle */}
+            <div className="absolute top-6 right-6 z-20">
+                <div className="glass p-2 rounded-full">
+                    <ThemeToggle />
+                </div>
+            </div>
+
+            {/* Decorative Floating Elements */}
+            <div className="absolute top-20 left-20 w-64 h-64 bg-purple-400/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float"></div>
+            <div className="absolute bottom-20 right-20 w-64 h-64 bg-blue-400/30 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float" style={{ animationDelay: '2s' }}></div>
+
             {loading && <Loading message="Autenticando..." />}
 
-            <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">Sinpro</h1>
-                    <p className="text-blue-100">Portal do Professor</p>
+            <div className="max-w-md w-full glass-panel p-8 relative z-10">
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/50 dark:bg-white/10 backdrop-blur-sm shadow-lg mb-6 animate-float">
+                        <span className="text-3xl">💎</span>
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">Empresa X</h1>
+                    <p className="text-gray-500 dark:text-gray-300 font-medium">Portal do Membro</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-lg mb-6 text-sm text-center backdrop-blur-sm">
+                    <div className="bg-red-50/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 p-4 rounded-2xl mb-6 text-sm text-center backdrop-blur-sm shadow-sm">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-blue-100 mb-1">CPF</label>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">CPF</label>
                         <input
                             type="text"
                             name="cpf"
                             value={credentials.cpf}
                             onChange={handleChange}
-                            className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition"
+                            className="input-field dark:bg-black/20 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
                             placeholder="000.000.000-00"
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-blue-100 mb-1">Senha</label>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Senha</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={credentials.password}
                                 onChange={handleChange}
-                                className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-200 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition pr-10"
+                                className="input-field pr-12 dark:bg-black/20 dark:border-white/10 dark:text-white dark:placeholder-gray-500"
                                 placeholder="••••••••"
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-200 hover:text-white"
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                             >
                                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                             </button>
@@ -100,7 +115,7 @@ const Login = () => {
                     </div>
 
                     <div className="flex justify-end">
-                        <Link to="/forgot-password" className="text-sm text-blue-200 hover:text-white transition">
+                        <Link to="/forgot-password" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                             Esqueceu a senha?
                         </Link>
                     </div>
@@ -108,23 +123,24 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-white text-blue-700 py-3.5 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg flex justify-center items-center"
+                        className="btn-primary w-full flex justify-center items-center group dark:bg-white dark:text-black dark:hover:bg-gray-200"
                     >
-                        <LogIn className="mr-2" size={20} /> Entrar
+                        <LogIn className="mr-2 group-hover:translate-x-1 transition-transform" size={20} />
+                        Entrar
                     </button>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                    <p className="text-blue-100 mb-4">Ainda não é filiado?</p>
+                <div className="mt-8 pt-6 border-t border-gray-200/50 dark:border-white/10 text-center">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4 text-sm">Ainda não é membro?</p>
                     <Link
                         to="/register"
-                        className="inline-flex items-center justify-center w-full px-4 py-3 border-2 border-white/30 text-white rounded-xl font-semibold hover:bg-white/10 transition"
+                        className="btn-secondary w-full inline-flex justify-center items-center dark:bg-white/5 dark:text-white dark:border-white/10 dark:hover:bg-white/10"
                     >
                         Filiar-se Agora
                     </Link>
                 </div>
-                <div className="mt-4 text-center">
-                    <Link to="/check-status" className="text-sm text-blue-200 hover:text-white transition">
+                <div className="mt-6 text-center">
+                    <Link to="/check-status" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors font-medium">
                         Consultar Situação do Pedido
                     </Link>
                 </div>

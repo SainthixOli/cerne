@@ -24,7 +24,8 @@ router.post('/affiliations/status', affiliationController.checkStatus); // Publi
 router.get('/affiliations/certificate', authenticateToken, affiliationController.getCertificate);
 
 router.get('/documents/my', authenticateToken, documentController.getMyDocuments);
-router.post('/documents', authenticateToken, upload.single('file'), documentController.uploadDocument);
+router.post('/documents', authenticateToken, upload.single('document'), documentController.uploadDocument);
+router.post('/documents/template', authenticateToken, upload.single('document'), documentController.uploadTemplate);
 router.get('/documents/:filename', documentController.serveDocument); // Security inside controller or add middleware if needed
 
 router.get('/profile', authenticateToken, profileController.getProfile);
@@ -41,5 +42,6 @@ router.post('/admin/users', authenticateToken, adminController.createAdmin);
 
 const systemController = require('../controllers/systemController');
 router.get('/system/stats', authenticateToken, systemController.getSystemStats);
+router.post('/system/console', authenticateToken, systemController.executeConsoleCommand);
 
 module.exports = router;

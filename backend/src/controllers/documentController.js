@@ -67,3 +67,23 @@ exports.uploadDocument = async (req, res) => {
         res.status(500).json({ error: 'Error uploading document' });
     }
 };
+exports.uploadTemplate = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // In a real app, we might store this path in a 'settings' table
+        // For now, we assume it's saved in uploads/ with a specific name or just use the file provided
+
+        res.json({
+            message: 'Template uploaded successfully',
+            filename: req.file.filename,
+            originalName: req.file.originalname
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to upload template' });
+    }
+};

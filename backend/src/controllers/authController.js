@@ -92,7 +92,7 @@ exports.forgotPassword = async (req, res) => {
         );
 
         // Send Email
-        const userEmail = user.email || `${user.cpf}@sinpro.com`; // Fallback if no email
+        const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback if no email
         await emailService.sendResetPasswordEmail(userEmail, resetToken);
 
         res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });

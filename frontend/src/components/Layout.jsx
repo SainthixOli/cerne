@@ -1,36 +1,32 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { FileText, LogIn, Menu } from 'lucide-react';
+import { Outlet } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 
-const Layout = ({ children }) => {
+const Layout = () => {
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <header className="bg-blue-700 text-white shadow-md">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <Link to="/" className="flex items-center space-x-2 text-xl font-bold">
-                        <FileText size={28} />
-                        <span>Sinpro Luziânia</span>
-                    </Link>
-                    <nav className="hidden md:flex space-x-6">
-                        <Link to="/" className="hover:text-blue-200 transition">Início</Link>
-                        <Link to="/register" className="hover:text-blue-200 transition">Filiação</Link>
-                        <Link to="/admin" className="hover:text-blue-200 transition">Admin</Link>
-                    </nav>
-                    <div className="md:hidden">
-                        <Menu />
+        <div className="flex min-h-screen mesh-gradient-bg transition-colors duration-500">
+            <Sidebar />
+            <div className="flex-1 flex flex-col min-w-0">
+                <header className="glass m-4 mb-0 rounded-2xl p-4 flex justify-between items-center sticky top-4 z-10">
+                    <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight ml-2">Portal do Membro</h1>
+                    <div className="flex items-center space-x-4 mr-2">
+                        <ThemeToggle />
+                        <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
+                            {/* Placeholder for user avatar */}
+                            <div className="w-full h-full bg-gradient-to-tr from-blue-400 to-purple-400"></div>
+                        </div>
                     </div>
-                </div>
-            </header>
-
-            <main className="flex-grow container mx-auto px-4 py-8">
-                {children}
-            </main>
-
-            <footer className="bg-gray-800 text-gray-400 py-6">
-                <div className="container mx-auto px-4 text-center">
-                    <p>&copy; 2024 Sindicato de Professores de Luziânia. Todos os direitos reservados.</p>
-                </div>
-            </footer>
+                </header>
+                <main className="flex-1 p-6 overflow-y-auto">
+                    <div className="glass-panel p-8 min-h-full">
+                        <Outlet />
+                    </div>
+                </main>
+                <footer className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm font-medium">
+                    <p>&copy; 2024 Empresa X. Todos os direitos reservados.</p>
+                </footer>
+            </div>
         </div>
     );
 };

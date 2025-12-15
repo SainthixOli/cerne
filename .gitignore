@@ -4,4 +4,4 @@ node_modules/
 dist/
 build/
 coverage/
-.vscode/
+

@@ -1,20 +1,134 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-gray-900 antialiased selection:bg-blue-500/30;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f5f5f7;
+    /* Apple-like light gray background */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply tracking-tight font-semibold;
+  }
+}
+
+@layer components {
+
+  /* --- Liquid Glass Utilities --- */
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl dark:bg-black/60 dark:border-white/10;
+  }
+
+  .glass-dark {
+    @apply bg-black/60 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-2xl border border-white/50 shadow-2xl rounded-3xl dark:bg-black/50 dark:border-white/10;
+  }
+
+  /* --- Premium Inputs & Buttons --- */
+  .input-field {
+    @apply w-full px-5 py-3 bg-white/50 border border-gray-200/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white/80 outline-none transition-all duration-300 placeholder-gray-400 backdrop-blur-sm dark:bg-white/5 dark:border-white/10 dark:text-white dark:focus:bg-white/10;
+  }
+
+  .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-black transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 rounded-2xl px-6 py-3 font-medium tracking-wide dark:bg-white dark:text-black dark:hover:bg-gray-200;
+  }
+
+  .btn-secondary {
+    @apply bg-white/80 text-gray-900 border border-white/20 hover:bg-white transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 rounded-2xl px-6 py-3 font-medium backdrop-blur-md dark:bg-white/5 dark:text-white dark:border-white/10 dark:hover:bg-white/10;
+  }
+
+  /* --- Animations --- */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+
+    100% {
+      transform: translateY(0px);
+    }
+  }
+
+  .mesh-gradient-bg {
+    background-color: #ffffff;
+    background-image:
+      radial-gradient(at 40% 20%, hsla(28, 100%, 74%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, hsla(340, 100%, 76%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
+    background-size: 150% 150%;
+    animation: gradient-move 15s ease infinite;
+  }
+
+  @keyframes gradient-move {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .dark .mesh-gradient-bg {
+    background-color: #0f172a;
+    background-image:
+      radial-gradient(at 40% 20%, hsla(240, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(260, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(220, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, hsla(280, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(240, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 80% 100%, hsla(260, 100%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 0%, hsla(220, 100%, 20%, 1) 0px, transparent 50%);
+  }
+}
 
 body {
   font-family: 'Inter', sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Outfit', sans-serif;
 }
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
+
 /* Black Theme Overrides */
 .black body {
   background-color: #000000;
@@ -35,6 +149,7 @@ body {
   border-color: #1f1f1f;
 }
 
-.black .border-gray-200, .black .border-gray-700 {
+.black .border-gray-200,
+.black .border-gray-700 {
   border-color: #1f1f1f;
 }

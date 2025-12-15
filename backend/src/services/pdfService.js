@@ -9,21 +9,14 @@ exports.generateAffiliationPDF = (data, res) => {
     doc.pipe(res);
 
     // Header
-    doc.fontSize(20).text('Ficha de Filiação - Sindicato de Professores', { align: 'center' });
+    doc.fontSize(20).text('Ficha de Cadastro - Empresa X', { align: 'center' });
     doc.moveDown();
-
-    // Content
-    doc.fontSize(12).text(`Nome: ${data.nome}`);
+    doc.fontSize(12).text(`Nome: ${data.nome_completo}`); // Assuming data now contains nome_completo
     doc.text(`CPF: ${data.cpf}`);
-    doc.text(`RG: ${data.rg}`);
-    doc.text(`Endereço: ${data.endereco}`);
-    doc.text(`Escola: ${data.escola}`);
-    doc.text(`Cargo: ${data.cargo}`);
+    doc.text(`Email: ${data.email}`); // Assuming data now contains email
+    doc.text(`Cargo: ${data.cargo}`); // Keeping cargo as it was in the original context
 
-    doc.moveDown();
-    doc.text('Declaro que desejo me filiar ao sindicato e aceito os termos estatutários.', { align: 'justify' });
-
-    doc.moveDown(2);
+    doc.moveDown(4);
     doc.text('__________________________________________', { align: 'center' });
     doc.text('Assinatura do Professor', { align: 'center' });
 
@@ -44,7 +37,7 @@ exports.generateCertificate = (user, res) => {
     doc.rect(10, 10, 380, 230).stroke();
 
     // Header
-    doc.fontSize(16).font('Helvetica-Bold').text('SINPRO - Carteira de Filiado', 20, 30, { align: 'center', width: 360 });
+    doc.fontSize(16).font('Helvetica-Bold').text('EMPRESA X - Carteira de Membro', 20, 30, { align: 'center', width: 360 });
 
     // Content
     doc.fontSize(12).font('Helvetica').text(`Nome: ${user.nome_completo}`, 30, 80);

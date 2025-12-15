@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 
 exports.sendPasswordEmail = async (email, password) => {
     console.log(`[EMAIL MOCK] Sending email to ${email}`);
-    console.log(`[EMAIL MOCK] Subject: Sua senha de acesso - Sinpro Luziânia`);
+    console.log(`[EMAIL MOCK] Subject: Sua senha de acesso - Empresa X`);
     console.log(`[EMAIL MOCK] Body: Sua senha provisória é: ${password}`);
 
     // In a real scenario, we would actually send it

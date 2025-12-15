@@ -19,10 +19,10 @@ const Sidebar = () => {
     ];
 
     return (
-        <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Sinpro</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Área do Professor</p>
+        <aside className="w-64 glass border-r-0 flex flex-col transition-all duration-300 m-4 rounded-3xl h-[calc(100vh-2rem)] sticky top-4">
+            <div className="p-8 border-b border-gray-200/30">
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Empresa X</h2>
+                <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">Área do Membro</p>
             </div>
 
             <nav className="flex-grow p-4 space-y-2">
@@ -32,9 +32,9 @@ const Sidebar = () => {
                         to={item.path}
                         end={item.end}
                         className={({ isActive }) =>
-                            `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                            `flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-300 ${isActive
+                                ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20 scale-105'
+                                : 'text-gray-500 hover:bg-white/50 hover:text-gray-900 hover:shadow-sm'
                             }`
                         }
                     >
@@ -44,10 +44,10 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-t border-gray-200/30 mt-auto">
                 <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl w-full transition-all duration-200"
+                    className="flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-50/50 hover:text-red-600 rounded-2xl w-full transition-all duration-300 font-medium"
                 >
                     <LogOut size={20} />
                     <span>Sair</span>

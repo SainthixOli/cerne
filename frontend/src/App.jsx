@@ -10,6 +10,7 @@ import AdminAffiliates from './pages/admin/AdminAffiliates';
 import AdminReports from './pages/admin/AdminReports';
 import AdminAudit from './pages/admin/AdminAudit';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminDocuments from './pages/admin/AdminDocuments';
 import ProfessorLayout from './layouts/ProfessorLayout';
 import ProfessorHome from './pages/professor/ProfessorHome';
 import ProfessorProfile from './pages/professor/ProfessorProfile';
@@ -47,6 +48,7 @@ function App() {
             <Route path="reports" element={<AdminReports />} />
             <Route path="audit" element={<AdminAudit />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="documents" element={<AdminDocuments />} />
             <Route path="settings" element={<ProfessorSettings />} />
           </Route>
 

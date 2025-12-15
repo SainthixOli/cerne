@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Mail, Phone, Briefcase, Save, Edit2 } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, Save, Edit2, Camera, Shield } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
 
@@ -59,130 +59,174 @@ const ProfessorProfile = () => {
         }
     };
 
-    if (loading) return <div className="text-center py-10 text-gray-500">Carregando perfil...</div>;
+    if (loading) return (
+        <div className="min-h-[50vh] flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
+
     if (!user) return null;
 
     return (
         <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">Meu Cadastro</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 tracking-tight">Meu Cadastro</h1>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-                <div className="px-8 pb-8">
-                    <div className="relative flex justify-between items-end -mt-12 mb-6">
-                        <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg relative group cursor-pointer">
-                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-400 overflow-hidden">
-                                {user.photo_url ? (
-                                    <img src={`http://localhost:3000/${user.photo_url}`} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    user.nome_completo?.charAt(0)
-                                )}
+            <div className="glass-panel overflow-hidden relative">
+                {/* Decorative Header Background */}
+                <div className="h-40 bg-gradient-to-r from-blue-600 to-purple-600 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]"></div>
+                    <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                </div>
+
+                <div className="px-8 pb-8 relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-end -mt-16 mb-8 gap-4">
+                        <div className="relative group">
+                            <div className="w-32 h-32 rounded-full p-1.5 glass bg-white/10 backdrop-blur-md shadow-2xl">
+                                <div className="w-full h-full rounded-full overflow-hidden bg-gray-800 relative">
+                                    {user.photo_url ? (
+                                        <img src={`http://localhost:3000/${user.photo_url}`} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 text-4xl font-bold text-white">
+                                            {user.nome_completo?.charAt(0)}
+                                        </div>
+                                    )}
+
+                                    {/* Photo Upload Overlay */}
+                                    <label htmlFor="photo-upload" className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                                        <Camera className="text-white mb-1" size={24} />
+                                        <span className="text-white text-xs font-medium">Alterar Foto</span>
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id="photo-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handlePhotoUpload}
+                                    />
+                                </div>
                             </div>
-                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                <label htmlFor="photo-upload" className="cursor-pointer text-white text-xs text-center">
-                                    Alterar<br />Foto
-                                </label>
-                                <input
-                                    type="file"
-                                    id="photo-upload"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handlePhotoUpload}
-                                />
-                            </div>
+                            <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                         </div>
+
+                        <div className="flex-grow md:ml-4 mb-2">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.nome_completo}</h2>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center">
+                                <Shield size={16} className="mr-1.5 text-blue-500" />
+                                Membro Ativo
+                            </p>
+                        </div>
+
                         <button
                             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                            className={`px-4 py-2 rounded-lg text-white transition shadow-md flex items-center ${isEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
+                            className={`px-6 py-2.5 rounded-xl text-white font-medium transition-all shadow-lg flex items-center ${isEditing
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-500/30'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30'
                                 }`}
                         >
-                            {isEditing ? <><Save size={18} className="mr-2" /> Salvar</> : <><Edit2 size={18} className="mr-2" /> Editar Dados</>}
+                            {isEditing ? <><Save size={18} className="mr-2" /> Salvar Alterações</> : <><Edit2 size={18} className="mr-2" /> Editar Perfil</>}
                         </button>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
                         <div className="space-y-6">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome Completo</label>
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Nome Completo</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
                                         name="nome_completo"
                                         value={formData.nome_completo || ''}
                                         onChange={handleChange}
-                                        className="w-full mt-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none dark:text-white"
+                                        className="input-field"
                                     />
                                 ) : (
-                                    <div className="flex items-center mt-1 text-gray-900 dark:text-white font-medium">
-                                        <User size={18} className="mr-2 text-blue-500" />
-                                        {user.nome_completo}
+                                    <div className="flex items-center p-3 bg-gray-50/50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 mr-3">
+                                            <User size={18} />
+                                        </div>
+                                        <span className="text-gray-900 dark:text-white font-medium">{user.nome_completo}</span>
                                     </div>
                                 )}
                             </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Email</label>
                                 {isEditing ? (
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email || ''}
                                         onChange={handleChange}
-                                        className="w-full mt-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none dark:text-white"
+                                        className="input-field"
                                     />
                                 ) : (
-                                    <div className="flex items-center mt-1 text-gray-900 dark:text-white font-medium">
-                                        <Mail size={18} className="mr-2 text-blue-500" />
-                                        {user.email || 'Não informado'}
+                                    <div className="flex items-center p-3 bg-gray-50/50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400 mr-3">
+                                            <Mail size={18} />
+                                        </div>
+                                        <span className="text-gray-900 dark:text-white font-medium">{user.email || 'Não informado'}</span>
                                     </div>
                                 )}
                             </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</label>
+
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Telefone</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
                                         name="telefone"
                                         value={formData.telefone || ''}
                                         onChange={handleChange}
-                                        className="w-full mt-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none dark:text-white"
+                                        className="input-field"
                                     />
                                 ) : (
-                                    <div className="flex items-center mt-1 text-gray-900 dark:text-white font-medium">
-                                        <Phone size={18} className="mr-2 text-blue-500" />
-                                        {user.telefone || 'Não informado'}
+                                    <div className="flex items-center p-3 bg-gray-50/50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400 mr-3">
+                                            <Phone size={18} />
+                                        </div>
+                                        <span className="text-gray-900 dark:text-white font-medium">{user.telefone || 'Não informado'}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         <div className="space-y-6">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Função</label>
-                                <div className="flex items-center mt-1 text-gray-900 dark:text-white font-medium">
-                                    <Briefcase size={18} className="mr-2 text-blue-500" />
-                                    Professor
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Função</label>
+                                <div className="flex items-center p-3 bg-gray-50/50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400 mr-3">
+                                        <Briefcase size={18} />
+                                    </div>
+                                    <span className="text-gray-900 dark:text-white font-medium">Professor</span>
                                 </div>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Matrícula</label>
+
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Matrícula</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
                                         name="matricula_funcional"
                                         value={formData.matricula_funcional || ''}
                                         onChange={handleChange}
-                                        className="w-full mt-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none dark:text-white"
+                                        className="input-field"
                                     />
                                 ) : (
-                                    <div className="flex items-center mt-1 text-gray-900 dark:text-white font-medium">
-                                        {user.matricula_funcional || 'Não informada'}
+                                    <div className="flex items-center p-3 bg-gray-50/50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5">
+                                        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400 mr-3">
+                                            <span className="font-mono font-bold text-xs">ID</span>
+                                        </div>
+                                        <span className="text-gray-900 dark:text-white font-medium">{user.matricula_funcional || 'Não informada'}</span>
                                     </div>
                                 )}
                             </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status da Conta</label>
-                                <div className="flex items-center mt-1">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+
+                            <div className="group">
+                                <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Status da Conta</label>
+                                <div className="flex items-center">
+                                    <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                                         Ativo
                                     </span>
                                 </div>

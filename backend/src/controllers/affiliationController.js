@@ -110,7 +110,7 @@ exports.getAllAffiliations = async (req, res) => {
                 p.nome_completo as nome, 
                 p.cpf, 
                 p.status_conta,
-                f.id as filiacao_id,
+                f.id as id,
                 f.status, 
                 f.data_solicitacao, 
                 f.observacoes_admin,
@@ -144,11 +144,18 @@ exports.approveAffiliation = async (req, res) => {
     try {
         const db = await getDb();
 
+        // 0. Verify if Admin exists (Prevent FK Constraint failure if token is stale)
+        const adminExists = await db.get('SELECT id FROM profiles WHERE id = ?', [adminId]);
+        if (!adminExists) {
+            return res.status(401).json({ error: 'Sessão inválida ou expirada. Por favor, faça login novamente.' });
+        }
+
         // 1. Get the affiliation and user
         const filiacao = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
         if (!filiacao) return res.status(404).json({ error: 'Affiliation not found' });
 
         const user = await db.get('SELECT * FROM profiles WHERE id = ?', [filiacao.user_id]);
+        if (!user) return res.status(404).json({ error: 'User associated with this affiliation not found.' });
 
         // 2. Generate temporary password
         const tempPassword = Math.random().toString(36).slice(-8);
@@ -166,22 +173,31 @@ exports.approveAffiliation = async (req, res) => {
             [adminId, observacoes || 'Aprovado pelo admin', id]
         );
 
-        // 5. Log Audit
-        await auditService.logAction(adminId, 'APPROVE_AFFILIATION', id, {
-            user_name: user.nome_completo,
-            user_cpf: user.cpf,
-            observation: observacoes
-        });
+        // 5. Log Audit (Non-blocking)
+        try {
+            await auditService.logAction(adminId, 'APPROVE_AFFILIATION', id, {
+                user_name: user.nome_completo,
+                user_cpf: user.cpf,
+                observation: observacoes
+            });
+        } catch (auditErr) {
+            console.error('Audit Log Failed:', auditErr.message);
+            // Continue execution, don't fail the request just because audit failed (though ideally it shouldn't fail)
+        }
 
-        // 6. Send Email
-        const userEmail = user.email || `${user.cpf}@sinpro.com`;
-        await emailService.sendPasswordEmail(userEmail, tempPassword);
+        // 6. Send Email (Non-blocking)
+        try {
+            const userEmail = user.email || `${user.cpf}@empresax.com`;
+            await emailService.sendPasswordEmail(userEmail, tempPassword);
+        } catch (emailErr) {
+            console.error('Email Send Failed:', emailErr.message);
+        }
 
-        // DEV ONLY: Return temp password in response for easier testing if needed, though email service logs it too.
+        // DEV ONLY: Return temp password
         res.status(200).json({ message: `Affiliation approved.`, tempPassword });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        console.error('Approve Affiliation Error:', error);
+        res.status(500).json({ error: 'Erro interno ao aprovar filiação. Tente novamente.' });
     }
 };
 
