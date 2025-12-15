@@ -1,92 +1,140 @@
-# 🏛️ Sistema de Filiação Digital - Sinpro
+# 🚀 Enterprise Member Management System
 
-![Logo Sinpro](docs/assets/img/logo.png)
+![System Preview](docs/assets/img/logo.png)
 
-> **Modernidade e agilidade para o professor.**
-> Um sistema completo para gestão de filiações, documentos e comunicação entre o sindicato e seus associados.
-
----
-
-## ✨ Sobre o Projeto
-
-O **Sistema de Filiação Digital** foi desenvolvido para simplificar e modernizar o processo de adesão de novos professores ao sindicato. Com uma interface **premium**, suporte a **temas (Claro, Escuro e OLED)** e um fluxo totalmente digital, eliminamos a burocracia do papel.
-
-### 🚀 Funcionalidades Principais
-
-*   **📝 Filiação 100% Online**: Preenchimento de dados, geração automática da ficha em PDF e assinatura digital.
-*   **🔐 Segurança de Ponta**: Autenticação via JWT, senhas criptografadas (Bcrypt) e fluxo de troca de senha obrigatória no primeiro acesso.
-*   **🎨 Experiência Premium**: Interface moderna com *Glassmorphism*, animações fluidas e 3 opções de temas.
-*   **📱 Painel do Professor**:
-    *   Acompanhamento do status da filiação em tempo real.
-    *   Gestão de documentos (upload/download).
-    *   Edição de dados cadastrais.
-*   **🛡️ Painel Administrativo**:
-    *   Visão geral com métricas e gráficos.
-    *   Aprovação de novos filiados com um clique.
-    *   Visualização segura de documentos enviados.
-    *   Exportação de dados para CSV.
+> **Next-Generation Digital Onboarding & Management Platform.**
+> A comprehensive, high-performance solution for managing member lifecycles, digital assets, and corporate communications.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## ✨ Project Overview
 
-Este projeto foi construído com as melhores tecnologias do mercado para garantir performance e escalabilidade:
+The **Enterprise Member Management System** is a state-of-the-art platform designed to streamline complex onboarding workflows and member administration. Built with a focus on **User Experience (UX)** and **Technical Robustness**, it replaces legacy paper-based processes with a secure, 100% digital ecosystem.
 
-*   **Frontend**: React.js, TailwindCSS, Lucide Icons, React Router, React Hot Toast.
-*   **Backend**: Node.js, Express, SQLite (Dev), Supabase (Prod), PDFKit, Nodemailer.
-*   **Arquitetura**: REST API, MVC, JWT Auth.
+The interface features a premium **"Liquid Glass"** aesthetic, ensuring a modern and engaging experience across all devices, supported by a powerful and scalable backend.
+
+### 🚀 Key Features
+
+*   **📝 Digital Onboarding Wizard**: A frictionless, step-by-step registration flow with real-time validation and digital signature integration.
+*   **🔐 Enterprise-Grade Security**:
+    *   Stateless authentication via **JWT (JSON Web Tokens)**.
+    *   **Bcrypt** password hashing.
+    *   Role-Based Access Control (RBAC) for Members, Admins, and System Managers.
+*   **🎨 Premium UI/UX**:
+    *   **Liquid Glass Design**: Translucent panels, mesh gradients, and soft shadows.
+    *   **Theme Engine**: Native support for Light, Dark, and OLED High-Contrast modes.
+    *   **Responsive**: Flawless experience on Desktop, Tablet, and Mobile.
+*   **📱 Member Portal**:
+    *   Real-time status tracking.
+    *   Secure document vault (Upload/Download).
+    *   Profile and credential management.
+*   **🛡️ Administration Suite**:
+    *   **Dashboard**: High-level metrics, charts, and KPIs.
+    *   **Workflow Automation**: One-click approvals and status updates.
+    *   **System Monitor**: Real-time server metrics (CPU, Memory, Disk) and maintenance tools.
+    *   **Data Export**: CSV generation for external reporting.
 
 ---
 
-## 📸 Capturas de Tela
+## 🛠️ Technical Architecture
 
-| Login Moderno | Dashboard Professor | Modo Escuro |
-|:---:|:---:|:---:|
-| *Interface de acesso segura e elegante* | *Tudo o que o professor precisa em um só lugar* | *Conforto visual para uso noturno* |
+This project follows a **Monolithic Modular Architecture**, balancing simplicity with scalability.
+
+### Technology Stack
+
+*   **Frontend**:
+    *   **React.js**: Component-based UI library.
+    *   **TailwindCSS**: Utility-first styling with custom "Glass" configuration.
+    *   **Lucide React**: Modern, consistent icon set.
+    *   **Axios**: Promise-based HTTP client.
+*   **Backend**:
+    *   **Node.js & Express**: High-performance server runtime.
+    *   **SQLite**: Zero-configuration SQL database engine (Dev/Staging).
+    *   **PDFKit**: Dynamic PDF generation engine.
+*   **DevOps & Tooling**:
+    *   **Vite**: Next-generation frontend tooling.
+    *   **Nodemon**: Hot-reloading for backend development.
+
+### Directory Structure
+
+```bash
+/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/   # Business Logic
+│   │   ├── routes/        # API Endpoints
+│   │   ├── services/      # External integrations (PDF, Email)
+│   │   └── config/        # Database & Env Config
+│   ├── db/                # SQLite Database File
+│   └── uploads/           # Secure Document Storage
+│
+└── frontend/
+    ├── src/
+    │   ├── pages/         # View Components
+    │   ├── components/    # Reusable UI Elements
+    │   ├── contexts/      # Global State (Theme, Auth)
+    │   └── assets/        # Static Resources
+```
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## 🚀 Getting Started
 
-### Pré-requisitos
+### Prerequisites
 
-*   Node.js (v18+)
-*   NPM ou Yarn
+*   **Node.js** (v18 or higher)
+*   **NPM** or **Yarn**
 
-### Instalação
+### Installation
 
-1.  **Clone o repositório**
+1.  **Clone the repository**
     ```bash
-    git clone https://github.com/seu-usuario/filiacao-sindicato.git
-    cd filiacao-sindicato
+    git clone https://github.com/your-org/enterprise-member-system.git
+    cd enterprise-member-system
     ```
 
-2.  **Instale as dependências**
+2.  **Install Dependencies**
     ```bash
-    # Backend
+    # Install Backend Dependencies
     cd backend
     npm install
-    
-    # Frontend (em outro terminal)
+
+    # Install Frontend Dependencies
     cd ../frontend
     npm install
     ```
 
-3.  **Execute o projeto**
+3.  **Start the Application**
     ```bash
-    # Backend
+    # Start Backend Server (Port 3000)
+    cd backend
     npm run dev
-    
-    # Frontend
+
+    # Start Frontend Client (Port 5173)
+    cd ../frontend
     npm run dev
     ```
 
-4.  **Acesse**: `http://localhost:5173`
+4.  **Access the System**: Open `http://localhost:5173` in your browser.
 
 ---
 
+## 🔧 System Management
 
+The system includes a built-in **System Manager** role for technical oversight:
+
+*   **Access**: Log in with System Manager credentials.
+*   **Capabilities**:
+    *   View real-time server health (CPU Load, RAM Usage).
+    *   Execute maintenance commands via the built-in Web Console.
+    *   Manage system-wide settings and logs.
 
 ---
 
-Desenvolvido com 💙 para o **Sinpro**.
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+---
+
+*Engineered for Performance & Elegance.*
