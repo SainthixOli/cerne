@@ -4,6 +4,7 @@ import { Search, ArrowLeft, AlertCircle, CheckCircle, XCircle } from 'lucide-rea
 import api from '../../api';
 import { maskCPF } from '../../utils/masks';
 import Loading from '../../components/Loading';
+import ChatComponent from '../../components/ChatComponent';
 
 const CheckStatus = () => {
     const [cpf, setCpf] = useState('');
@@ -101,21 +102,24 @@ const CheckStatus = () => {
                         )}
 
                         {statusData.status === 'rejeitado' && (
-                            <div className="text-center">
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Por favor, corrija os problemas apontados e envie um novo documento.
-                                </p>
-                                {/* In a real app, we would link to a re-upload page. For now, link to Register or Login to re-upload if logic allows. 
-                                    Since user is not logged in, they might need to 'Register' again or we create a specific 'Re-upload' public page.
-                                    For simplicity, let's link to Register but maybe they need to contact admin? 
-                                    Actually, the user said "send new document... in the area itself". 
-                                    So we should probably allow upload here? 
-                                    Let's keep it simple: "Entre em contato ou faça um novo cadastro se necessário".
-                                    Or just link to Register.
-                                */}
-                                <Link to="/register" className="block w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                                    Novo Cadastro
-                                </Link>
+                            <div className="mt-8 animate-fade-in-up">
+                                <div className="text-center mb-6">
+                                    <p className="text-sm text-gray-600 mb-2">
+                                        Sua solicitação precisa de atenção. Converse com nosso suporte abaixo.
+                                    </p>
+                                </div>
+
+                                {/* Puts Chat in a "darker" container context if needed, or just let it float */}
+                                <div className="bg-gray-900 rounded-3xl p-1 shadow-inner overflow-hidden">
+                                    <ChatComponent filiacaoId={statusData.id} cpf={cpf} />
+                                </div>
+
+                                <div className="mt-6 text-center">
+                                    <p className="text-xs text-gray-400 mb-2">Após alinhar com o suporte:</p>
+                                    <Link to="/register" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm">
+                                        Enviar Nova Solicitação
+                                    </Link>
+                                </div>
                             </div>
                         )}
 

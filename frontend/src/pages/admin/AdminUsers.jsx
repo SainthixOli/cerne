@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, UserPlus } from 'lucide-react';
 import api from '../../api';
 import { maskCPF } from '../../utils/masks';
@@ -8,6 +9,7 @@ const AdminUsers = () => {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', password: '' });
+    const navigate = useNavigate();
 
     const fetchAdmins = async () => {
         try {
@@ -19,6 +21,8 @@ const AdminUsers = () => {
             setLoading(false);
         }
     };
+
+
 
     useEffect(() => {
         fetchAdmins();
@@ -48,21 +52,21 @@ const AdminUsers = () => {
             <header className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
-                        <Users className="mr-3 text-blue-600" /> Gerenciar Admins
+                        <Users className="mr-3 text-blue-600" /> Colaboradores
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Controle de acesso administrativo.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Gerenciamento e Avaliação da Equipe.</p>
                 </div>
                 <button
                     onClick={() => setShowForm(!showForm)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
                 >
-                    <UserPlus size={18} className="mr-2" /> Novo Admin
+                    <UserPlus size={18} className="mr-2" /> Novo Colaborador
                 </button>
             </header>
 
             {showForm && (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 mb-8 animate-fade-in">
-                    <h3 className="text-lg font-bold mb-4 dark:text-white">Cadastrar Novo Admin</h3>
+                    <h3 className="text-lg font-bold mb-4 dark:text-white">Cadastrar Novo Colaborador</h3>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input
                             type="text"
@@ -122,7 +126,11 @@ const AdminUsers = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {admins.map((admin) => (
-                            <tr key={admin.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                            <tr
+                                key={admin.id}
+                                onClick={() => navigate(`/admin/users/${admin.id}`)}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
+                            >
                                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{admin.nome_completo}</td>
                                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.cpf}</td>
                                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.email}</td>

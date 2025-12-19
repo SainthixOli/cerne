@@ -72,7 +72,7 @@ const ProfessorProfile = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 tracking-tight">Meu Cadastro</h1>
 
             <div className="glass-panel overflow-hidden relative">
-                {/* Decorative Header Background */}
+                {/* Fundo Decorativo do Cabeçalho */}
                 <div className="h-40 bg-gradient-to-r from-blue-600 to-purple-600 relative overflow-hidden">
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]"></div>
                     <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
@@ -92,7 +92,7 @@ const ProfessorProfile = () => {
                                         </div>
                                     )}
 
-                                    {/* Photo Upload Overlay */}
+                                    {/* Sobreposição de Upload de Foto */}
                                     <label htmlFor="photo-upload" className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
                                         <Camera className="text-white mb-1" size={24} />
                                         <span className="text-white text-xs font-medium">Alterar Foto</span>
@@ -120,8 +120,8 @@ const ProfessorProfile = () => {
                         <button
                             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                             className={`px-6 py-2.5 rounded-xl text-white font-medium transition-all shadow-lg flex items-center ${isEditing
-                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-500/30'
-                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30'
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-500/30'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30'
                                 }`}
                         >
                             {isEditing ? <><Save size={18} className="mr-2" /> Salvar Alterações</> : <><Edit2 size={18} className="mr-2" /> Editar Perfil</>}
@@ -198,7 +198,7 @@ const ProfessorProfile = () => {
                                     <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400 mr-3">
                                         <Briefcase size={18} />
                                     </div>
-                                    <span className="text-gray-900 dark:text-white font-medium">Professor</span>
+                                    <span className="text-gray-900 dark:text-white font-medium">Membro</span>
                                 </div>
                             </div>
 

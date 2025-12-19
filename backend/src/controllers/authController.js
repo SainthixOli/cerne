@@ -54,8 +54,8 @@ exports.changePassword = async (req, res) => {
         const { userId, newPassword } = req.body;
         const db = await getDb();
 
-        // In a real app, we should verify the old password too, or use the JWT token to identify the user
-        // For simplicity here, we assume the user is authenticated and passing their ID (or we extract from token middleware)
+        // Em uma aplicação real, deveríamos verificar a senha antiga também ou usar o token JWT para identificar o usuário
+        // Por simplicidade aqui, assumimos que o usuário está autenticado e passando seu ID (ou extraímos do middleware de token)
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -78,21 +78,21 @@ exports.forgotPassword = async (req, res) => {
 
         const user = await db.get('SELECT * FROM profiles WHERE cpf = ?', [cpf]);
         if (!user) {
-            // Security: don't reveal if user exists
+            // Segurança: não revelar se o usuário existe
             return res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
         }
 
-        // Generate Reset Token
+        // Gerar Token de Redefinição
         const resetToken = uuidv4();
-        const expires = new Date(Date.now() + 3600000); // 1 hour
+        const expires = new Date(Date.now() + 3600000); // 1 hora
 
         await db.run(
             'UPDATE profiles SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
             [resetToken, expires.toISOString(), user.id]
         );
 
-        // Send Email
-        const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback if no email
+        // Enviar Email
+        const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback se não houver email
         await emailService.sendResetPasswordEmail(userEmail, resetToken);
 
         res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });

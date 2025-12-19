@@ -34,3 +34,22 @@ CREATE TABLE IF NOT EXISTS documentos (
     tipo_documento TEXT NOT NULL,
     data_upload DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS admin_evaluations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    evaluator_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE SET NULL,
+    month_ref TEXT NOT NULL, -- Format YYYY-MM
+    score INTEGER CHECK(score >= 1 AND score <= 5),
+    feedback TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(admin_id, month_ref)
+);
+
+CREATE TABLE IF NOT EXISTS filiation_chat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filiacao_id INTEGER NOT NULL REFERENCES filiacoes(id) ON DELETE CASCADE,
+    sender_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

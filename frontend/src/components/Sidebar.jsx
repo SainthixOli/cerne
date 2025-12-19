@@ -12,10 +12,10 @@ const Sidebar = () => {
     };
 
     const navItems = [
-        { path: '/professor', icon: Home, label: 'Início', end: true },
-        { path: '/professor/profile', icon: User, label: 'Meu Cadastro' },
-        { path: '/professor/documents', icon: FileText, label: 'Meus Documentos' },
-        { path: '/professor/settings', icon: Settings, label: 'Configurações' },
+        { path: '/member', icon: Home, label: 'Início', end: true },
+        { path: '/member/profile', icon: User, label: 'Meu Cadastro' },
+        { path: '/member/documents', icon: FileText, label: 'Meus Documentos' },
+        { path: '/member/settings', icon: Settings, label: 'Configurações' },
     ];
 
     return (

@@ -38,7 +38,7 @@ const ProfessorSettings = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 tracking-tight">Configurações</h1>
 
             <div className="space-y-8">
-                {/* Appearance */}
+                {/* Aparência */}
                 <section className="glass-panel p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
@@ -69,7 +69,7 @@ const ProfessorSettings = () => {
                     </div>
                 </section>
 
-                {/* Security */}
+                {/* Segurança */}
                 <section className="glass-panel p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
@@ -92,8 +92,8 @@ const ProfessorSettings = () => {
                             <button
                                 onClick={() => setIsChangingPassword(!isChangingPassword)}
                                 className={`px-4 py-2 rounded-xl font-medium transition-all ${isChangingPassword
-                                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                        : 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20'
+                                    ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                    : 'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20'
                                     }`}
                             >
                                 {isChangingPassword ? 'Cancelar' : 'Alterar'}

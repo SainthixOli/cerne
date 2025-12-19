@@ -40,7 +40,7 @@ const Login = () => {
             } else if (user.role === 'system_manager') {
                 navigate('/system');
             } else {
-                navigate('/professor');
+                navigate('/member');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Erro ao fazer login');

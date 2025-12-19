@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Check, X, FileText, Search, Filter, RefreshCw, AlertCircle, Download } from 'lucide-react';
+import { Check, X, FileText, Search, Filter, RefreshCw, AlertCircle, Download, MessageCircle } from 'lucide-react';
 import api from '../../api';
+import ChatComponent from '../../components/ChatComponent';
 
 const AdminAffiliates = () => {
     const [affiliations, setAffiliations] = useState([]);
@@ -8,7 +9,7 @@ const AdminAffiliates = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('pendentes'); // 'pendentes' | 'aprovados'
 
-    // Modal State
+    // Estado do Modal
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAction, setModalAction] = useState(null); // 'approve' | 'reject' | 'history'
     const [selectedAffiliation, setSelectedAffiliation] = useState(null);
@@ -120,13 +121,13 @@ const AdminAffiliates = () => {
                 </div>
             </header>
 
-            {/* Tabs */}
+            {/* Abas */}
             <div className="flex space-x-2 p-1 glass rounded-2xl w-fit">
                 <button
                     onClick={() => setActiveTab('pendentes')}
                     className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'pendentes'
-                            ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
+                        ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                         }`}
                 >
                     Solicitações Pendentes
@@ -134,8 +135,8 @@ const AdminAffiliates = () => {
                 <button
                     onClick={() => setActiveTab('aprovados')}
                     className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'aprovados'
-                            ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
+                        ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                         }`}
                 >
                     Filiados Ativos
@@ -143,7 +144,7 @@ const AdminAffiliates = () => {
             </div>
 
             <div className="glass-panel overflow-hidden">
-                {/* Toolbar */}
+                {/* Barra de Ferramentas */}
                 <div className="p-6 border-b border-gray-200/50 dark:border-white/10 flex gap-4">
                     <div className="relative flex-grow max-w-md">
                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -157,7 +158,7 @@ const AdminAffiliates = () => {
                     </div>
                 </div>
 
-                {/* Table */}
+                {/* Tabela */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50/50 dark:bg-white/5 text-gray-600 dark:text-gray-400 font-semibold text-sm uppercase tracking-wider">
@@ -232,6 +233,14 @@ const AdminAffiliates = () => {
                                                 <FileText size={20} />
                                             </button>
 
+                                            <button
+                                                onClick={() => openModal(affiliation, 'chat')}
+                                                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
+                                                title="Chat / Atendimento"
+                                            >
+                                                <MessageCircle size={20} />
+                                            </button>
+
                                             {activeTab === 'pendentes' && affiliation.status !== 'rejeitado' && (
                                                 <>
                                                     <button
@@ -259,7 +268,7 @@ const AdminAffiliates = () => {
                 </div>
             </div>
 
-            {/* Action Modal */}
+            {/* Modal de Ação */}
             {modalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="glass-panel p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all scale-100">
@@ -302,6 +311,19 @@ const AdminAffiliates = () => {
                                     </div>
                                 ))}
                                 <div className="flex justify-end mt-6">
+                                    <button
+                                        onClick={() => setModalOpen(false)}
+                                        className="px-6 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition font-medium"
+                                    >
+                                        Fechar
+                                    </button>
+                                </div>
+                            </div>
+                        ) : modalAction === 'chat' ? (
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-gray-900 dark:text-white">Chat com {selectedAffiliation?.nome}</h4>
+                                <ChatComponent filiacaoId={selectedAffiliation?.id} />
+                                <div className="flex justify-end mt-4">
                                     <button
                                         onClick={() => setModalOpen(false)}
                                         className="px-6 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition font-medium"

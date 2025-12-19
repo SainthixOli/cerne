@@ -10,6 +10,7 @@ import AdminAffiliates from './pages/admin/AdminAffiliates';
 import AdminReports from './pages/admin/AdminReports';
 import AdminAudit from './pages/admin/AdminAudit';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminCollaboratorDetail from './pages/admin/AdminCollaboratorDetail';
 import AdminDocuments from './pages/admin/AdminDocuments';
 import ProfessorLayout from './layouts/ProfessorLayout';
 import ProfessorHome from './pages/professor/ProfessorHome';
@@ -41,19 +42,20 @@ function App() {
 
           <Route path="/system" element={<SystemDashboard />} />
 
-          {/* Nested Admin Routes */}
+          {/* Rotas de Admin Aninhadas */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminHome />} />
             <Route path="affiliates" element={<AdminAffiliates />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="audit" element={<AdminAudit />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<AdminCollaboratorDetail />} />
             <Route path="documents" element={<AdminDocuments />} />
             <Route path="settings" element={<ProfessorSettings />} />
           </Route>
 
-          {/* Nested Professor Routes */}
-          <Route path="/professor" element={<ProfessorLayout />}>
+          {/* Rotas de Membro Aninhadas */}
+          <Route path="/member" element={<ProfessorLayout />}>
             <Route index element={<ProfessorHome />} />
             <Route path="profile" element={<ProfessorProfile />} />
             <Route path="documents" element={<ProfessorDocuments />} />

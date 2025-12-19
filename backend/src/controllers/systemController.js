@@ -29,26 +29,24 @@ exports.getSystemStats = async (req, res) => {
         const dbPath = path.resolve(__dirname, '../../db/database.sqlite');
         const uploadsPath = path.resolve(__dirname, '../../uploads');
 
-        // 1. Database Size
+        // 1. Tamanho do Banco de Dados
         const dbStats = fs.statSync(dbPath);
         const dbSizeMB = (dbStats.size / (1024 * 1024)).toFixed(2);
 
-        // 2. Uploads Folder Size
+        // 2. Tamanho da Pasta de Uploads
         const uploadsSize = getFolderSize(uploadsPath);
         const uploadsSizeMB = (uploadsSize / (1024 * 1024)).toFixed(2);
 
-        // 3. Memory Usage
+        // 3. Uso de Memória
         const memoryUsage = process.memoryUsage();
         const memoryUsageMB = (memoryUsage.rss / (1024 * 1024)).toFixed(2);
 
-        // 4. CPU Load (Approximate based on Load Average / Core Count)
-        const cpus = os.cpus().length;
-        const loadAvg = os.loadavg()[0]; // 1 minute average
-        // Load average is the number of processes waiting. 
-        // If loadAvg = cpus, it's 100% loaded.
+        // 4. Carga da CPU (Aproximado com base na Média de Carga / Contagem de Núcleos)
+        // A média de carga é o número de processos aguardando.
+        // Se loadAvg = cpus, está 100% carregado.
         const cpuLoadPercent = Math.min(100, (loadAvg / cpus) * 100).toFixed(1);
 
-        // 5. Database Counts
+        // 5. Contagens do Banco de Dados
         const db = await getDb();
         const userCount = await db.get('SELECT COUNT(*) as count FROM profiles');
         const affiliationCount = await db.get('SELECT COUNT(*) as count FROM filiacoes');
@@ -114,7 +112,7 @@ System is running normally.`;
 [SUCCESS] System restarted. Uptime: 0s`;
                 break;
             case 'logs':
-                // In a real app, we would read from a log file
+                // Em uma aplicação real, leríamos de um arquivo de log
                 output = `[2025-12-15 15:45:01] [INFO] User login: admin
 [2025-12-15 15:48:22] [WARN] High memory usage detected (mock)
 [2025-12-15 15:50:05] [INFO] Affiliation approved: ID #1234

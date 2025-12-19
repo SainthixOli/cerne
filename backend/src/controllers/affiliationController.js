@@ -9,8 +9,8 @@ exports.register = async (req, res) => {
         const data = req.body;
         const db = await getDb();
 
-        // 1. Check if profile exists by CPF OR Email
-        // This allows linking "Frank Ocean" (wrong CPF) to "Frank Ocean" (correct CPF) if email is same.
+        // 1. Verificar se o perfil existe por CPF OU Email
+        // Isso permite vincular "Frank Ocean" (CPF errado) a "Frank Ocean" (CPF correto) se o email for o mesmo.
         const existingProfile = await db.get(
             'SELECT * FROM profiles WHERE cpf = ? OR email = ?',
             [data.cpf, data.email]
@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
 
         if (existingProfile) {
             profileId = existingProfile.id;
-            // Update profile with latest info (e.g. if they corrected CPF or Phone)
+            // Atualizar perfil com informações mais recentes (ex: se corrigiram CPF ou Telefone)
             await db.run(
                 `UPDATE profiles SET nome_completo = ?, cpf = ?, telefone = ?, matricula_funcional = ?, status_conta = 'pendente_docs' WHERE id = ?`,
                 [data.nome, data.cpf, data.telefone || '', data.matricula || '', profileId]
@@ -34,19 +34,19 @@ exports.register = async (req, res) => {
             );
         }
 
-        // 2. Create NEW Filiacao Request (History)
-        // We always create a new request if they are registering again.
-        // But we might want to check if there is already a PENDING one?
-        // If there is a pending one, maybe just update it? 
-        // User said: "Line of history... I rejected... I made a new one".
-        // So we should allow multiple.
+        // 2. Criar NOVA Solicitação de Filiação (Histórico)
+        // Sempre criamos uma nova solicitação se eles estiverem se registrando novamente.
+        // Mas talvez devêssemos verificar se já existe uma PENDENTE?
+        // Se houver uma pendente, talvez apenas atualizá-la?
+        // Usuário disse: "Linha do histórico... eu rejeitei... eu fiz um novo".
+        // Então devemos permitir múltiplos.
 
         await db.run(
             `INSERT INTO filiacoes (user_id, status) VALUES (?, 'em_processamento')`,
             [profileId]
         );
 
-        // Generate PDF
+        // Gerar PDF
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=filiacao_${data.nome}.pdf`);
 
@@ -65,29 +65,29 @@ exports.uploadSignedForm = async (req, res) => {
         }
 
         const db = await getDb();
-        const cpf = req.body.cpf; // We need to identify the user
+        const cpf = req.body.cpf; // Precisamos identificar o usuário
 
-        // Find user by CPF
+        // Encontrar usuário por CPF
         const profile = await db.get('SELECT id FROM profiles WHERE cpf = ?', [cpf]);
 
         if (!profile) {
             return res.status(404).json({ error: 'User not found. Please register first.' });
         }
 
-        // Find latest filiacao
+        // Encontrar última filiação
         const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [profile.id]);
 
         if (!filiacao) {
             return res.status(404).json({ error: 'Affiliation request not found.' });
         }
 
-        // Insert Document
+        // Inserir Documento
         await db.run(
             `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALUES (?, ?, ?, 'ficha_assinada')`,
             [profile.id, filiacao.id, req.file.path]
         );
 
-        // Update Profile Status
+        // Atualizar Status do Perfil
         await db.run('UPDATE profiles SET status_conta = ? WHERE id = ?', ['em_analise', profile.id]);
 
         res.status(200).json({ message: 'File uploaded successfully', filename: req.file.filename });
@@ -100,9 +100,9 @@ exports.uploadSignedForm = async (req, res) => {
 exports.getAllAffiliations = async (req, res) => {
     try {
         const db = await getDb();
-        // We want to list USERS, showing their LATEST affiliation status, but also knowing if they have history.
-        // Or we list Affiliations?
-        // User wants: "Frank Ocean (+2)". This implies we list Users (or the latest request for each user).
+        // Queremos listar USUÁRIOS, mostrando seu status de filiação mais recente, mas também sabendo se têm histórico.
+        // Ou listamos Filiações?
+        // Usuário quer: "Frank Ocean (+2)". Isso implica que listamos Usuários (ou a solicitação mais recente de cada um).
 
         const rows = await db.all(`
             SELECT 
@@ -119,14 +119,13 @@ exports.getAllAffiliations = async (req, res) => {
             FROM filiacoes f
             JOIN profiles p ON f.user_id = p.id
             LEFT JOIN documentos d ON f.id = d.filiacao_id AND d.tipo_documento = 'ficha_assinada'
-            WHERE f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id) -- Get only the latest request per user
+            WHERE f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id) -- Obter apenas a solicitação mais recente por usuário
             ORDER BY f.data_solicitacao DESC
         `);
 
-        // We might also want to fetch the FULL history for the detail view.
-        // For now, we return the "Latest" state for the list, and the frontend can request details.
-        // Or we can just return ALL rows and let frontend group?
-        // Returning "Latest" per user is cleaner for the main table.
+        // Também podemos querer buscar o histórico COMPLETO para a visualização de detalhes.
+        // Por enquanto, retornamos o estado "Mais Recente" para a lista, e o frontend pode solicitar detalhes.
+        // Retornar "Mais Recente" por usuário é mais limpo para a tabela principal.
 
         res.status(200).json(rows);
     } catch (error) {
@@ -144,36 +143,36 @@ exports.approveAffiliation = async (req, res) => {
     try {
         const db = await getDb();
 
-        // 0. Verify if Admin exists (Prevent FK Constraint failure if token is stale)
+        // 0. Verificar se o Admin existe (Prevenir falha de restrição FK se o token estiver obsoleto)
         const adminExists = await db.get('SELECT id FROM profiles WHERE id = ?', [adminId]);
         if (!adminExists) {
             return res.status(401).json({ error: 'Sessão inválida ou expirada. Por favor, faça login novamente.' });
         }
 
-        // 1. Get the affiliation and user
+        // 1. Obter a filiação e o usuário
         const filiacao = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
         if (!filiacao) return res.status(404).json({ error: 'Affiliation not found' });
 
         const user = await db.get('SELECT * FROM profiles WHERE id = ?', [filiacao.user_id]);
         if (!user) return res.status(404).json({ error: 'User associated with this affiliation not found.' });
 
-        // 2. Generate temporary password
+        // 2. Gerar senha temporária
         const tempPassword = Math.random().toString(36).slice(-8);
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-        // 3. Update Profile (Activate + Set Password + Force Change)
+        // 3. Atualizar Perfil (Ativar + Definir Senha + Forçar Troca)
         await db.run(
             "UPDATE profiles SET status_conta = 'ativo', password_hash = ?, change_password_required = 1 WHERE id = ?",
             [hashedPassword, filiacao.user_id]
         );
 
-        // 4. Update Filiacao
+        // 4. Atualizar Filiação
         await db.run(
             "UPDATE filiacoes SET status = 'concluido', data_aprovacao = CURRENT_TIMESTAMP, aprovado_por_admin_id = ?, observacoes_admin = ? WHERE id = ?",
             [adminId, observacoes || 'Aprovado pelo admin', id]
         );
 
-        // 5. Log Audit (Non-blocking)
+        // 5. Registrar Auditoria (Não bloqueante)
         try {
             await auditService.logAction(adminId, 'APPROVE_AFFILIATION', id, {
                 user_name: user.nome_completo,
@@ -185,7 +184,7 @@ exports.approveAffiliation = async (req, res) => {
             // Continue execution, don't fail the request just because audit failed (though ideally it shouldn't fail)
         }
 
-        // 6. Send Email (Non-blocking)
+        // 6. Enviar Email (Não bloqueante)
         try {
             const userEmail = user.email || `${user.cpf}@empresax.com`;
             await emailService.sendPasswordEmail(userEmail, tempPassword);
@@ -193,7 +192,7 @@ exports.approveAffiliation = async (req, res) => {
             console.error('Email Send Failed:', emailErr.message);
         }
 
-        // DEV ONLY: Return temp password
+        // APENAS DEV: Retornar senha temporária
         res.status(200).json({ message: `Affiliation approved.`, tempPassword });
     } catch (error) {
         console.error('Approve Affiliation Error:', error);
@@ -219,16 +218,22 @@ exports.rejectAffiliation = async (req, res) => {
             [adminId, observacoes || 'Rejeitado pelo admin', id]
         );
 
-        // Update profile status back to pendente_docs or similar? Or keep as em_analise but let them re-upload?
-        // Let's set to 'pendente_docs' so they know they need to send something new.
+        // Atualizar status do perfil de volta para pendente_docs ou similar? Ou manter como em_analise mas deixá-los re-enviar?
+        // Vamos definir para 'pendente_docs' para que saibam que precisam enviar algo novo.
         await db.run("UPDATE profiles SET status_conta = 'pendente_docs' WHERE id = ?", [filiacao.user_id]);
 
-        // Log Audit
+        // Registrar Auditoria
         await auditService.logAction(adminId, 'REJECT_AFFILIATION', id, {
             user_name: user?.nome_completo,
             user_cpf: user?.cpf,
             reason: observacoes
         });
+
+        // Mensagem automática no Chat
+        await db.run(`
+            INSERT INTO filiation_chat (filiacao_id, sender_id, message)
+            VALUES (?, ?, ?)
+        `, [id, adminId, 'Sua solicitação foi atualizada para "Rejeitado". Olá, estou à disposição para ajudar a corrigir as pendências.']);
 
         res.status(200).json({ message: 'Affiliation rejected.' });
     } catch (error) {
@@ -246,27 +251,23 @@ exports.checkStatus = async (req, res) => {
         if (!user) return res.status(404).json({ error: 'CPF não encontrado.' });
 
         const filiacao = await db.get(
-            'SELECT status, observacoes_admin, data_aprovacao FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1',
+            'SELECT id, status, observacoes_admin, data_aprovacao FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1',
             [user.id]
         );
 
         if (!filiacao) return res.status(404).json({ error: 'Nenhuma solicitação encontrada.' });
 
-        // If approved, we might want to "simulate" sending the password again or just showing it if it was just approved?
-        // Actually, we can't retrieve the password hash. 
-        // But the user asked to "receive a standard password" here. 
-        // We can't show the password unless we just reset it or if we stored it temporarily (bad practice).
-        // For the sake of the user's specific request "receive a standard password... here is just for us to have a notion":
-        // We will return a message saying "Check your email" but if the user insists on seeing it here, 
-        // we can't show the OLD one. We can only show it if we just generated it.
-        // Let's just return the status and observation. The "temp password" was returned in the approve response (admin side).
-        // Wait, the user said: "verify if approved... receive a standard password there".
-        // Maybe they mean "Reset it" or "Get a default one"? 
-        // Let's stick to showing the status. If approved, they should use "Forgot Password" or the email they "received".
-        // However, to be helpful, I'll add a "temp_password_debug" field to the response IF it was just approved? No, that's stateful.
-        // I will just return the status. The Admin sees the password in the console/response when approving.
+        // Se aprovado, podemos querer "simular" o envio da senha novamente ou apenas mostrá-la se tiver sido aprovada recentemente?
+        // Na verdade, não conseguimos recuperar o hash da senha.
+        // Mas o usuário pediu para "receber uma senha padrão" aqui.
+        // Não podemos mostrar a senha a menos que a redefinamos ou se a armazenarmos temporariamente (má prática).
+        // Por causa do pedido específico do usuário "receber uma senha padrão... aqui é só pra gente ter uma noção":
+        // Vamos retornar uma mensagem dizendo "Verifique seu email", mas se o usuário insistir em ver aqui,
+        // não podemos mostrar a ANTIGA. Só podemos mostrar se acabamos de gerá-la.
+        // Vamos apenas retornar o status. O Admin vê a senha no console/resposta ao aprovar.
 
         res.json({
+            id: filiacao.id,
             nome: user.nome_completo,
             status: filiacao.status, // em_processamento, concluido, rejeitado
             observacoes: filiacao.observacoes_admin,
@@ -312,5 +313,83 @@ exports.getCertificate = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error generating certificate' });
+    }
+};
+
+exports.getChatMessages = async (req, res) => {
+    const { id } = req.params; // id da filiação
+    const cpfHeader = req.headers['x-cpf'];
+
+    try {
+        const db = await getDb();
+
+        const filiacao = await db.get(`
+            SELECT f.user_id, p.cpf 
+            FROM filiacoes f 
+            JOIN profiles p ON f.user_id = p.id 
+            WHERE f.id = ?
+        `, [id]);
+
+        if (!filiacao) return res.status(404).json({ error: 'Filiation not found' });
+
+        const isPublicAccess = cpfHeader && filiacao.cpf === cpfHeader;
+        const isAuthAccess = req.user && (req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.id === filiacao.user_id);
+
+        if (!isPublicAccess && !isAuthAccess) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const messages = await db.all(`
+            SELECT c.*, p.nome_completo as sender_name, p.role as sender_role
+            FROM filiation_chat c
+            JOIN profiles p ON c.sender_id = p.id
+            WHERE c.filiacao_id = ?
+            ORDER BY c.created_at ASC
+        `, [id]);
+
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.sendChatMessage = async (req, res) => {
+    const { id } = req.params; // id da filiação
+    const { message } = req.body;
+    const cpfHeader = req.headers['x-cpf'];
+
+    // Se acesso público (CPF), precisamos encontrar o ID do usuário para definir como remetente
+    // Se acesso autenticado (Token), usamos req.user.id
+
+    try {
+        const db = await getDb();
+
+        const filiacao = await db.get(`
+            SELECT f.user_id, p.cpf 
+            FROM filiacoes f 
+            JOIN profiles p ON f.user_id = p.id 
+            WHERE f.id = ?
+        `, [id]);
+
+        if (!filiacao) return res.status(404).json({ error: 'Filiation not found' });
+
+        let senderId;
+
+        if (cpfHeader && filiacao.cpf === cpfHeader) {
+            senderId = filiacao.user_id; // O próprio usuário
+        } else if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.id === filiacao.user_id)) {
+            senderId = req.user.id;
+        } else {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        await db.run(`
+            INSERT INTO filiation_chat (filiacao_id, sender_id, message)
+            VALUES (?, ?, ?)
+        `, [id, senderId, message]);
+
+        res.json({ message: 'Message sent' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };

@@ -6,7 +6,7 @@ const documentController = require('../controllers/documentController');
 const profileController = require('../controllers/profileController');
 const reportsController = require('../controllers/reportsController');
 const upload = require('../middlewares/upload');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateTokenOptional } = require('../middlewares/auth');
 
 router.post('/auth/login', authController.login);
 router.post('/auth/change-password', authenticateToken, authController.changePassword);
@@ -26,7 +26,7 @@ router.get('/affiliations/certificate', authenticateToken, affiliationController
 router.get('/documents/my', authenticateToken, documentController.getMyDocuments);
 router.post('/documents', authenticateToken, upload.single('document'), documentController.uploadDocument);
 router.post('/documents/template', authenticateToken, upload.single('document'), documentController.uploadTemplate);
-router.get('/documents/:filename', documentController.serveDocument); // Security inside controller or add middleware if needed
+router.get('/documents/:filename', documentController.serveDocument); // Segurança dentro do controlador ou adicione middleware se necessário
 
 router.get('/profile', authenticateToken, profileController.getProfile);
 router.put('/profile', authenticateToken, profileController.updateProfile);
@@ -39,9 +39,19 @@ const adminController = require('../controllers/adminController');
 router.get('/admin/audit', authenticateToken, adminController.getAuditLogs);
 router.get('/admin/users', authenticateToken, adminController.listAdmins);
 router.post('/admin/users', authenticateToken, adminController.createAdmin);
+router.put('/admin/users/:adminId/status', authenticateToken, adminController.updateAdminStatus);
 
 const systemController = require('../controllers/systemController');
 router.get('/system/stats', authenticateToken, systemController.getSystemStats);
 router.post('/system/console', authenticateToken, systemController.executeConsoleCommand);
+
+// Avaliação e Desempenho do Admin
+router.get('/admin/performance', authenticateToken, adminController.getAdminPerformance);
+router.post('/admin/evaluation', authenticateToken, adminController.saveEvaluation);
+router.get('/admin/evaluation/:adminId', authenticateToken, adminController.getEvaluations);
+
+// Chat de Filiação
+router.get('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.getChatMessages);
+router.post('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.sendChatMessage);
 
 module.exports = router;

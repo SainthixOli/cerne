@@ -3,7 +3,7 @@ const { getDb } = require('../config/database');
 exports.getProfile = async (req, res) => {
     try {
         const db = await getDb();
-        const userId = req.user.id; // From JWT middleware
+        const userId = req.user.id; // Do middleware JWT
 
         const profile = await db.get(`
       SELECT p.*, f.status as status_filiacao
@@ -48,7 +48,7 @@ exports.uploadPhoto = async (req, res) => {
 
         const db = await getDb();
         const userId = req.user.id;
-        const photoUrl = req.file.path; // In real app, upload to S3/Cloudinary and get URL
+        const photoUrl = req.file.path; // Em app real, enviar para S3/Cloudinary e obter URL
 
         // Assuming we have a photo_url column. If not, we might need to add it or use a generic 'documents' table linked to profile?
         // Let's check schema. Schema doesn't have photo_url.

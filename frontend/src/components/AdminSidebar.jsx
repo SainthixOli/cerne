@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File, CheckCircle } from 'lucide-react';
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
@@ -17,7 +17,6 @@ const AdminSidebar = () => {
         { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
         { path: '/admin/affiliates', icon: Users, label: 'Filiados' },
         { path: '/admin/reports', icon: BarChart, label: 'Relatórios' },
-        { path: '/admin/settings', icon: Settings, label: 'Configurações' },
     ];
 
     return (
@@ -71,8 +70,33 @@ const AdminSidebar = () => {
                             <File size={20} />
                             <span>Documentos</span>
                         </NavLink>
+                        <NavLink
+                            to="/admin/users"
+                            className={({ isActive }) =>
+                                `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`
+                            }
+                        >
+                            <Users size={20} />
+                            <span>Colaboradores</span>
+                        </NavLink>
                     </>
                 )}
+
+                <NavLink
+                    to="/admin/settings"
+                    className={({ isActive }) =>
+                        `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+                        }`
+                    }
+                >
+                    <Settings size={20} />
+                    <span>Configurações</span>
+                </NavLink>
             </nav>
 
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -84,7 +108,7 @@ const AdminSidebar = () => {
                     <span>Sair</span>
                 </button>
             </div>
-        </aside>
+        </aside >
     );
 };
 

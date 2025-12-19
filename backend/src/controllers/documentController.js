@@ -5,18 +5,18 @@ const fs = require('fs');
 exports.serveDocument = async (req, res) => {
     const { filename } = req.params;
 
-    // Security: Prevent directory traversal
+    // Segurança: Prevenir travessia de diretório
     const safeFilename = path.basename(filename);
     const filePath = path.join(__dirname, '../../uploads', safeFilename);
 
     try {
-        // Check if file exists
+        // Verificar se o arquivo existe
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: 'Documento não encontrado' });
         }
 
-        // TODO: Add permission check here (is user admin or owner?)
-        // For now, assuming the route is protected by auth middleware (to be added)
+        // TODO: Adicionar verificação de permissão aqui (o usuário é admin ou proprietário?)
+        // Por enquanto, assumindo que a rota é protegida por middleware de autenticação (a ser adicionado)
 
         res.sendFile(filePath);
     } catch (error) {
@@ -52,7 +52,7 @@ exports.uploadDocument = async (req, res) => {
         const userId = req.user.id;
         const filePath = req.file.path;
 
-        // Find filiacao id (optional, but good to link if exists)
+        // Encontrar ID da filiação (opcional, mas bom vincular se existir)
         const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [userId]);
         const filiacaoId = filiacao ? filiacao.id : null;
 
@@ -73,8 +73,8 @@ exports.uploadTemplate = async (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // In a real app, we might store this path in a 'settings' table
-        // For now, we assume it's saved in uploads/ with a specific name or just use the file provided
+        // Em uma aplicação real, poderíamos armazenar este caminho em uma tabela de 'configurações'
+        // Por enquanto, assumimos que está salvo em uploads/ com um nome específico ou apenas usamos o arquivo fornecido
 
         res.json({
             message: 'Template uploaded successfully',
