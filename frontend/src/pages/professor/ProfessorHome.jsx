@@ -11,26 +11,34 @@ const ProfessorHome = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (!storedUser) {
+                navigate('/login');
+                return;
+            }
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+
+            // Buscar Status
+            if (parsedUser.cpf) {
+                api.post('/affiliations/status', { cpf: parsedUser.cpf })
+                    .then(res => {
+                        setStatusData(res.data);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Error fetching status:", err);
+                        setLoading(false);
+                    });
+            } else {
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Error initializing user:", error);
+            localStorage.removeItem('user');
             navigate('/login');
-            return;
         }
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-
-        // Buscar Status
-        api.post('/affiliations/status', { cpf: parsedUser.cpf })
-            .then(res => {
-                setStatusData(res.data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                // Se 404, talvez não haja solicitação ainda?
-                setLoading(false);
-            });
-
     }, [navigate]);
 
     if (!user) return null;
@@ -43,8 +51,6 @@ const ProfessorHome = () => {
                 <div className="glass-panel p-8">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Complete seu acesso</h3>
                     <p className="mt-2 text-gray-500">Estamos finalizando a configuração do seu perfil de membro.</p>
-                    {/* Se acreditarmos estritamente que deveriam ter uma afiliação, talvez seja um erro de sincronização.
-                        Mas padronizar para "Perfil" é mais seguro. */}
                     <button onClick={() => navigate('/member/profile')} className="mt-4 btn-primary px-4 py-2">Meus Dados</button>
                 </div>
             );
@@ -57,7 +63,7 @@ const ProfessorHome = () => {
         let label = 'Em Análise';
         let description = 'Sua solicitação de associação está sendo analisada.';
 
-        if (status === 'concluido') {
+        if (status === 'concluido' || statusData.status_conta === 'ativo') {
             colorClass = 'bg-green-100 text-green-600';
             icon = <ShieldCheck size={28} />;
             label = 'Membro Ativo';
@@ -108,11 +114,13 @@ const ProfessorHome = () => {
         );
     };
 
+    const userName = user?.name?.split(' ')?.[0] || 'Professor';
+
     return (
         <div className="max-w-5xl mx-auto space-y-8">
             <header className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Olá, {user.name.split(' ')[0]}</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Olá, {userName}</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">Bem-vindo ao Painel do Associado.</p>
                 </div>
             </header>
@@ -126,7 +134,7 @@ const ProfessorHome = () => {
                 {/* Coluna de Ações Rápidas */}
                 <div className="glass-panel p-8 h-fit">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Ações Rápidas</h3>
-                    {/* ... botões ... */}
+
                     <button onClick={() => navigate('/member/profile')} className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-gray-100 dark:border-white/5 rounded-2xl transition group mb-4">
                         <div className="flex items-center">
                             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 mr-4 group-hover:scale-110 transition-transform">
@@ -136,7 +144,17 @@ const ProfessorHome = () => {
                         </div>
                         <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
                     </button>
-                    {/* ... mais botões ... */}
+
+                    <button onClick={() => navigate('/member/documents')} className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-gray-100 dark:border-white/5 rounded-2xl transition group mb-4">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl text-purple-600 dark:text-purple-400 mr-4 group-hover:scale-110 transition-transform">
+                                <CreditCard size={20} />
+                            </div>
+                            <span className="font-semibold text-gray-700 dark:text-gray-200">Meus Documentos</span>
+                        </div>
+                        <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    </button>
+
                 </div>
             </div>
         </div>

@@ -42,8 +42,8 @@ exports.getSystemStats = async (req, res) => {
         const memoryUsageMB = (memoryUsage.rss / (1024 * 1024)).toFixed(2);
 
         // 4. Carga da CPU (Aproximado com base na Média de Carga / Contagem de Núcleos)
-        // A média de carga é o número de processos aguardando.
-        // Se loadAvg = cpus, está 100% carregado.
+        const cpus = os.cpus().length;
+        const loadAvg = os.loadavg()[0];
         const cpuLoadPercent = Math.min(100, (loadAvg / cpus) * 100).toFixed(1);
 
         // 5. Contagens do Banco de Dados

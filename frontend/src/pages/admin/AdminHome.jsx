@@ -16,7 +16,7 @@ const AdminHome = () => {
         const fetchStats = async () => {
             try {
                 const response = await api.get('/reports');
-                setStats(response.data);
+                setStats(response.data.summary || response.data);
             } catch (error) {
                 console.error('Error fetching stats:', error);
             }

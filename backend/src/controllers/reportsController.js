@@ -9,6 +9,7 @@ exports.getReports = async (req, res) => {
         const pending = await db.get("SELECT COUNT(*) as count FROM filiacoes WHERE status IN ('em_analise', 'em_processamento')");
         const approved = await db.get("SELECT COUNT(*) as count FROM filiacoes WHERE status = 'concluido'");
         const rejected = await db.get("SELECT COUNT(*) as count FROM filiacoes WHERE status = 'rejeitado'");
+        const todayCount = await db.get("SELECT COUNT(*) as count FROM filiacoes WHERE date(data_solicitacao) = date('now')");
 
         // 2. Estatísticas Mensais (Gráfico de Linha)
         // Agrupar por AAAA-MM
@@ -58,6 +59,7 @@ exports.getReports = async (req, res) => {
                 pending: pending.count,
                 approved: approved.count,
                 rejected: rejected.count,
+                today: todayCount?.count || 0,
                 avgApprovalHours: avgApprovalHours
             },
             charts: {
