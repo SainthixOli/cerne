@@ -1,5 +1,43 @@
 -- SQLite version of the schema
 
+
+-- Tabela de Conversas (Chat 1:1)
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    admin_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(admin_id) REFERENCES profiles(id),
+    FOREIGN KEY(user_id) REFERENCES profiles(id),
+    UNIQUE(admin_id, user_id)
+);
+
+-- Tabela de Mensagens (Chat 1:1)
+CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL,
+    sender_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    read BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY(sender_id) REFERENCES profiles(id)
+);
+
+-- Tabela de Notificações (Broadcast)
+CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    target_group TEXT NOT NULL, -- 'all', 'professors', 'admins'
+    status TEXT DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
+    created_by TEXT NOT NULL,
+    approved_by TEXT, -- Super Admin ID
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(created_by) REFERENCES profiles(id),
+    FOREIGN KEY(approved_by) REFERENCES profiles(id)
+);
+
 CREATE TABLE IF NOT EXISTS profiles (
     id TEXT PRIMARY KEY, -- UUID stored as TEXT
     nome_completo TEXT NOT NULL,

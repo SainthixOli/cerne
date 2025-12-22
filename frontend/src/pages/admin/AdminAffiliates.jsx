@@ -1,28 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Check, X, FileText, Search, Filter, RefreshCw, AlertCircle, Download, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';
 
 const AdminAffiliates = () => {
+    const navigate = useNavigate();
     const [affiliations, setAffiliations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('pendentes'); // 'pendentes' | 'aprovados'
 
-    // Estado do Modal
+    // Modal State
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalAction, setModalAction] = useState(null); // 'approve' | 'reject' | 'history'
+    const [modalAction, setModalAction] = useState(null); // 'approve' | 'reject' | 'history' | 'chat' | 'broadcast'
     const [selectedAffiliation, setSelectedAffiliation] = useState(null);
     const [observation, setObservation] = useState('');
     const [historyData, setHistoryData] = useState([]);
 
+    // Broadcast State
+    const [broadcastData, setBroadcastData] = useState({ title: '', message: '', target_group: 'all' });
+
     const fetchAffiliations = async () => {
         try {
+            setLoading(true);
             const response = await api.get('/affiliations');
             setAffiliations(response.data);
         } catch (error) {
             console.error('Error fetching affiliations:', error);
-            alert('Erro ao buscar filiações: ' + error.message);
+            // alert('Erro ao buscar filiações'); // Removed alert to be less intrusive on load
         } finally {
             setLoading(false);
         }
@@ -61,10 +67,21 @@ const AdminAffiliates = () => {
 
             const response = await api.post(endpoint, { observacoes: observation });
 
-            if (modalAction === 'approve' && response.data.tempPassword) {
-                alert(`Aprovado com sucesso!\nSenha Temporária Gerada: ${response.data.tempPassword}\n(Anote, pois ela foi enviada por email simulado)`);
+            if (modalAction === 'approve') {
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#3b82f6', '#10b981', '#ffffff']
+                });
+
+                if (response.data.tempPassword) {
+                    alert(`Aprovado com sucesso!\nSenha Temporária: ${response.data.tempPassword}\n(Enviada por email simulado)`);
+                } else {
+                    alert('Aprovado com sucesso!');
+                }
             } else {
-                alert(modalAction === 'approve' ? 'Aprovado com sucesso!' : 'Rejeitado com sucesso!');
+                alert('Rejeitado com sucesso!');
             }
 
             setModalOpen(false);
@@ -72,6 +89,17 @@ const AdminAffiliates = () => {
         } catch (error) {
             console.error(error);
             alert('Erro ao processar ação');
+        }
+    };
+
+    const handleSendBroadcast = async () => {
+        try {
+            await api.post('/notifications/broadcast', broadcastData);
+            alert('Notificação enviada para aprovação do Super Admin!');
+            setModalOpen(false);
+            setBroadcastData({ title: '', message: '', target_group: 'all' });
+        } catch (error) {
+            alert('Erro ao enviar notificação');
         }
     };
 
@@ -112,6 +140,12 @@ const AdminAffiliates = () => {
                     <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">Gerencie os pedidos de filiação.</p>
                 </div>
                 <div className="flex space-x-3">
+                    <button
+                        onClick={() => { setModalAction('broadcast'); setModalOpen(true); }}
+                        className="btn-secondary flex items-center px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 transition rounded-xl"
+                    >
+                        <Megaphone size={18} className="mr-2" /> Comunicado
+                    </button>
                     <button onClick={fetchAffiliations} className="glass px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center rounded-xl">
                         <RefreshCw size={18} className="mr-2" /> Atualizar
                     </button>
@@ -174,7 +208,7 @@ const AdminAffiliates = () => {
                             {loading ? (
                                 <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">Carregando...</td></tr>
                             ) : filteredAffiliations.length === 0 ? (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">Nenhum registro encontrado nesta aba.</td></tr>
+                                <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">Nenhum registro encontrado.</td></tr>
                             ) : (
                                 filteredAffiliations.map((affiliation) => (
                                     <tr key={affiliation.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition duration-200">
@@ -187,7 +221,7 @@ const AdminAffiliates = () => {
                                                 {affiliation.total_requests > 1 && (
                                                     <button
                                                         onClick={() => openModal(affiliation, 'history')}
-                                                        className="ml-2 inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 transition cursor-pointer"
+                                                        className="ml-2 inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 cursor-pointer"
                                                     >
                                                         +{affiliation.total_requests - 1}
                                                     </button>
@@ -199,62 +233,50 @@ const AdminAffiliates = () => {
                                             {new Date(affiliation.data_solicitacao).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5">
-                                            {affiliation.status === 'concluido' ? (
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
-                                                    Aprovado
-                                                </span>
-                                            ) : affiliation.status === 'rejeitado' ? (
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
-                                                    Rejeitado
-                                                </span>
-                                            ) : affiliation.status_conta === 'pendente_docs' ? (
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
-                                                    Aguardando Docs
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800">
-                                                    Em Análise
-                                                </span>
-                                            )}
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${affiliation.status === 'concluido' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' :
+                                                affiliation.status === 'rejeitado' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
+                                                    affiliation.status_conta === 'pendente_docs' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
+                                                        'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
+                                                }`}>
+                                                {affiliation.status === 'concluido' ? 'Aprovado' :
+                                                    affiliation.status === 'rejeitado' ? 'Rejeitado' :
+                                                        affiliation.status_conta === 'pendente_docs' ? 'Aguardando Docs' : 'Em Análise'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-5 text-right space-x-2">
-                                            <button
-                                                onClick={() => {
-                                                    if (affiliation.url_arquivo) {
+                                            {affiliation.url_arquivo && (
+                                                <button
+                                                    onClick={() => {
                                                         const filename = affiliation.url_arquivo.split('/').pop().split('\\').pop();
                                                         window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
-                                                    } else {
-                                                        alert('Documento não encontrado');
-                                                    }
-                                                }}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
-                                                title="Ver Documento"
-                                            >
-                                                <FileText size={20} />
-                                            </button>
-
+                                                    }}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
+                                                    title="Ver Documento"
+                                                >
+                                                    <FileText size={20} />
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => openModal(affiliation, 'chat')}
+                                                onClick={() => {
+                                                    // Redirect to ChatManager with user context
+                                                    navigate('/admin/chat', {
+                                                        state: {
+                                                            startChatWith: affiliation.user_id,
+                                                            userName: affiliation.nome
+                                                        }
+                                                    });
+                                                }}
                                                 className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
-                                                title="Chat / Atendimento"
+                                                title="Chat"
                                             >
                                                 <MessageCircle size={20} />
                                             </button>
-
                                             {activeTab === 'pendentes' && affiliation.status !== 'rejeitado' && (
                                                 <>
-                                                    <button
-                                                        onClick={() => openModal(affiliation, 'approve')}
-                                                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition"
-                                                        title="Aprovar"
-                                                    >
+                                                    <button onClick={() => openModal(affiliation, 'approve')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition">
                                                         <Check size={20} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => openModal(affiliation, 'reject')}
-                                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition"
-                                                        title="Rejeitar"
-                                                    >
+                                                    <button onClick={() => openModal(affiliation, 'reject')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition">
                                                         <X size={20} />
                                                     </button>
                                                 </>
@@ -268,103 +290,96 @@ const AdminAffiliates = () => {
                 </div>
             </div>
 
-            {/* Modal de Ação */}
+            {/* Modal */}
             {modalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-panel p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all scale-100">
+                    <div className="glass-panel p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                             {modalAction === 'approve' ? 'Aprovar Filiação' :
                                 modalAction === 'reject' ? 'Rejeitar Filiação' :
-                                    'Histórico de Solicitações'}
+                                    modalAction === 'history' ? 'Histórico' :
+                                        modalAction === 'broadcast' ? 'Novo Comunicado' :
+                                            `Chat - ${selectedAffiliation?.nome}`}
                         </h3>
 
                         {modalAction === 'history' ? (
                             <div className="space-y-6">
-                                {historyData.map((item, index) => (
+                                {historyData.map((item) => (
                                     <div key={item.id} className="border-l-2 border-gray-200 dark:border-gray-700 pl-6 relative">
-                                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500 border-4 border-white dark:border-gray-800"></div>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1 font-medium">
-                                            {new Date(item.data_solicitacao).toLocaleString()}
-                                        </p>
-                                        <div className="flex items-center mb-2">
-                                            <span className={`text-sm font-bold px-2 py-0.5 rounded-md ${item.status === 'concluido' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                item.status === 'rejeitado' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                }`}>
-                                                {item.status.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        {item.observacoes_admin && (
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/5">
-                                                Obs: {item.observacoes_admin}
-                                            </p>
-                                        )}
-                                        {item.url_arquivo && (
-                                            <a
-                                                href={`http://localhost:3000/api/documents/${item.url_arquivo.split('/').pop()}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-xs text-blue-500 hover:text-blue-600 font-bold block mt-2"
-                                            >
-                                                Ver Documento Anexado
-                                            </a>
-                                        )}
+                                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500"></div>
+                                        <p className="text-sm text-gray-500 mb-1">{new Date(item.data_solicitacao).toLocaleString()}</p>
+                                        <span className="text-sm font-bold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800">{item.status.toUpperCase()}</span>
+                                        {item.observacoes_admin && <p className="text-sm mt-1 bg-gray-50 p-2 rounded">Obs: {item.observacoes_admin}</p>}
                                     </div>
                                 ))}
-                                <div className="flex justify-end mt-6">
-                                    <button
-                                        onClick={() => setModalOpen(false)}
-                                        className="px-6 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition font-medium"
-                                    >
-                                        Fechar
-                                    </button>
+                                <div className="flex justify-end mt-4">
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Fechar</button>
                                 </div>
                             </div>
                         ) : modalAction === 'chat' ? (
                             <div className="space-y-4">
-                                <h4 className="font-bold text-gray-900 dark:text-white">Chat com {selectedAffiliation?.nome}</h4>
                                 <ChatComponent filiacaoId={selectedAffiliation?.id} />
-                                <div className="flex justify-end mt-4">
-                                    <button
-                                        onClick={() => setModalOpen(false)}
-                                        className="px-6 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-white/20 transition font-medium"
+                                <div className="flex justify-end">
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Fechar</button>
+                                </div>
+                            </div>
+                        ) : modalAction === 'broadcast' ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Título</label>
+                                    <input
+                                        type="text"
+                                        value={broadcastData.title}
+                                        onChange={e => setBroadcastData({ ...broadcastData, title: e.target.value })}
+                                        className="input-field"
+                                        placeholder="Ex: Manutenção"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Mensagem</label>
+                                    <textarea
+                                        value={broadcastData.message}
+                                        onChange={e => setBroadcastData({ ...broadcastData, message: e.target.value })}
+                                        className="input-field h-24 resize-none"
+                                        placeholder="Mensagem..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Destino</label>
+                                    <select
+                                        value={broadcastData.target_group}
+                                        onChange={e => setBroadcastData({ ...broadcastData, target_group: e.target.value })}
+                                        className="input-field"
                                     >
-                                        Fechar
-                                    </button>
+                                        <option value="all">Todos</option>
+                                        <option value="professors">Professores</option>
+                                        <option value="admins">Admins</option>
+                                    </select>
+                                </div>
+                                <div className="flex justify-end mt-4 space-x-3">
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
+                                    <button onClick={handleSendBroadcast} className="btn-primary px-4 py-2 bg-purple-600 hover:bg-purple-700">Enviar</button>
                                 </div>
                             </div>
                         ) : (
                             <>
-                                <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
-                                    {modalAction === 'approve'
-                                        ? `Deseja aprovar a filiação de ${selectedAffiliation?.nome}?`
-                                        : `Deseja rejeitar a filiação de ${selectedAffiliation?.nome}?`
-                                    }
+                                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                                    {modalAction === 'approve' ? `Aprovar ${selectedAffiliation?.nome}?` : `Rejeitar ${selectedAffiliation?.nome}?`}
                                 </p>
-
-                                <div className="mb-8">
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                        {modalAction === 'approve' ? 'Observações (Opcional)' : 'Motivo da Rejeição (Obrigatório)'}
-                                    </label>
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold mb-2">Observações</label>
                                     <textarea
                                         value={observation}
                                         onChange={(e) => setObservation(e.target.value)}
                                         className="input-field h-32 resize-none"
-                                        placeholder={modalAction === 'approve' ? "Tudo certo com a documentação..." : "Documento ilegível, falta assinatura..."}
+                                        placeholder="Digite aqui..."
                                     />
                                 </div>
-
                                 <div className="flex justify-end space-x-4">
-                                    <button
-                                        onClick={() => setModalOpen(false)}
-                                        className="px-6 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition font-medium"
-                                    >
-                                        Cancelar
-                                    </button>
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
                                     <button
                                         onClick={handleConfirmAction}
-                                        disabled={modalAction === 'reject' && !observation.trim()}
-                                        className={`px-8 py-3 text-white rounded-xl font-bold transition shadow-lg disabled:opacity-50 ${modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                                            }`}
+                                        className={`px-8 py-2 text-white rounded-xl font-bold ${modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                                     >
                                         Confirmar
                                     </button>

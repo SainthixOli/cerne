@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, FileText, AlertCircle, TrendingUp, Activity, HardDrive } from 'lucide-react';
+import { Users, FileText, AlertCircle, TrendingUp, Activity, HardDrive, CheckCircle } from 'lucide-react';
 import api from '../../api';
 
 const AdminHome = () => {
@@ -45,42 +45,48 @@ const AdminHome = () => {
                 </div>
             </div>
 
-            {/* Super Admin Exclusive: System Health (Premium Widget) */}
+            {/* Super Admin Exclusive: System Health & Pending Broadcasts */}
             {user?.role === 'super_admin' && (
-                <div className="glass-panel p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-700 group-hover:bg-blue-500/20"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* System Health */}
+                    <div className="glass-panel p-8 relative overflow-hidden group h-full">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-700 group-hover:bg-blue-500/20"></div>
 
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                        <Activity className="mr-2 text-blue-500" size={24} />
-                        Saúde do Sistema
-                    </h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                            <Activity className="mr-2 text-blue-500" size={24} />
+                            Saúde do Sistema
+                        </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="flex items-center p-6 bg-white/50 dark:bg-white/5 rounded-2xl border border-white/20 dark:border-white/10 backdrop-blur-sm transition-transform hover:scale-[1.02]">
-                            <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-4 text-green-600 dark:text-green-400 shadow-sm">
-                                <Activity size={24} />
-                            </div>
-                            <div>
-                                <p className="font-bold text-gray-900 dark:text-white text-lg">Online</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Todos os serviços ativos</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center p-6 bg-white/50 dark:bg-white/5 rounded-2xl border border-white/20 dark:border-white/10 backdrop-blur-sm transition-transform hover:scale-[1.02]">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-4 text-blue-600 dark:text-blue-400 shadow-sm">
-                                <HardDrive size={24} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex justify-between mb-2">
-                                    <span className="font-bold text-gray-900 dark:text-white">Armazenamento</span>
-                                    <span className="text-sm text-green-500 font-medium">Saudável</span>
+                        <div className="space-y-4">
+                            <div className="flex items-center p-4 bg-white/50 dark:bg-white/5 rounded-2xl border border-white/20 dark:border-white/10 backdrop-blur-sm">
+                                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-4 text-green-600 dark:text-green-400 shadow-sm">
+                                    <Activity size={20} />
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                                    <div className="bg-blue-500 h-full rounded-full w-[45%] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                <div>
+                                    <p className="font-bold text-gray-900 dark:text-white">Online</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Todos os serviços ativos</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center p-4 bg-white/50 dark:bg-white/5 rounded-2xl border border-white/20 dark:border-white/10 backdrop-blur-sm">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-4 text-blue-600 dark:text-blue-400 shadow-sm">
+                                    <HardDrive size={20} />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between mb-1">
+                                        <span className="font-bold text-gray-900 dark:text-white text-sm">Armazenamento</span>
+                                        <span className="text-xs text-green-500 font-medium">Saudável</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                        <div className="bg-blue-500 h-full rounded-full w-[45%]"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Pending Broadcasts */}
+                    <PendingBroadcastsWidget />
                 </div>
             )}
 
@@ -108,6 +114,77 @@ const AdminHome = () => {
                 <p className="text-gray-500 dark:text-gray-400 max-w-sm">
                     Nenhuma atividade recente registrada no sistema. As ações dos usuários aparecerão aqui.
                 </p>
+            </div>
+        </div>
+    );
+};
+
+const PendingBroadcastsWidget = () => {
+    const [pending, setPending] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchPending = async () => {
+        try {
+            const res = await api.get('/notifications/pending');
+            setPending(res.data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPending();
+    }, []);
+
+    const handleApprove = async (id) => {
+        try {
+            await api.post(`/notifications/${id}/approve`);
+            alert('Notificação aprovada e enviada!');
+            fetchPending();
+        } catch (error) {
+            alert('Erro ao aprovar');
+        }
+    };
+
+    return (
+        <div className="glass-panel p-8 h-full flex flex-col">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <AlertCircle className="mr-2 text-yellow-500" size={24} />
+                Aprovações Pendentes
+            </h2>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                {loading ? (
+                    <p className="text-gray-400 text-sm">Carregando...</p>
+                ) : pending.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 text-center opacity-70">
+                        <CheckCircle size={32} className="mb-2 text-green-500" />
+                        <p className="text-sm">Tudo em dia!</p>
+                    </div>
+                ) : (
+                    pending.map(n => (
+                        <div key={n.id} className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-xl relative group">
+                            <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-gray-800 dark:text-white text-sm">{n.title}</h4>
+                                <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider border px-1 rounded bg-white dark:bg-transparent">
+                                    {n.target_group === 'all' ? 'Todos' : n.target_group}
+                                </span>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">{n.message}</p>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-gray-400">Por: {n.author_name}</span>
+                                <button
+                                    onClick={() => handleApprove(n.id)}
+                                    className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center"
+                                >
+                                    <CheckCircle size={12} className="mr-1" /> Aprovar
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

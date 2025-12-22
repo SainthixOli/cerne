@@ -54,4 +54,17 @@ router.get('/admin/evaluation/:adminId', authenticateToken, adminController.getE
 router.get('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.getChatMessages);
 router.post('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.sendChatMessage);
 
+const chatController = require('../controllers/chatController');
+router.post('/chat/start', authenticateToken, chatController.startConversation);
+router.get('/chat/conversations', authenticateToken, chatController.listConversations);
+router.get('/chat/:conversationId/messages', authenticateToken, chatController.getMessages);
+router.post('/chat/:conversationId/messages', authenticateToken, chatController.sendMessage);
+router.get('/chat/admins', authenticateToken, chatController.getAvailableAdmins);
+
+const notificationController = require('../controllers/notificationController');
+router.post('/notifications/broadcast', authenticateToken, notificationController.createBroadcast);
+router.post('/notifications/:id/approve', authenticateToken, notificationController.approveBroadcast); // Apenas Super Admin (validado no controller)
+router.get('/notifications/pending', authenticateToken, notificationController.listPendingBroadcasts);
+router.get('/notifications/my', authenticateToken, notificationController.listMyNotifications);
+
 module.exports = router;

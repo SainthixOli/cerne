@@ -18,7 +18,9 @@ import ProfessorProfile from './pages/professor/ProfessorProfile';
 import ProfessorDocuments from './pages/professor/ProfessorDocuments';
 import ProfessorSettings from './pages/professor/ProfessorSettings';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LoadingProvider } from './contexts/LoadingContext';
 import { Toaster } from 'react-hot-toast';
+import ChatManager from './pages/shared/ChatManager';
 
 import ForgotPassword from './pages/auth/ForgotPassword';
 
@@ -29,40 +31,44 @@ import SystemDashboard from './pages/system/SystemDashboard';
 function App() {
   return (
     <ThemeProvider>
-      <Toaster position="top-right" />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/check-status" element={<CheckStatus />} />
-          <Route path="/change-password" element={<ChangePassword />} />
+      <LoadingProvider>
+        <Toaster position="top-right" />
+        <Router>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/check-status" element={<CheckStatus />} />
+            <Route path="/change-password" element={<ChangePassword />} />
 
-          <Route path="/system" element={<SystemDashboard />} />
+            <Route path="/system" element={<SystemDashboard />} />
 
-          {/* Rotas de Admin Aninhadas */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminHome />} />
-            <Route path="affiliates" element={<AdminAffiliates />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="audit" element={<AdminAudit />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="users/:id" element={<AdminCollaboratorDetail />} />
-            <Route path="documents" element={<AdminDocuments />} />
-            <Route path="settings" element={<ProfessorSettings />} />
-          </Route>
+            {/* Rotas de Admin Aninhadas */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminHome />} />
+              <Route path="affiliates" element={<AdminAffiliates />} />
+              <Route path="chat" element={<ChatManager role="admin" />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="audit" element={<AdminAudit />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="users/:id" element={<AdminCollaboratorDetail />} />
+              <Route path="documents" element={<AdminDocuments />} />
+              <Route path="settings" element={<ProfessorSettings />} />
+            </Route>
 
-          {/* Rotas de Membro Aninhadas */}
-          <Route path="/member" element={<ProfessorLayout />}>
-            <Route index element={<ProfessorHome />} />
-            <Route path="profile" element={<ProfessorProfile />} />
-            <Route path="documents" element={<ProfessorDocuments />} />
-            <Route path="settings" element={<ProfessorSettings />} />
-          </Route>
-        </Routes>
-      </Router>
+            {/* Rotas de Membro Aninhadas */}
+            <Route path="/member" element={<ProfessorLayout />}>
+              <Route index element={<ProfessorHome />} />
+              <Route path="chat" element={<ChatManager role="professor" />} />
+              <Route path="profile" element={<ProfessorProfile />} />
+              <Route path="documents" element={<ProfessorDocuments />} />
+              <Route path="settings" element={<ProfessorSettings />} />
+            </Route>
+          </Routes>
+        </Router>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }

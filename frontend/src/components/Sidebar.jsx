@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { User, FileText, Settings, LogOut, Home } from 'lucide-react';
+import { User, FileText, Settings, LogOut, Home, MessageSquare } from 'lucide-react';
 
 const Sidebar = () => {
     const navigate = useNavigate();
@@ -13,6 +13,7 @@ const Sidebar = () => {
 
     const navItems = [
         { path: '/member', icon: Home, label: 'Início', end: true },
+        { path: '/member/chat', icon: MessageSquare, label: 'Chats' },
         { path: '/member/profile', icon: User, label: 'Meu Cadastro' },
         { path: '/member/documents', icon: FileText, label: 'Meus Documentos' },
         { path: '/member/settings', icon: Settings, label: 'Configurações' },

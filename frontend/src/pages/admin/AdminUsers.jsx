@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserPlus } from 'lucide-react';
+import { Users, UserPlus, MessageCircle } from 'lucide-react';
 import api from '../../api';
 import { maskCPF } from '../../utils/masks';
 
 const AdminUsers = () => {
+    // ... (existing state) ...
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', password: '' });
     const navigate = useNavigate();
 
+    // ... (existing fetchAdmins and handleSubmit) ...
     const fetchAdmins = async () => {
         try {
             const res = await api.get('/admin/users');
@@ -21,12 +23,6 @@ const AdminUsers = () => {
             setLoading(false);
         }
     };
-
-
-
-    useEffect(() => {
-        fetchAdmins();
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -47,8 +43,19 @@ const AdminUsers = () => {
         setFormData({ ...formData, [name]: value });
     };
 
+    const handleStartChat = async (e, userId) => {
+        e.stopPropagation(); // Evitar navegação para detalhes
+        try {
+            await api.post('/chat/start', { userId });
+            navigate('/admin/chat');
+        } catch (error) {
+            alert('Erro ao iniciar conversa');
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto">
+            {/* ... (existing header) ... */}
             <header className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
@@ -64,6 +71,7 @@ const AdminUsers = () => {
                 </button>
             </header>
 
+            {/* ... (existing form) ... */}
             {showForm && (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 mb-8 animate-fade-in">
                     <h3 className="text-lg font-bold mb-4 dark:text-white">Cadastrar Novo Colaborador</h3>
@@ -122,6 +130,7 @@ const AdminUsers = () => {
                             <th className="px-6 py-4">Email</th>
                             <th className="px-6 py-4">Função</th>
                             <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -144,6 +153,15 @@ const AdminUsers = () => {
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         {admin.status_conta}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <button
+                                        onClick={(e) => handleStartChat(e, admin.id)}
+                                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition"
+                                        title="Iniciar Conversa"
+                                    >
+                                        <MessageCircle size={18} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}

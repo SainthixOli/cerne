@@ -76,56 +76,42 @@ exports.getSystemStats = async (req, res) => {
     }
 };
 exports.executeConsoleCommand = async (req, res) => {
+    const { command } = req.body;
+    const allowedCommands = ['status', 'help', 'logs', 'version', 'clear'];
+
+    if (!allowedCommands.includes(command.split(' ')[0])) {
+        return res.json({ output: `Command not found: ${command}` });
+    }
+
     try {
-        if (req.user.role !== 'system_manager') {
-            return res.status(403).json({ error: 'Acesso negado.' });
+        if (command === 'status') {
+            const uploadsDir = path.resolve(__dirname, '../../uploads');
+            let uploadsWritable = false;
+            try {
+                require('fs').accessSync(uploadsDir, require('fs').constants.W_OK);
+                uploadsWritable = true;
+            } catch (e) { uploadsWritable = false; }
+
+            const db = await getDb();
+            await db.get('SELECT 1');
+
+            return res.json({
+                output: `System Status:\n[OK] Database Active\n[${uploadsWritable ? 'OK' : 'FAIL'}] Uploads Writable\n[OK] Uptime: ${process.uptime().toFixed(0)}s`
+            });
         }
 
-        const { command } = req.body;
-        let output = '';
-
-        switch (command.trim().toLowerCase()) {
-            case 'help':
-                output = `Available commands:
-- status: Check system health
-- clear_cache: Clear system cache (simulated)
-- logs: View recent system logs
-- restart: Restart system services (simulated)
-- help: Show this help message`;
-                break;
-            case 'status':
-                output = `[OK] Database Connection
-[OK] File System
-[OK] Email Service (Mock)
-[OK] API Gateway
-System is running normally.`;
-                break;
-            case 'clear_cache':
-                output = `[INFO] Clearing Redis cache...
-[INFO] Clearing temporary files...
-[SUCCESS] Cache cleared successfully.`;
-                break;
-            case 'restart':
-                output = `[WARN] Initiating graceful restart...
-[INFO] Stopping worker processes...
-[INFO] Starting worker processes...
-[SUCCESS] System restarted. Uptime: 0s`;
-                break;
-            case 'logs':
-                // Em uma aplicação real, leríamos de um arquivo de log
-                output = `[2025-12-15 15:45:01] [INFO] User login: admin
-[2025-12-15 15:48:22] [WARN] High memory usage detected (mock)
-[2025-12-15 15:50:05] [INFO] Affiliation approved: ID #1234
-[2025-12-15 15:55:10] [ERROR] Connection timeout (retrying...)`;
-                break;
-            default:
-                output = `Command not found: ${command}. Type 'help' for available commands.`;
+        if (command === 'logs') {
+            const db = await getDb();
+            const logs = await db.all(`SELECT data_solicitacao, user_id, status FROM filiacoes ORDER BY data_solicitacao DESC LIMIT 5`);
+            const output = logs.map(l => `[${l.data_solicitacao}] User: ${l.user_id} Status: ${l.status}`).join('\n') || 'No recent logs.';
+            return res.json({ output });
         }
 
-        res.json({ output });
+        if (command === 'help') return res.json({ output: 'Available: status, logs, help' });
+
+        return res.json({ output: '' });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ output: `Error: ${error.message}` });
     }
 };
