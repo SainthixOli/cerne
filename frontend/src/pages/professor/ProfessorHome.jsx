@@ -108,7 +108,7 @@ const ProfessorHome = () => {
 
                 {/* Seção de Chat */}
                 {statusData.id && (
-                    <ChatComponent filiacaoId={statusData.id} />
+                    <ChatComponent filiacaoId={statusData.id} cpf={user.cpf} />
                 )}
             </div>
         );

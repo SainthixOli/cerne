@@ -5,20 +5,25 @@ import api from '../../api';
 import { maskCPF } from '../../utils/masks';
 
 const AdminUsers = () => {
-    // ... (existing state) ...
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', password: '' });
     const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isSuperAdmin = user.role === 'super_admin';
 
-    // ... (existing fetchAdmins and handleSubmit) ...
+    useEffect(() => {
+        fetchAdmins();
+    }, []);
+
     const fetchAdmins = async () => {
         try {
             const res = await api.get('/admin/users');
             setAdmins(res.data);
         } catch (error) {
             console.error(error);
+            setLoading(false);
         } finally {
             setLoading(false);
         }
@@ -43,19 +48,13 @@ const AdminUsers = () => {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleStartChat = async (e, userId) => {
+    const handleStartChat = (e, userId) => {
         e.stopPropagation(); // Evitar navegação para detalhes
-        try {
-            await api.post('/chat/start', { userId });
-            navigate('/admin/chat');
-        } catch (error) {
-            alert('Erro ao iniciar conversa');
-        }
+        navigate('/admin/chat', { state: { startChatWith: userId } });
     };
 
     return (
         <div className="max-w-6xl mx-auto">
-            {/* ... (existing header) ... */}
             <header className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
@@ -63,16 +62,17 @@ const AdminUsers = () => {
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Gerenciamento e Avaliação da Equipe.</p>
                 </div>
-                <button
-                    onClick={() => setShowForm(!showForm)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
-                >
-                    <UserPlus size={18} className="mr-2" /> Novo Colaborador
-                </button>
+                {isSuperAdmin && (
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+                    >
+                        <UserPlus size={18} className="mr-2" /> Novo Colaborador
+                    </button>
+                )}
             </header>
 
-            {/* ... (existing form) ... */}
-            {showForm && (
+            {isSuperAdmin && showForm && (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 mb-8 animate-fade-in">
                     <h3 className="text-lg font-bold mb-4 dark:text-white">Cadastrar Novo Colaborador</h3>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">

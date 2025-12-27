@@ -91,3 +91,15 @@ exports.approveBroadcast = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+exports.deleteBroadcast = async (req, res) => {
+    if (req.user.role !== 'super_admin') return res.status(403).json({ error: 'Access denied' });
+    const { id } = req.params;
+
+    try {
+        const db = await getDb();
+        await db.run('DELETE FROM notifications WHERE id = ?', [id]);
+        res.json({ message: 'Broadcast deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Trash2 } from 'lucide-react';
 import api from '../api';
 
 const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isSuperAdmin = user.role === 'super_admin';
 
     const fetchNotifications = async () => {
         try {
@@ -14,6 +16,19 @@ const NotificationBell = () => {
             setUnreadCount(res.data.length); // Simplificação: Considera todas "não lidas" se estão na lista
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm('Tem certeza que deseja apagar esta notificação para TODOS os usuários?')) return;
+        try {
+            await api.delete(`/notifications/${id}`);
+            setNotifications(notifications.filter(n => n.id !== id));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao apagar notificação');
         }
     };
 
@@ -49,12 +64,23 @@ const NotificationBell = () => {
                                 <p className="p-8 text-center text-gray-500 text-sm">Nenhuma notificação nova.</p>
                             ) : (
                                 notifications.map(notif => (
-                                    <div key={notif.id} className="p-4 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                        <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1">{notif.title}</h4>
+                                    <div key={notif.id} className="p-4 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group relative">
+                                        <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 pr-6">{notif.title}</h4>
                                         <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{notif.message}</p>
-                                        <span className="text-[10px] text-gray-400 mt-2 block">
-                                            {new Date(notif.created_at).toLocaleString()}
-                                        </span>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <span className="text-[10px] text-gray-400">
+                                                {new Date(notif.created_at).toLocaleString()}
+                                            </span>
+                                            {isSuperAdmin && (
+                                                <button
+                                                    onClick={(e) => handleDelete(e, notif.id)}
+                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                                    title="Apagar para todos"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}

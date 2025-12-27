@@ -24,16 +24,23 @@ const ChatManager = ({ role }) => {
     // Initial Load & Handle Redirect
     useEffect(() => {
         const init = async () => {
-            await fetchConversations(true); // Silent initial load
+            console.log('ChatManager Init. State:', location.state);
+            // Always fetch list first
+            await fetchConversations(true);
 
             // Check for redirect state
             if (location.state?.startChatWith) {
+                console.log('Found startChatWith:', location.state.startChatWith);
                 const { startChatWith } = location.state;
                 handleStartChat(startChatWith);
+
+                // Optional: Clear state to prevent re-triggering if simply refreshing? 
+                // React Router state persists on refresh, but we might want to be careful.
+                // For now, idempotent handleStartChat is fine.
             }
         };
         init();
-    }, []);
+    }, [location]); // Added location dependency
 
     const handleStartChat = async (userId) => {
         try {
@@ -88,7 +95,40 @@ const ChatManager = ({ role }) => {
         }
     };
 
-    // ... fetch functions ...
+    const fetchConversations = async (silent = false) => {
+        try {
+            const res = await api.get('/chat/conversations', { silent });
+            setConversations(res.data);
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+        }
+    };
+
+    const fetchMessages = async (chatId, silent = false) => {
+        try {
+            const res = await api.get(`/chat/${chatId}/messages`, { silent });
+            setMessages(res.data);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    };
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !selectedChat) return;
+
+        try {
+            await api.post(`/chat/${selectedChat.id}/messages`, {
+                content: newMessage
+            }, { silent: true });
+            setNewMessage('');
+            fetchMessages(selectedChat.id, true);
+            fetchConversations(true); // Update last message in list
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro ao enviar mensagem');
+        }
+    };
 
     const handleStartSupportChat = async () => {
         try {
@@ -106,6 +146,8 @@ const ChatManager = ({ role }) => {
             toast.error('Erro ao buscar atendentes.');
         }
     };
+
+    const getMessageOpacity = () => 'opacity-100';
 
     return (
         // Changed outer height to simple h-full if parent controls it, or keep calc but ensure overflow hidden
@@ -200,7 +242,7 @@ const ChatManager = ({ role }) => {
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 scroll-smooth"
                         >
-                            {messages.map((msg) => {
+                            {Array.isArray(messages) && messages.map((msg) => {
                                 const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
                                 const isMe = msg.sender_id === currentUser.id;
 

@@ -63,6 +63,7 @@ router.get('/chat/admins', authenticateToken, chatController.getAvailableAdmins)
 
 const notificationController = require('../controllers/notificationController');
 router.post('/notifications/broadcast', authenticateToken, notificationController.createBroadcast);
+router.delete('/notifications/:id', authenticateToken, notificationController.deleteBroadcast);
 router.post('/notifications/:id/approve', authenticateToken, notificationController.approveBroadcast); // Apenas Super Admin (validado no controller)
 router.get('/notifications/pending', authenticateToken, notificationController.listPendingBroadcasts);
 router.get('/notifications/my', authenticateToken, notificationController.listMyNotifications);

@@ -11,7 +11,7 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
 
     const loadMessages = () => {
         const headers = cpf ? { 'x-cpf': cpf } : {};
-        api.get(`/affiliations/${filiacaoId}/chat`, { headers })
+        api.get(`/affiliations/${filiacaoId}/chat`, { headers, silent: true })
             .then(res => {
                 setMessages(res.data);
                 setLoading(false);
@@ -39,7 +39,7 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
 
         try {
             const headers = cpf ? { 'x-cpf': cpf } : {};
-            await api.post(`/affiliations/${filiacaoId}/chat`, { message: newMessage }, { headers });
+            await api.post(`/affiliations/${filiacaoId}/chat`, { message: newMessage }, { headers, silent: true });
             setNewMessage('');
             loadMessages();
         } catch (error) {

@@ -20,6 +20,13 @@ async function getDb() {
     const schema = fs.readFileSync(schemaPath, 'utf8');
     await dbInstance.exec(schema);
 
+    // Initialize audit schema
+    const auditSchemaPath = path.resolve(__dirname, '../../db/audit_schema.sql');
+    if (fs.existsSync(auditSchemaPath)) {
+        const auditSchema = fs.readFileSync(auditSchemaPath, 'utf8');
+        await dbInstance.exec(auditSchema);
+    }
+
     return dbInstance;
 }
 
