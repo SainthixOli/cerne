@@ -266,12 +266,19 @@ exports.checkStatus = async (req, res) => {
         // não podemos mostrar a ANTIGA. Só podemos mostrar se acabamos de gerá-la.
         // Vamos apenas retornar o status. O Admin vê a senha no console/resposta ao aprovar.
 
+        // Check for messages
+        const messageCount = await db.get(
+            'SELECT COUNT(*) as count FROM filiation_chat WHERE filiacao_id = ?',
+            [filiacao.id]
+        );
+
         res.json({
             id: filiacao.id,
             nome: user.nome_completo,
             status: filiacao.status, // em_processamento, concluido, rejeitado
             observacoes: filiacao.observacoes_admin,
-            status_conta: user.status_conta
+            status_conta: user.status_conta,
+            message_count: messageCount?.count || 0
         });
 
     } catch (error) {
@@ -357,6 +364,13 @@ exports.sendChatMessage = async (req, res) => {
     const { id } = req.params; // id da filiação
     const { message } = req.body;
     const cpfHeader = req.headers['x-cpf'];
+
+    // Filtro de Palavras (Simples)
+    const PROFANITY_LIST = ['palavra1', 'badword', 'idiota', 'stupid'];
+    const lowerContent = message.toLowerCase();
+    if (PROFANITY_LIST.some(word => lowerContent.includes(word))) {
+        return res.status(400).json({ error: 'Mensagem contém linguagem imprópria e foi bloqueada.' });
+    }
 
     // Se acesso público (CPF), precisamos encontrar o ID do usuário para definir como remetente
     // Se acesso autenticado (Token), usamos req.user.id

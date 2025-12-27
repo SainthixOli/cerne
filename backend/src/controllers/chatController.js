@@ -55,9 +55,24 @@ exports.listConversations = async (req, res) => {
         const db = await getDb();
         let query = '';
         let params = [];
+        const { mode } = req.query; // 'all' for spectator, undefined/null for personal
 
-        if (role === 'admin' || role === 'super_admin') {
-            // Admin vê todas as SUAS conversas
+        // If Super Admin AND specifically asking for all chats (Monitor Mode)
+        if (role === 'super_admin' && mode === 'all') {
+            query = `
+                SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
+                (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                admin_p.nome_completo as admin_name
+                FROM conversations c
+                JOIN profiles p ON c.user_id = p.id
+                LEFT JOIN profiles admin_p ON c.admin_id = admin_p.id
+                ORDER BY c.last_updated DESC
+            `;
+            params = [];
+        }
+        // Admin OR (Super Admin in Personal Mode)
+        else if (role === 'admin' || role === 'super_admin') {
+            // See their OWN conversations
             query = `
                 SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
                 (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message
@@ -68,7 +83,7 @@ exports.listConversations = async (req, res) => {
             `;
             params = [userId];
         } else {
-            // Usuário vê todas as conversas onde ele é o user_id
+            // Member
             query = `
                 SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
                 (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message
@@ -93,8 +108,8 @@ exports.getMessages = async (req, res) => {
     try {
         const db = await getDb();
 
-        // Auto-clean: Deletar mensagens com mais de 7 dias
-        await db.run(`DELETE FROM messages WHERE conversation_id = ? AND created_at < date('now', '-7 days')`, [conversationId]);
+        // Auto-clean: Deletar mensagens com mais de 7 dias (opcional, manter se user pediu, mas não pediu agora)
+        // await db.run(`DELETE FROM messages WHERE conversation_id = ? AND created_at < date('now', '-7 days')`, [conversationId]);
 
         const messages = await db.all(`
             SELECT m.*, p.nome_completo as sender_name 
@@ -110,10 +125,18 @@ exports.getMessages = async (req, res) => {
     }
 };
 
+const PROFANITY_LIST = ['palavra1', 'badword', 'droga', 'idiota', 'stupid']; // Adicionar lista real
+
 exports.sendMessage = async (req, res) => {
     const { conversationId } = req.params;
     const { content } = req.body;
     const senderId = req.user.id;
+
+    // Filtro de Palavras
+    const lowerContent = content.toLowerCase();
+    if (PROFANITY_LIST.some(word => lowerContent.includes(word))) {
+        return res.status(400).json({ error: 'Mensagem contém linguagem imprópria e foi bloqueada.' });
+    }
 
     try {
         const db = await getDb();

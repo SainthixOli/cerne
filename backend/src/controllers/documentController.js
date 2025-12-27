@@ -44,6 +44,8 @@ exports.getMyDocuments = async (req, res) => {
     }
 };
 
+const auditService = require('../services/auditService');
+
 exports.uploadDocument = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -60,6 +62,11 @@ exports.uploadDocument = async (req, res) => {
             `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALUES (?, ?, ?, 'outro')`,
             [userId, filiacaoId, filePath]
         );
+
+        // Audit Log
+        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+            await auditService.logAction(userId, 'UPLOAD_DOCUMENT', filiacaoId || userId, { filename: req.file.filename, type: 'outro' });
+        }
 
         res.json({ message: 'Document uploaded', filename: req.file.filename });
     } catch (error) {

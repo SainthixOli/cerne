@@ -23,6 +23,8 @@ exports.getProfile = async (req, res) => {
     }
 };
 
+const auditService = require('../services/auditService');
+
 exports.updateProfile = async (req, res) => {
     try {
         const db = await getDb();
@@ -34,6 +36,11 @@ exports.updateProfile = async (req, res) => {
       SET nome_completo = ?, telefone = ?, email = ?, matricula_funcional = ?
       WHERE id = ?
     `, [nome_completo, telefone, email, matricula_funcional, userId]);
+
+        // Audit if performed by Admin/Super Admin on themselves or others (if logic allowed)
+        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+            await auditService.logAction(userId, 'UPDATE_PROFILE', userId, { changes: req.body });
+        }
 
         res.json({ message: 'Perfil atualizado com sucesso' });
     } catch (error) {

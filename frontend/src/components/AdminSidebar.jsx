@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File, CheckCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File, CheckCircle, MessageSquare, User } from 'lucide-react';
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
@@ -18,6 +18,7 @@ const AdminSidebar = () => {
         { path: '/admin/chat', icon: MessageSquare, label: 'Chats' },
         { path: '/admin/affiliates', icon: Users, label: 'Filiados' },
         { path: '/admin/reports', icon: BarChart, label: 'Relatórios' },
+        { path: '/admin/profile', icon: User, label: 'Meu Cadastro' }, // Profile before settings
     ];
 
     return (

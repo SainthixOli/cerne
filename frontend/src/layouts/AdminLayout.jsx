@@ -1,9 +1,45 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
 import AdminSidebar from '../components/AdminSidebar';
+import api from '../api';
 
 const AdminLayout = () => {
+    const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+    let user = {};
+    try {
+        user = JSON.parse(localStorage.getItem('user') || '{}');
+    } catch (e) {
+        console.error("Corrupted user data in localStorage, clearing.");
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+    }
+    const [isAuthenticated, setIsAuthenticated] = useState(null); // null = loading
+
+    useEffect(() => {
+        const verifyAuth = async () => {
+            if (!token || !user.role || (user.role !== 'admin' && user.role !== 'super_admin')) {
+                setIsAuthenticated(false);
+                return;
+            }
+
+            try {
+                // Optional: Verify token with backend
+                // await api.get('/auth/me'); 
+                setIsAuthenticated(true);
+            } catch (error) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setIsAuthenticated(false);
+            }
+        };
+        verifyAuth();
+    }, [token, navigate]);
+
+    if (isAuthenticated === null) return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+    if (isAuthenticated === false) return <Navigate to="/login" replace />;
+
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             <AdminSidebar />

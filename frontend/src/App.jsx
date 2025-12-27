@@ -14,18 +14,15 @@ import AdminCollaboratorDetail from './pages/admin/AdminCollaboratorDetail';
 import AdminDocuments from './pages/admin/AdminDocuments';
 import ProfessorLayout from './layouts/ProfessorLayout';
 import ProfessorHome from './pages/professor/ProfessorHome';
-import ProfessorProfile from './pages/professor/ProfessorProfile';
 import ProfessorDocuments from './pages/professor/ProfessorDocuments';
 import ProfessorSettings from './pages/professor/ProfessorSettings';
+import UserProfile from './pages/shared/UserProfile';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { Toaster } from 'react-hot-toast';
 import ChatManager from './pages/shared/ChatManager';
-
 import ForgotPassword from './pages/auth/ForgotPassword';
-
 import CheckStatus from './pages/public/CheckStatus';
-
 import SystemDashboard from './pages/system/SystemDashboard';
 
 function App() {
@@ -55,6 +52,7 @@ function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="users/:id" element={<AdminCollaboratorDetail />} />
               <Route path="documents" element={<AdminDocuments />} />
+              <Route path="profile" element={<UserProfile />} />
               <Route path="settings" element={<ProfessorSettings />} />
             </Route>
 
@@ -62,7 +60,7 @@ function App() {
             <Route path="/member" element={<ProfessorLayout />}>
               <Route index element={<ProfessorHome />} />
               <Route path="chat" element={<ChatManager role="professor" />} />
-              <Route path="profile" element={<ProfessorProfile />} />
+              <Route path="profile" element={<UserProfile />} />
               <Route path="documents" element={<ProfessorDocuments />} />
               <Route path="settings" element={<ProfessorSettings />} />
             </Route>
