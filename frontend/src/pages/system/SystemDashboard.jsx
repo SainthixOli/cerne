@@ -180,7 +180,7 @@ const SystemDashboard = () => {
                     </div>
                 </div>
                 <div className="bg-black/90 p-6 rounded-b-xl font-mono text-sm h-80 overflow-y-auto custom-scrollbar" onClick={() => document.getElementById('console-input').focus()}>
-                    <div className="text-gray-500 mb-2">Empresa X System Console [v1.0.0]</div>
+                    <div className="text-gray-500 mb-2">CERNE System Console [v1.0.0]</div>
                     <div className="text-gray-500 mb-6">Type 'help' for available commands.</div>
 
                     {consoleHistory.map((line, i) => (

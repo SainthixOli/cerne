@@ -9,7 +9,13 @@ const Layout = () => {
             <Sidebar />
             <div className="flex-1 flex flex-col min-w-0">
                 <header className="glass m-4 mb-0 rounded-2xl p-4 flex justify-between items-center sticky top-4 z-10">
-                    <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight ml-2">Portal do Membro</h1>
+                    <div className="flex items-center space-x-3">
+                        <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">CERNE</h2>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">System</p>
+                        </div>
+                    </div>
                     <div className="flex items-center space-x-4 mr-2">
                         <ThemeToggle />
                         <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
@@ -24,7 +30,7 @@ const Layout = () => {
                     </div>
                 </main>
                 <footer className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm font-medium">
-                    <p>&copy; 2024 Empresa X. Todos os direitos reservados.</p>
+                    <p>&copy; {(new Date()).getFullYear()} CERNE System. Todos os direitos reservados.</p>
                 </footer>
             </div>
         </div>

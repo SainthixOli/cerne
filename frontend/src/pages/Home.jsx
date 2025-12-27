@@ -23,7 +23,7 @@ const Home = () => {
                     </h1>
 
                     <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        Junte-se à Empresa X de forma rápida, segura e 100% online.
+                        Junte-se ao <strong>CERNE System</strong> de forma rápida, segura e 100% online.
                         Sem papelada, sem burocracia, com a modernidade que você merece.
                     </p>
 

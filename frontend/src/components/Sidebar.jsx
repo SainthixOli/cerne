@@ -21,9 +21,12 @@ const Sidebar = () => {
 
     return (
         <aside className="w-64 glass border-r-0 flex flex-col transition-all duration-300 m-4 rounded-3xl h-[calc(100vh-2rem)] sticky top-4">
-            <div className="p-8 border-b border-gray-200/30">
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Empresa X</h2>
-                <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">Área do Membro</p>
+            <div className="p-8 border-b border-gray-200/30 flex items-center space-x-3">
+                <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">CERNE</h2>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">System</p>
+                </div>
             </div>
 
             <nav className="flex-grow p-4 space-y-2">

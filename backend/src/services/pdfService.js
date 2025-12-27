@@ -46,7 +46,7 @@ exports.generateCertificate = (user, res) => {
     doc.text(`Validade: Indeterminada`, 30, 140);
 
     // Footer
-    doc.fontSize(10).text('Este documento comprova a filiação ao Sindicato.', 20, 200, { align: 'center', width: 360 });
+    doc.fontSize(10).text('Este documento comprova a filiação ao CERNE System.', 20, 200, { align: 'center', width: 360 });
 
     doc.end();
 };

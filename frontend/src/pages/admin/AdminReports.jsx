@@ -83,7 +83,7 @@ const AdminReports = () => {
             doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
             doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 30);
-            doc.text("Empresa X - Setor de Associações", pageWidth - 20, 30, { align: 'right' });
+            doc.text("CERNE System - Setor de Associações", pageWidth - 20, 30, { align: 'right' });
 
             let yPos = 50;
 

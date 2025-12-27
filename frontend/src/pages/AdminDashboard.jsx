@@ -31,7 +31,7 @@ export function AdminDashboard() {
             ADM
           </div>
           <div>
-            <span className="font-bold text-gray-900 dark:text-white block">Sindicato</span>
+            <span className="font-bold text-gray-900 dark:text-white block">CERNE System</span>
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Painel Gestor</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
-# 🚀 Sistema Corporativo de Gestão de Membros
+# 🚀 CERNE System
 
-![Prévia do Sistema](docs/assets/img/logo1.png)
+
 
 > **Plataforma de Gestão e Onboarding Digital de Próxima Geração.**
 > Uma solução completa e de alta performance para gerenciar o ciclo de vida de membros, ativos digitais e comunicações corporativas.
@@ -11,7 +11,7 @@
 
 ## ✨ Visão Geral do Projeto
 
-O **Sistema Corporativo de Gestão de Membros** é uma plataforma de ponta projetada para simplificar fluxos de trabalho complexos de onboarding e administração de membros. Construído com foco na **Experiência do Usuário (UX)** e **Robustez Técnica**, ele substitui processos legados baseados em papel por um ecossistema 100% digital e seguro.
+O **CERNE System** é uma plataforma de ponta projetada para simplificar fluxos de trabalho complexos de onboarding e administração de membros. Construído com foco na **Experiência do Usuário (UX)** e **Robustez Técnica**, ele substitui processos legados baseados em papel por um ecossistema 100% digital e seguro.
 
 A interface apresenta uma estética premium **"Liquid Glass"** (Vidro Líquido), garantindo uma experiência moderna e envolvente em todos os dispositivos, suportada por um backend poderoso e escalável.
 
@@ -91,8 +91,8 @@ Este projeto segue uma **Arquitetura Monolítica Modular**, equilibrando simplic
 
 1.  **Clone o repositório**
     ```bash
-    git clone https://github.com/sua-org/sistema-gestao-membros.git
-    cd sistema-gestao-membros
+    git clone https://github.com/sua-org/cerne-system.git
+    cd cerne-system
     ```
 
 2.  **Instale as Dependências**

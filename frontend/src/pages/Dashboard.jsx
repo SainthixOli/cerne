@@ -20,7 +20,7 @@ export function Dashboard({ onLogout }) {
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
             S
           </div>
-          <span className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">Sindicato</span>
+          <span className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">CERNE System</span>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

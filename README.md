@@ -1,6 +1,6 @@
-# 🚀 Enterprise Member Management System
+# 🚀 CERNE System
 
-![System Preview](docs/assets/img/logo1.png)
+![Logo CERNE System](frontend/src/assets/logo.svg)
 
 > **Next-Generation Digital Onboarding & Management Platform.**
 > A comprehensive, high-performance solution for managing member lifecycles, digital assets, and corporate communications.
@@ -11,7 +11,7 @@
 
 ## ✨ Project Overview
 
-The **Enterprise Member Management System** is a state-of-the-art platform designed to streamline complex onboarding workflows and member administration. Built with a focus on **User Experience (UX)** and **Technical Robustness**, it replaces legacy paper-based processes with a secure, 100% digital ecosystem.
+The **CERNE System** is a state-of-the-art platform designed to streamline complex onboarding workflows and member administration. Built with a focus on **User Experience (UX)** and **Technical Robustness**, it replaces legacy paper-based processes with a secure, 100% digital ecosystem.
 
 The interface features a premium **"Liquid Glass"** aesthetic, ensuring a modern and engaging experience across all devices, supported by a powerful and scalable backend.
 
@@ -91,8 +91,8 @@ This project follows a **Monolithic Modular Architecture**, balancing simplicity
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-org/enterprise-member-system.git
-    cd enterprise-member-system
+    git clone https://github.com/your-org/cerne-system.git
+    cd cerne-system
     ```
 
 2.  **Install Dependencies**

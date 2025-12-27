@@ -1,7 +1,7 @@
 {
   "name": "filiacao_sindicato",
   "version": "1.0.0",
-  "description": "Esse projeto visa automatizar o processo de filiação e atualização de dados no Sindicato de Professores de Luziânia.",
+  "description": "Plataforma integrada de gestão sindical que moderniza a experiência dos professores. O sistema centraliza a filiação digital, atualização cadastral, envio seguro de documentos e comunicação direta via chat em tempo real. Para a administração, oferece ferramentas robustas de auditoria, notificações em massa e gestão eficiente de solicitações, garantindo agilidade e segurança.",
   "main": "index.js",
   "directories": {
     "doc": "docs"

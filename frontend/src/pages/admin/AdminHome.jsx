@@ -37,7 +37,7 @@ const AdminHome = () => {
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
                 <div>
                     <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">Dashboard</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">Visão geral do sistema Empresa X.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">Visão geral do CERNE System.</p>
                 </div>
                 <div className="glass px-4 py-2 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center">
                     <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>

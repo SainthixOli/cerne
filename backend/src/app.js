@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', routes);
 
 app.get('/', (req, res) => {
-  res.send('API Sistema de Filiação Sindicato is running');
+  res.send('API CERNE System is running');
 });
 
 module.exports = app;
