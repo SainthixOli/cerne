@@ -2,6 +2,8 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { User, FileText, Settings, LogOut, Home, MessageSquare } from 'lucide-react';
 
+import { brand } from '../config/brand';
+
 const Sidebar = () => {
     const navigate = useNavigate();
 
@@ -22,10 +24,10 @@ const Sidebar = () => {
     return (
         <aside className="w-64 glass border-r-0 flex flex-col transition-all duration-300 m-4 rounded-3xl h-[calc(100vh-2rem)] sticky top-4">
             <div className="p-8 border-b border-gray-200/30 flex items-center space-x-3">
-                <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                <img src={brand.client.logo} alt="Logo" className="w-10 h-10" />
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">CERNE</h2>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">System</p>
+                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">{brand.client.shortName}</h2>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Member</p>
                 </div>
             </div>
 

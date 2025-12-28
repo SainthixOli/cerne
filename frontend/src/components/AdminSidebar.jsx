@@ -2,6 +2,8 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File, CheckCircle, MessageSquare, User } from 'lucide-react';
 
+import { brand } from '../config/brand';
+
 const AdminSidebar = () => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user'));
@@ -24,9 +26,9 @@ const AdminSidebar = () => {
     return (
         <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-3">
-                <img src="/src/assets/logo.svg" alt="Logo" className="w-10 h-10" />
+                <img src={brand.client.logo} alt="Logo" className="w-10 h-10" />
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">CERNE</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">{brand.client.shortName}</h2>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Admin</p>
                 </div>
             </div>

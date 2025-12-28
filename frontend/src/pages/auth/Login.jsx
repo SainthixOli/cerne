@@ -6,7 +6,10 @@ import Loading from '../../components/Loading';
 import { maskCPF } from '../../utils/masks';
 import ThemeToggle from '../../components/ThemeToggle';
 
+import { brand } from '../../config/brand';
+
 const Login = () => {
+    // ... (state hooks remain same)
     const [credentials, setCredentials] = useState({ cpf: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -64,17 +67,17 @@ const Login = () => {
 
             {loading && <Loading message="Autenticando..." />}
 
-            <div className="max-w-md w-full glass-panel p-8 relative z-10">
+            <div className="max-w-md w-full glass-panel p-8 relative z-10 flex flex-col">
                 <div className="text-center mb-10">
                     <div className="relative inline-flex items-center justify-center w-32 h-32 mb-6">
                         {/* Orbiting Dot Container */}
                         <div className="absolute inset-0 animate-spin-slow rounded-full border border-blue-500/10 dark:border-white/5">
                             <div className="h-4 w-4 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.6)] absolute -top-2 left-1/2 -translate-x-1/2"></div>
                         </div>
-                        {/* Main Logo */}
-                        <img src="/src/assets/logo.svg" alt="Logo" className="w-20 h-20 relative z-10 drop-shadow-2xl" />
+                        {/* Main Logo from Config */}
+                        <img src={brand.client.logo} alt="Logo" className="w-20 h-20 relative z-10 drop-shadow-2xl" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">CERNE <span className="font-light text-gray-400">System</span></h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">{brand.client.name} <span className="block text-sm font-light text-gray-400 mt-1">{brand.system.name} System</span></h1>
                     <p className="text-gray-500 dark:text-gray-300 font-medium">Portal do Membro</p>
                 </div>
 
@@ -148,6 +151,12 @@ const Login = () => {
                     <Link to="/check-status" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors font-medium">
                         Consultar Situação do Pedido
                     </Link>
+                </div>
+
+                {/* Powered By Footer */}
+                <div className="mt-auto pt-8 text-center opacity-50 text-[10px] text-gray-400 dark:text-gray-600">
+                    {brand.system.footerText}
+                    <div className="mt-1">v{brand.system.version}</div>
                 </div>
             </div>
         </div>
