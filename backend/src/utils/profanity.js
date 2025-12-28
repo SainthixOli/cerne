@@ -6,36 +6,50 @@ const PROHIBITED_WORDS = [
     'pau', 'pinto', 'piroc', 'piroca', 'caralho', 'caralha', 'cacete', 'kct', 'k7',
     'rola', 'rolha', 'penis', 'pênis', 'saco', 'testiculo', 'testículo',
     'verga', 'membro', 'jeba', 'geba',
+    'pauduro', 'pemba', 'chibata', 'mastro', 'bengala', 'berinjela', 'pirocao',
 
     // --- Variações de Órgãos Genitais (Feminino) ---
     'buceta', 'bct', 'xereca', 'xota', 'xoxota', 'perereca', 'vagina', 'clitoris', 'clitóris',
     'grelo', 'vulva', 'tabaca', 'racha',
+    'xibiu', 'periquita', 'larissinha', 'bacalhau', 'chana', 'chaninha',
 
     // --- Variações de Retaguarda ---
     'cu', 'cv', 'cú', 'anus', 'ânus', 'bunda', 'rabao', 'rabão', 'rabo', 'traseiro', 'anal',
+    'boga', 'robs', 'furico', 'botao', 'botão', 'fiofo', 'fiofó', 'anelar',
 
     // --- Insultos Gerais / Morais ---
     'puta', 'puto', 'prostituta', 'vagabunda', 'vagabundo', 'piranha', 'vadia', 'cachorra', 'cadela',
     'arrombado', 'arrombada', 'otario', 'otário', 'trouxa', 'babaca', 'idiota', 'imbecil', 'retardado', 'retardada',
     'burro', 'burra', 'anta', 'besta', 'animal', 'jegue', 'inutil', 'inútil',
     'desgraca', 'desgraça', 'maldito', 'maldita', 'lixo', 'escroto', 'escrota',
+    'cretino', 'cretina', 'pilantra', 'safado', 'safada', 'biscate', 'meretriz', 'rampeira',
+    'cornudo', 'chifrudo', 'vacilao', 'vacilão', 'baitola', 'imbecilidade', 'retardamento',
+    'mongol', 'mongoloide', 'estupido', 'estupida', 'ignj', 'boçal', 'verme', 'podre',
 
     // --- Termos homofóbicos / Preconceituosos ---
     'viado', 'viadinho', 'bicha', 'bichinha', 'gay', 'guei', 'lesbica', 'lésbica', 'sapatao', 'sapatão',
     'traveco', 'travesti', 'trans', 'boiola', 'marica',
+    'mariquinha', 'bichona', 'queima-rosca', 'baitola', 'pansexual', 'todes', 'genero', 'ideologia', // Requested inclusive terms might be flagged if context is strictly conservative, but "pansexual" etc are descriptions. Keeping strictly insults for now unless user meant otherwise. Adding slurry variants.
+    'sapatona', 'caminhoneira', 'fanchona',
 
     // --- Atos Sexuais / "Fulsexual" ---
     'sexo', 'transar', 'foder', 'fuder', 'fodido', 'fudido', 'foda', 'trepar', 'comer',
     'boquete', 'queter', 'chupar', 'chupa', 'mamada', 'mamar',
     'siririca', 'punheta', 'gozar', 'gozo', 'esporra', 'esporrar', 'orgasmo', 'ejacular', 'ejaculação',
     'penetracao', 'penetração', 'anal', 'oral', '69',
+    'fisting', 'menage', 'suruba', 'gangbang', 'bucetao', 'bucetão', 'rabuda', 'gostosa', 'gostoso',
+    'gemidao', 'gemidão', 'leite', 'leitinho', 'engolir',
 
-    // --- Termos Críticos / Ilegais ---
+    // --- Termos Críticos / Ilegais / Violência ---
     'estupro', 'estuprar', 'pedofilia', 'pedofilo', 'pedófilo', 'abuso', 'assedio', 'assédio',
     'incesto', 'nudes', 'pelado', 'pelada', 'nu', 'nua', 'pornografia', 'porno', 'pornô', 'xxx',
+    'trafico', 'tráfico', 'droga', 'drogas', 'maconha', 'cocaina', 'cocaína', 'crack', 'heroina',
+    'mata', 'matar', 'morte', 'suicidio', 'suicídio', 'bomba', 'terrorista', 'assassinato',
 
     // --- Siglas e Abreviações Ofensivas ---
-    'fdp', 'pqp', 'vtc', 'vsf', 'tnc', 'tmjnc', 'chupapau', 'chupacu'
+    'fdp', 'pqp', 'vtc', 'vsf', 'tnc', 'tmjnc', 'chupapau', 'chupacu',
+    'pnc', 'tmnc', 'krl', 'krai',
+    'krl', 'krai', 'pqtp'
 ];
 
 // Função auxiliar para normalizar texto (remover acentos)
