@@ -360,16 +360,16 @@ exports.getChatMessages = async (req, res) => {
     }
 };
 
+const { hasProfanity } = require('../utils/profanity');
+
 exports.sendChatMessage = async (req, res) => {
     const { id } = req.params; // id da filiação
     const { message } = req.body;
     const cpfHeader = req.headers['x-cpf'];
 
     // Filtro de Palavras (Simples)
-    const PROFANITY_LIST = ['palavra1', 'badword', 'idiota', 'stupid'];
-    const lowerContent = message.toLowerCase();
-    if (PROFANITY_LIST.some(word => lowerContent.includes(word))) {
-        return res.status(400).json({ error: 'Mensagem contém linguagem imprópria e foi bloqueada.' });
+    if (hasProfanity(message)) {
+        return res.status(400).json({ error: 'Mensagem inadequada. Por favor, atente-se às regras do chat.' });
     }
 
     // Se acesso público (CPF), precisamos encontrar o ID do usuário para definir como remetente

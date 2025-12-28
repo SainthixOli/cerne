@@ -125,7 +125,7 @@ exports.getMessages = async (req, res) => {
     }
 };
 
-const PROFANITY_LIST = ['palavra1', 'badword', 'droga', 'idiota', 'stupid']; // Adicionar lista real
+const { hasProfanity } = require('../utils/profanity');
 
 exports.sendMessage = async (req, res) => {
     const { conversationId } = req.params;
@@ -133,9 +133,8 @@ exports.sendMessage = async (req, res) => {
     const senderId = req.user.id;
 
     // Filtro de Palavras
-    const lowerContent = content.toLowerCase();
-    if (PROFANITY_LIST.some(word => lowerContent.includes(word))) {
-        return res.status(400).json({ error: 'Mensagem contém linguagem imprópria e foi bloqueada.' });
+    if (hasProfanity(content)) {
+        return res.status(400).json({ error: 'Mensagem inadequada. Por favor, atente-se às regras do chat.' });
     }
 
     try {
