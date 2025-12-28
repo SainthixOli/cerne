@@ -20,17 +20,37 @@ exports.register = async (req, res) => {
 
         if (existingProfile) {
             profileId = existingProfile.id;
-            // Atualizar perfil com informações mais recentes (ex: se corrigiram CPF ou Telefone)
+            // Atualizar perfil com informações completas
             await db.run(
-                `UPDATE profiles SET nome_completo = ?, cpf = ?, telefone = ?, matricula_funcional = ?, status_conta = 'pendente_docs' WHERE id = ?`,
-                [data.nome, data.cpf, data.telefone || '', data.matricula || '', profileId]
+                `UPDATE profiles SET 
+                    nome_completo = ?, cpf = ?, telefone = ?, matricula_funcional = ?,
+                    rg = ?, orgao_emissor = ?, nacionalidade = ?, estado_civil = ?,
+                    cep = ?, endereco = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?,
+                    status_conta = 'pendente_docs' 
+                WHERE id = ?`,
+                [
+                    data.nome, data.cpf, data.telefone || '', data.matricula || '',
+                    data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
+                    data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
+                    data.bairro || '', data.cidade || '', data.uf || '',
+                    profileId
+                ]
             );
         } else {
             profileId = uuidv4();
             await db.run(
-                `INSERT INTO profiles(id, nome_completo, cpf, email, telefone, matricula_funcional, role, status_conta)
-                 VALUES(?, ?, ?, ?, ?, ?, 'professor', 'pendente_docs')`,
-                [profileId, data.nome, data.cpf, data.email, data.telefone || '', data.matricula || '']
+                `INSERT INTO profiles(
+                    id, nome_completo, cpf, email, telefone, matricula_funcional, 
+                    rg, orgao_emissor, nacionalidade, estado_civil,
+                    cep, endereco, numero, complemento, bairro, cidade, uf,
+                    role, status_conta
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'professor', 'pendente_docs')`,
+                [
+                    profileId, data.nome, data.cpf, data.email, data.telefone || '', data.matricula || '',
+                    data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
+                    data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
+                    data.bairro || '', data.cidade || '', data.uf || ''
+                ]
             );
         }
 

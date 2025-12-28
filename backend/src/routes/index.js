@@ -68,4 +68,7 @@ router.post('/notifications/:id/approve', authenticateToken, notificationControl
 router.get('/notifications/pending', authenticateToken, notificationController.listPendingBroadcasts);
 router.get('/notifications/my', authenticateToken, notificationController.listMyNotifications);
 
+const settingsRoutes = require('./settingsRoutes');
+router.use('/settings', settingsRoutes);
+
 module.exports = router;

@@ -47,7 +47,18 @@ CREATE TABLE IF NOT EXISTS profiles (
     change_password_required BOOLEAN DEFAULT 0, -- Force password change
     telefone TEXT,
     matricula_funcional TEXT,
-    role TEXT CHECK (role IN ('admin', 'professor', 'super_admin')) NOT NULL DEFAULT 'professor',
+    rg TEXT,
+    orgao_emissor TEXT,
+    nacionalidade TEXT,
+    estado_civil TEXT,
+    cep TEXT,
+    endereco TEXT,
+    numero TEXT,
+    complemento TEXT,
+    bairro TEXT,
+    cidade TEXT,
+    uf TEXT,
+    role TEXT CHECK (role IN ('admin', 'professor', 'super_admin', 'system_manager')) NOT NULL DEFAULT 'professor',
     status_conta TEXT CHECK (status_conta IN ('pendente_docs', 'em_analise', 'ativo', 'inativo')) NOT NULL DEFAULT 'pendente_docs',
     reset_token TEXT,
     reset_token_expires DATETIME,
@@ -90,4 +101,17 @@ CREATE TABLE IF NOT EXISTS filiation_chat (
     sender_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Configurações do Sistema (Dinâmico)
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Inserir Configuração Padrão se não existir (Termos de Filiação)
+INSERT OR IGNORE INTO system_settings (key, value) VALUES (
+    'affiliation_terms',
+    'Eu, {{NOME}}, inscrito(a) no CPF sob o nº {{CPF}}, matrícula funcional nº {{MATRICULA}}, residente e domiciliado(a) nesta cidade, venho por meio deste requerer a minha admissão no quadro de associados desta entidade.\n\nDeclaro estar ciente e de pleno acordo com as normas estatutárias e regimentais que regem esta instituição, comprometendo-me a respeitá-las e cumpri-las.\n\nAutorizo, desde já, o envio de comunicações, boletos bancários e, quando aplicável, o desconto em folha de pagamento das contribuições associativas mensais, conforme estipulado em Assembleia Geral.'
 );
