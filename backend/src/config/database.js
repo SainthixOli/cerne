@@ -15,12 +15,12 @@ async function getDb() {
         driver: sqlite3.Database
     });
 
-    // Initialize schema if needed
+    // Inicializa o schema principal se necessário
     const schemaPath = path.resolve(__dirname, '../../db/local_schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
     await dbInstance.exec(schema);
 
-    // Initialize audit schema
+    // Inicializa o schema de auditoria e logs
     const auditSchemaPath = path.resolve(__dirname, '../../db/audit_schema.sql');
     if (fs.existsSync(auditSchemaPath)) {
         const auditSchema = fs.readFileSync(auditSchemaPath, 'utf8');

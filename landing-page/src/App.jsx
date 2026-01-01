@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { FaShieldAlt, FaRocket, FaUserShield, FaChartLine, FaComments, FaBolt, FaLock, FaDatabase, FaGithub, FaUniversalAccess } from 'react-icons/fa';
 import logo from './assets/logo.svg';
 
-// Import Screenshots
+// Importação de Demonstrativos e Assets
 import dashboardImg from './assets/dashboard_admin_pro.png';
 import auditoriaImg from './assets/auditoria_superadmin.png';
 import chatImg from './assets/chat_superadmin_adm.png';
@@ -36,18 +36,18 @@ function App() {
   return (
     <div className="min-h-screen text-slate-100 relative overflow-hidden font-sans selection:bg-blue-500/30">
 
-      {/* Progress Bar */}
+      {/* Barra de Progresso de Leitura */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 origin-left z-[100]"
         style={{ scaleX }}
       />
 
-      {/* Dynamic Background Blobs */}
+      {/* Background Dinâmico (Orbs) */}
       <div className="glow-blob bg-blue-600 top-[-20%] left-[-10%] mix-blend-screen"></div>
       <div className="glow-blob bg-purple-600 top-[20%] right-[-10%] animation-delay-2000 mix-blend-screen"></div>
       <div className="glow-blob bg-pink-600 bottom-[-20%] left-[20%] animation-delay-4000 mix-blend-screen"></div>
 
-      {/* Navbar - Glassmorphism */}
+      {/* Barra de Navegação - Glassmorphism */}
       <nav className={`fixed w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-slate-900/80 backdrop-blur-md border-b border-white/5 py-3' : 'py-6'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <motion.div
@@ -91,7 +91,7 @@ function App() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
 
-        {/* HERO SECTION */}
+        {/* SEÇÃO HERO - Apresentação Principal */}
         <main className="text-center relative z-10 min-h-[80vh] flex flex-col justify-center items-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -136,7 +136,7 @@ function App() {
             </a>
           </motion.div>
 
-          {/* 3D DASHBOARD PREVIEW */}
+          {/* PREVIEW DO DASHBOARD 3D */}
           <motion.div
             initial={{ opacity: 0, rotateX: 20, y: 100 }}
             animate={{ opacity: 1, rotateX: 0, y: 0 }}
@@ -153,7 +153,7 @@ function App() {
           </motion.div>
         </main>
 
-        {/* ORIGIN STORY SECTION */}
+        {/* SEÇÃO: ORIGEM DO PROJETO */}
         <section id="origem" className="py-32 border-b border-white/5">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative">
@@ -178,7 +178,7 @@ function App() {
           </div>
         </section>
 
-        {/* SECURITY DEEP DIVE */}
+        {/* DEEP DIVE EM SEGURANÇA */}
         <section id="seguranca" className="py-32 relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[500px] bg-green-500/5 blur-[120px] -z-10"></div>
 
@@ -236,7 +236,7 @@ function App() {
           </div>
         </section>
 
-        {/* ACCESSIBILITY & USABILITY */}
+        {/* ACESSIBILIDADE E USABILIDADE */}
         <section className="py-32 border-y border-white/5">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
@@ -267,10 +267,10 @@ function App() {
           </div>
         </section>
 
-        {/* DETAILED FEATURES SECTIONS */}
+        {/* DETALHAMENTO DOS MÓDULOS */}
         <section id="modulos" className="space-y-40 py-20">
 
-          {/* FEATURE 1: MEMBER MANAGEMENT */}
+          {/* FUNCIONALIDADE 1: GESTÃO DE MEMBROS */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative group">
               <div className="absolute -inset-4 bg-blue-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
@@ -298,7 +298,7 @@ function App() {
             </div>
           </div>
 
-          {/* FEATURE 2: SECURE CHAT */}
+          {/* FUNCIONALIDADE 2: CHAT SEGURO */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 text-xs font-mono mb-6">
@@ -330,7 +330,7 @@ function App() {
             </div>
           </div>
 
-          {/* FEATURE 3: AUDIT LOGS */}
+          {/* FUNCIONALIDADE 3: LOGS DE AUDITORIA */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative group">
               <div className="absolute -inset-4 bg-orange-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
@@ -363,7 +363,7 @@ function App() {
             </div>
           </div>
 
-          {/* FEATURE 4: TECH ADMIN */}
+          {/* FUNCIONALIDAE 4: PAINEL TÉCNICO */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6">
@@ -393,7 +393,7 @@ function App() {
 
         </section>
 
-        {/* DISCLAIMER / SHOWCASE NOTE */}
+        {/* NOTA TÉCNICA / SHOWCASE */}
         <section className="py-12 px-6 mb-20">
           <div className="max-w-4xl mx-auto p-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent">
             <div className="bg-slate-900/90 backdrop-blur-xl rounded-lg p-8 text-center">
@@ -409,11 +409,11 @@ function App() {
           </div>
         </section>
 
-        {/* DEVELOPER SECTION */}
+        {/* SEÇÃO: SOBRE O DESENVOLVEDOR */}
         <section className="py-20 border-t border-white/5">
           <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
-            {/* VIDEO */}
+            {/* VÍDEO DE APRESENTAÇÃO */}
             <div className="relative group flex justify-center">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-[2.5rem] blur opacity-30 group-hover:opacity-70 transition duration-500 w-full max-w-[340px] mx-auto"></div>
               <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-slate-900 bg-slate-900 aspect-[9/16] max-w-[340px] w-full mx-auto">
@@ -428,7 +428,7 @@ function App() {
               </div>
             </div>
 
-            {/* BIO */}
+            {/* BIO E TEXTO */}
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-mono mb-6">
                 <FaUserShield />
@@ -456,7 +456,7 @@ function App() {
           </div>
         </section>
 
-        {/* FINAL CTA */}
+        {/* CHAMADA PARA AÇÃO FINAL (CTA) */}
         <section className="text-center py-24 px-6 rounded-[3rem] relative overflow-hidden glass-card border border-blue-500/30">
           <div className="absolute inset-0 bg-blue-600/10 blur-3xl"></div>
           <motion.div
