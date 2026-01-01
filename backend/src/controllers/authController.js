@@ -4,7 +4,10 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 
-const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key';
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+    throw new Error('FATAL: JWT_SECRET nao definido no ambiente.');
+}
 
 exports.login = async (req, res) => {
     try {
@@ -51,11 +54,10 @@ exports.login = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
     try {
-        const { userId, newPassword } = req.body;
+        const { newPassword } = req.body;
+        // SECURITY FIX: Use ID from token, not body
+        const userId = req.user.id;
         const db = await getDb();
-
-        // Em uma aplicação real, deveríamos verificar a senha antiga também ou usar o token JWT para identificar o usuário
-        // Por simplicidade aqui, assumimos que o usuário está autenticado e passando seu ID (ou extraímos do middleware de token)
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 

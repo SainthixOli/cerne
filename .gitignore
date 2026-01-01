@@ -5,3 +5,10 @@ dist/
 build/
 coverage/
 
+
+# Security & Local Data
+backend/uploads/
+*.sqlite
+*.db
+backend/db/*.sqlite
+backend/db/*.db

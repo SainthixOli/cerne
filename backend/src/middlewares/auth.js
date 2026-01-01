@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const SECRET_KEY = process.env.JWT_SECRET || 'super_secret_key';
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) throw new Error('JWT_SECRET missing in env');
 
 exports.authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
