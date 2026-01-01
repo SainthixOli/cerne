@@ -1,142 +1,177 @@
-# 🚀 CERNE System
+# 🌐 CERNE - Gestão Sindical do Futuro
 
-![Logo CERNE System](frontend/src/assets/logo.svg)
+<div align="center">
+  <img src="frontend/src/assets/logo.svg" alt="CERNE Logo" width="120" />
+  <br />
+  
+  ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=for-the-badge)
+  ![Status](https://img.shields.io/badge/status-stable-success.svg?style=for-the-badge)
+  ![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
+  ![Node](https://img.shields.io/badge/node-v18+-339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
+  ![React](https://img.shields.io/badge/react-v18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)
 
-> **Next-Generation Digital Onboarding & Management Platform.**
-> A comprehensive, high-performance solution for managing member lifecycles, digital assets, and corporate communications.
-
-[🇺🇸 Read in English](README.md) | [🇧🇷 Leia em Português](README.pt-br.md)
-
----
-
-## ✨ Project Overview
-
-The **CERNE System** is a state-of-the-art platform designed to streamline complex onboarding workflows and member administration. Built with a focus on **User Experience (UX)** and **Technical Robustness**, it replaces legacy paper-based processes with a secure, 100% digital ecosystem.
-
-The interface features a premium **"Liquid Glass"** aesthetic, ensuring a modern and engaging experience across all devices, supported by a powerful and scalable backend.
-
-### 🚀 Key Features
-
-*   **📝 Digital Onboarding Wizard**: A frictionless, step-by-step registration flow with real-time validation and digital signature integration.
-*   **🔐 Enterprise-Grade Security**:
-    *   Stateless authentication via **JWT (JSON Web Tokens)**.
-    *   **Bcrypt** password hashing.
-    *   Role-Based Access Control (RBAC) for Members, Admins, and System Managers.
-*   **🎨 Premium UI/UX**:
-    *   **Liquid Glass Design**: Translucent panels, mesh gradients, and soft shadows.
-    *   **Theme Engine**: Native support for Light, Dark, and OLED High-Contrast modes.
-    *   **Responsive**: Flawless experience on Desktop, Tablet, and Mobile.
-*   **📱 Member Portal**:
-    *   Real-time status tracking.
-    *   Secure document vault (Upload/Download).
-    *   Profile and credential management.
-*   **🛡️ Administration Suite**:
-    *   **Dashboard**: High-level metrics, charts, and KPIs.
-    *   **Workflow Automation**: One-click approvals and status updates.
-    *   **System Monitor**: Real-time server metrics (CPU, Memory, Disk) and maintenance tools.
-    *   **Data Export**: CSV generation for external reporting.
+  ### **A Plataforma Definitiva para Gestão de Filiados, Documentos e Comunicação.**
+  *Segurança Corporativa • Design Premium • Auditoria Total*
+  
+  [🇺🇸 English](README.md) | [🇧🇷 Português](README.pt-br.md)
+  
+  ---
+  
+  <p align="center">
+    <a href="#-visão-geral">Visão Geral</a> •
+    <a href="#-funcionalidades">Funcionalidades</a> •
+    <a href="#-arquitetura-técnica">Arquitetura</a> •
+    <a href="#-instalação">Instalação</a> •
+    <a href="#-contribuindo">Contribuição</a> •
+    <a href="#-autor">Autor</a>
+  </p>
+</div>
 
 ---
 
-## 🛠️ Technical Architecture
+## ✨ Visão Geral
 
-This project follows a **Monolithic Modular Architecture**, balancing simplicity with scalability.
+O **CERNE System** nasceu de uma necessidade real: transformar a burocracia sindical em uma experiência digital fluida, segura e transparente. Abandonamos as planilhas manuais e os processos em papel para criar um **ecossistema SaaS** completo.
 
-### Technology Stack
+Focado em **Experiência do Usuário (UX)** de alto nível, o sistema utiliza uma estética _"Liquid Glass"_ moderna, combinada com uma engenharia de segurança robusta que garante a integridade de dados sensíveis de milhares de filiados.
 
-*   **Frontend**:
-    *   **React.js**: Component-based UI library.
-    *   **TailwindCSS**: Utility-first styling with custom "Glass" configuration.
-    *   **Lucide React**: Modern, consistent icon set.
-    *   **Axios**: Promise-based HTTP client.
-*   **Backend**:
-    *   **Node.js & Express**: High-performance server runtime.
-    *   **SQLite**: Zero-configuration SQL database engine (Dev/Staging).
-    *   **PDFKit**: Dynamic PDF generation engine.
-*   **DevOps & Tooling**:
-    *   **Vite**: Next-generation frontend tooling.
-    *   **Nodemon**: Hot-reloading for backend development.
+### 🖼️ Preview
+> *Adicione aqui screenshots do Dashboard e da Landing Page*
 
-### Directory Structure
+---
 
+## 🚀 Funcionalidades
+
+### 🏛️ Módulo Core (Gestão de Filiados)
+*   **Onboarding Digital:** Cadastro passo-a-passo com validação em tempo real (CPF, CEP).
+*   **Ciclo de Vida:** Controle de status (Pendente, Ativo, Suspenso, Desativado).
+*   **Carteirinha Digital:** Geração automática de credenciais com QR Code.
+*   **Document Management:** Upload seguro de PDFs e imagens com versionamento.
+
+### 🔐 Segurança & Auditoria (Enterprise Grade)
+*   **Logbook Imutável:** Rastreabilidade total de ações (Quem fez? O que fez? Quando? De onde?).
+*   **Blindagem de Chat:** Filtro ativo de conteúdo (RegEx) que bloqueia mensagens ofensivas em tempo real.
+*   **Criptografia:** Senhas hashadas com **Bcrypt** e comunicação via Tokens JWT (Stateless).
+*   **WAF Básico:** Rate limiting e sanitização de inputs contra SQL Injection e XSS.
+
+### 💬 Comunicação & Suporte
+*   **Chat em Tempo Real:** WebSockets para comunicação instantânea entre Admins e Suporte.
+*   **Notificações Globais:** Sistema de avisos broadcast para todos os usuários.
+*   **Helpdesk Integrado:** Abertura e acompanhamento de chamados.
+
+### 📊 Painéis de Controle
+*   **Admin Dashboard:** Métricas, KPIs de filiação e atalhos rápidos.
+*   **Tech Admin Panel:** Monitoramento de saúde do servidor (CPU, Memória, Banco de Dados).
+
+---
+
+## 🛠️ Arquitetura Técnica
+
+O projeto segue uma **Arquitetura Modular Monolítica**, ideal para escalar sem a complexidade desnecessária de microserviços iniciais.
+
+### Stack Tecnológico
+
+| Camada | Tecnologias |
+| :--- | :--- |
+| **Frontend** | React.js, TailwindCSS (Glassmorphism), Framer Motion, Axios, Lucide React |
+| **Backend** | Node.js, Express, Socket.io (Realtime), PDFKit (Gerador de Docs) |
+| **Database** | SQLite (Dev/Staging) / PostgreSQL (Ready for Prod) |
+| **Security** | Helmet, CORS, Rate-Limit, Bcrypt, JWT |
+| **DevOps** | Vite, Nodemon, ESLint Security |
+
+### 📂 Estrutura de Diretórios
 ```bash
 /
-├── backend/
+├── backend/            # API RESTful & WebSocket Server
 │   ├── src/
-│   │   ├── controllers/   # Business Logic
-│   │   ├── routes/        # API Endpoints
-│   │   ├── services/      # External integrations (PDF, Email)
-│   │   └── config/        # Database & Env Config
-│   ├── db/                # SQLite Database File
-│   └── uploads/           # Secure Document Storage
+│   │   ├── controllers/   # Regras de Negócio
+│   │   ├── middlewares/   # Segurança e Validações
+│   │   ├── routes/        # Rotas da API
+│   │   └── services/      # Integrações (Email, PDF)
+│   ├── db/                # Schema e Migrations
+│   └── uploads/           # Armazenamento Local (Dev)
 │
-└── frontend/
-    ├── src/
-    │   ├── pages/         # View Components
-    │   ├── components/    # Reusable UI Elements
-    │   ├── contexts/      # Global State (Theme, Auth)
-    │   └── assets/        # Static Resources
+├── frontend/           # SPA React Moderno
+│   ├── src/
+│   │   ├── components/    # UI Kit Reutilizável
+│   │   ├── contexts/      # Gestão de Estado Global
+│   │   ├── pages/         # Telas da Aplicação
+│   │   └── hooks/         # Lógica Customizada
+│
+└── landing-page/       # Site de Apresentação (Showcase)
 ```
 
 ---
 
-## 🚀 Getting Started
+## ⚡ Instalação e Execução
 
-### Prerequisites
+### Pré-requisitos
+*   **Node.js** (v18 ou superior)
+*   **NPM** ou **Yarn**
 
-*   **Node.js** (v18 or higher)
-*   **NPM** or **Yarn**
+### Passo a Passo
 
-### Installation
-
-1.  **Clone the repository**
+1.  **Clone o repositório**
     ```bash
-    git clone https://github.com/your-org/cerne-system.git
-    cd cerne-system
+    git clone https://github.com/SainthixOli/filiacao_sindicato.git
+    cd filiacao_sindicato
     ```
 
-2.  **Install Dependencies**
+2.  **Configure e Rode o Backend**
     ```bash
-    # Install Backend Dependencies
     cd backend
     npm install
+    cp .env.example .env # Configure suas variáveis
+    npm run dev
+    # O servidor iniciará em http://localhost:3000
+    ```
 
-    # Install Frontend Dependencies
+3.  **Configure e Rode o Frontend**
+    ```bash
     cd ../frontend
     npm install
+    npm run dev
+    # A aplicação abrirá em http://localhost:5173
     ```
 
-3.  **Start the Application**
+4.  **Landing Page (Opcional)**
     ```bash
-    # Start Backend Server (Port 3000)
-    cd backend
-    npm run dev
-
-    # Start Frontend Client (Port 5173)
-    cd ../frontend
+    cd ../landing-page
+    npm install
     npm run dev
     ```
 
-4.  **Access the System**: Open `http://localhost:5173` in your browser.
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Este é um projeto **Open Source** focado em aprendizado e inovação.
+
+1.  Faça um **Fork** do projeto.
+2.  Crie uma Branch para sua Feature (`git checkout -b feature/IncrivelFeature`).
+3.  Faça o Commit (`git commit -m 'Add some IncrivelFeature'`).
+4.  Push para a Branch (`git push origin feature/IncrivelFeature`).
+5.  Abra um **Pull Request**.
 
 ---
 
-## 🔧 System Management
+## 👤 Autor
 
-The system includes a built-in **System Manager** role for technical oversight:
+<div align="center">
+  <img src="https://github.com/SainthixOli.png" width="100px;"/>
+  <br />
+  <sub><b>Oliver Arthur</b></sub>
+  <br />
+  <i>Estudante de Engenharia de Software @ Uniceplac</i>
+  <br />
+  <br />
 
-*   **Access**: Log in with System Manager credentials.
-*   **Capabilities**:
-    *   View real-time server health (CPU Load, RAM Usage).
-    *   Execute maintenance commands via the built-in Web Console.
-    *   Manage system-wide settings and logs.
+  [![Linkedin Badge](https://img.shields.io/badge/-Oliver_Arthur-blue?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/oliver-arthur-souza-pinheiro-677b24376/)](https://www.linkedin.com/in/oliver-arthur-souza-pinheiro-677b24376/) 
+  [![Gmail Badge](https://img.shields.io/badge/-oliverarthursouzapinheiro@gmail.com-c14438?style=flat-square&logo=Gmail&logoColor=white&link=mailto:oliverarthursouzapinheiro@gmail.com)](mailto:oliverarthursouzapinheiro@gmail.com)
+</div>
 
 ---
 
-## 📄 License
-
-This project is proprietary software. All rights reserved.
-
----
-
-*Engineered for Performance & Elegance.*
+<p align="center">
+  Feito com 💙 e muito café por Oliver Arthur.
+</p>
