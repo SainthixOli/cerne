@@ -1,7 +1,7 @@
-# 🌐 CERNE - Gestão Sindical do Futuro
+# 🌐 CERNE - Union Management of the Future
 
 <div align="center">
-  <img src="frontend/src/assets/logo.svg" alt="CERNE Logo" width="120" />
+  <img src="frontend/src/assets/logo.svg" alt="CERNE Logo" width="220" />
   <br />
   
   ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=for-the-badge)
@@ -10,131 +10,138 @@
   ![Node](https://img.shields.io/badge/node-v18+-339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
   ![React](https://img.shields.io/badge/react-v18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)
 
-  ### **A Plataforma Definitiva para Gestão de Filiados, Documentos e Comunicação.**
-  *Segurança Corporativa • Design Premium • Auditoria Total*
+  ### **The Ultimate Platform for Member Management, Documents, and Communication.**
+  *Corporate Security • Premium Design • Total Auditing*
   
   [🇺🇸 English](README.md) | [🇧🇷 Português](README.pt-br.md)
   
   ---
   
   <p align="center">
-    <a href="#-visão-geral">Visão Geral</a> •
-    <a href="#-funcionalidades">Funcionalidades</a> •
-    <a href="#-arquitetura-técnica">Arquitetura</a> •
-    <a href="#-instalação">Instalação</a> •
-    <a href="#-contribuindo">Contribuição</a> •
-    <a href="#-autor">Autor</a>
+    <a href="#-overview">Overview</a> •
+    <a href="#-features">Features</a> •
+    <a href="#-technical-architecture">Architecture</a> •
+    <a href="#-installation">Installation</a> •
+    <a href="#-contributing">Contributing</a> •
+    <a href="#-author">Author</a>
   </p>
 </div>
 
 ---
 
-## ✨ Visão Geral
+## ✨ Overview
 
-O **CERNE System** nasceu de uma necessidade real: transformar a burocracia sindical em uma experiência digital fluida, segura e transparente. Abandonamos as planilhas manuais e os processos em papel para criar um **ecossistema SaaS** completo.
+The **CERNE System** was born from a real need: to transform union bureaucracy into a fluid, secure, and transparent digital experience. We abandoned manual spreadsheets and paper processes to create a complete **SaaS ecosystem**.
 
-Focado em **Experiência do Usuário (UX)** de alto nível, o sistema utiliza uma estética _"Liquid Glass"_ moderna, combinada com uma engenharia de segurança robusta que garante a integridade de dados sensíveis de milhares de filiados.
+Focused on high-level **User Experience (UX)**, the system utilizes a modern _"Liquid Glass"_ aesthetic, combined with robust security engineering that ensures the integrity of sensitive data for thousands of members.
 
 ### 🖼️ Preview
-> *Adicione aqui screenshots do Dashboard e da Landing Page*
+> <div align="center">
+>   <img src="landing-page/src/assets/dashboard_admin_pro.png" alt="Admin Dashboard" width="100%" />
+>   <br /><br />
+>   <div style="display: flex; gap: 10px;">
+>     <img src="landing-page/src/assets/login.png" alt="Login Screen" width="48%" />
+>     <img src="landing-page/src/assets/techadmin_dashboard.png" alt="Tech Admin" width="48%" />
+>   </div>
+> </div>
 
 ---
 
-## 🚀 Funcionalidades
+## 🚀 Features
 
-### 🏛️ Módulo Core (Gestão de Filiados)
-*   **Onboarding Digital:** Cadastro passo-a-passo com validação em tempo real (CPF, CEP).
-*   **Ciclo de Vida:** Controle de status (Pendente, Ativo, Suspenso, Desativado).
-*   **Carteirinha Digital:** Geração automática de credenciais com QR Code.
-*   **Document Management:** Upload seguro de PDFs e imagens com versionamento.
+### 🏛️ Core Module (Member Management)
+*   **Digital Onboarding:** Step-by-step registration with real-time validation (ID, ZIP Code).
+*   **Lifecycle:** Status control (Pending, Active, Suspended, Disabled).
+*   **Digital ID:** Automatic credential generation with QR Code.
+*   **Document Management:** Secure upload of PDFs and images with versioning.
 
-### 🔐 Segurança & Auditoria (Enterprise Grade)
-*   **Logbook Imutável:** Rastreabilidade total de ações (Quem fez? O que fez? Quando? De onde?).
-*   **Blindagem de Chat:** Filtro ativo de conteúdo (RegEx) que bloqueia mensagens ofensivas em tempo real.
-*   **Criptografia:** Senhas hashadas com **Bcrypt** e comunicação via Tokens JWT (Stateless).
-*   **WAF Básico:** Rate limiting e sanitização de inputs contra SQL Injection e XSS.
+### 🔐 Security & Auditing (Enterprise Grade)
+*   **Immutable Logbook:** Total action traceability (Who? What? When? Where?).
+*   **Chat Shield:** Active content filter (RegEx) that blocks offensive messages in real-time.
+*   **Encryption:** Passwords hashed with **Bcrypt** and communication via JWT Tokens (Stateless).
+*   **Basic WAF:** Rate limiting and input sanitization against SQL Injection and XSS.
 
-### 💬 Comunicação & Suporte
-*   **Chat em Tempo Real:** WebSockets para comunicação instantânea entre Admins e Suporte.
-*   **Notificações Globais:** Sistema de avisos broadcast para todos os usuários.
-*   **Helpdesk Integrado:** Abertura e acompanhamento de chamados.
+### 💬 Communication & Support
+*   **Real-Time Chat:** WebSockets for instant communication between Admins and Support.
+*   **Global Notifications:** Broadcast warning system for all users.
+*   **Integrated Helpdesk:** Ticket opening and tracking.
 
-### 📊 Painéis de Controle
-*   **Admin Dashboard:** Métricas, KPIs de filiação e atalhos rápidos.
-*   **Tech Admin Panel:** Monitoramento de saúde do servidor (CPU, Memória, Banco de Dados).
+### 📊 Control Panels
+*   **Admin Dashboard:** Metrics, Affiliation KPIs, and quick shortcuts.
+*   **Tech Admin Panel:** Server health monitoring (CPU, Memory, Database).
 
 ---
 
-## 🛠️ Arquitetura Técnica
+## 🛠️ Technical Architecture
 
-O projeto segue uma **Arquitetura Modular Monolítica**, ideal para escalar sem a complexidade desnecessária de microserviços iniciais.
+The project follows a **Monolithic Modular Architecture**, ideal for scaling without the unnecessary complexity of microservices at the start.
 
-### Stack Tecnológico
+### Tech Stack
 
-| Camada | Tecnologias |
+| Layer | Technologies |
 | :--- | :--- |
 | **Frontend** | React.js, TailwindCSS (Glassmorphism), Framer Motion, Axios, Lucide React |
-| **Backend** | Node.js, Express, Socket.io (Realtime), PDFKit (Gerador de Docs) |
+| **Backend** | Node.js, Express, Socket.io (Realtime), PDFKit (Doc Generator) |
 | **Database** | SQLite (Dev/Staging) / PostgreSQL (Ready for Prod) |
 | **Security** | Helmet, CORS, Rate-Limit, Bcrypt, JWT |
 | **DevOps** | Vite, Nodemon, ESLint Security |
 
-### 📂 Estrutura de Diretórios
+### 📂 Directory Structure
 ```bash
 /
-├── backend/            # API RESTful & WebSocket Server
+├── backend/            # RESTful API & WebSocket Server
 │   ├── src/
-│   │   ├── controllers/   # Regras de Negócio
-│   │   ├── middlewares/   # Segurança e Validações
-│   │   ├── routes/        # Rotas da API
-│   │   └── services/      # Integrações (Email, PDF)
-│   ├── db/                # Schema e Migrations
-│   └── uploads/           # Armazenamento Local (Dev)
+│   │   ├── controllers/   # Business Rules
+│   │   ├── middlewares/   # Security and Validations
+│   │   ├── routes/        # API Routes
+│   │   └── services/      # Integrations (Email, PDF)
+│   ├── db/                # Schema and Migrations
+│   └── uploads/           # Local Storage (Dev)
 │
-├── frontend/           # SPA React Moderno
+├── frontend/           # Modern React SPA
 │   ├── src/
-│   │   ├── components/    # UI Kit Reutilizável
-│   │   ├── contexts/      # Gestão de Estado Global
-│   │   ├── pages/         # Telas da Aplicação
-│   │   └── hooks/         # Lógica Customizada
+│   │   ├── components/    # Reusable UI Kit
+│   │   ├── contexts/      # Global State Management
+│   │   ├── pages/         # Application Screens
+│   │   └── hooks/         # Custom Logic
 │
-└── landing-page/       # Site de Apresentação (Showcase)
+└── landing-page/       # Presentation Site (Showcase)
 ```
 
 ---
 
-## ⚡ Instalação e Execução
+## ⚡ Installation and Execution
 
-### Pré-requisitos
-*   **Node.js** (v18 ou superior)
-*   **NPM** ou **Yarn**
+### Prerequisites
+*   **Node.js** (v18 or higher)
+*   **NPM** or **Yarn**
 
-### Passo a Passo
+### Step by Step
 
-1.  **Clone o repositório**
+1.  **Clone the repository**
     ```bash
     git clone https://github.com/SainthixOli/filiacao_sindicato.git
     cd filiacao_sindicato
     ```
 
-2.  **Configure e Rode o Backend**
+2.  **Configure and Run Backend**
     ```bash
     cd backend
     npm install
-    cp .env.example .env # Configure suas variáveis
+    cp .env.example .env # Configure your variables
     npm run dev
-    # O servidor iniciará em http://localhost:3000
+    # Server will start at http://localhost:3000
     ```
 
-3.  **Configure e Rode o Frontend**
+3.  **Configure and Run Frontend**
     ```bash
     cd ../frontend
     npm install
     npm run dev
-    # A aplicação abrirá em http://localhost:5173
+    # Application will open at http://localhost:5173
     ```
 
-4.  **Landing Page (Opcional)**
+4.  **Landing Page (Optional)**
     ```bash
     cd ../landing-page
     npm install
@@ -143,26 +150,26 @@ O projeto segue uma **Arquitetura Modular Monolítica**, ideal para escalar sem 
 
 ---
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Contribuições são bem-vindas! Este é um projeto **Open Source** focado em aprendizado e inovação.
+Contributions are welcome! This is an **Open Source** project focused on learning and innovation.
 
-1.  Faça um **Fork** do projeto.
-2.  Crie uma Branch para sua Feature (`git checkout -b feature/IncrivelFeature`).
-3.  Faça o Commit (`git commit -m 'Add some IncrivelFeature'`).
-4.  Push para a Branch (`git push origin feature/IncrivelFeature`).
-5.  Abra um **Pull Request**.
+1.  **Fork** the project.
+2.  Create a Branch for your Feature (`git checkout -b feature/AmazingFeature`).
+3.  Commit (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to Branch (`git push origin feature/AmazingFeature`).
+5.  Open a **Pull Request**.
 
 ---
 
-## 👤 Autor
+## 👤 Author
 
 <div align="center">
   <img src="https://github.com/SainthixOli.png" width="100px;"/>
   <br />
   <sub><b>Oliver Arthur</b></sub>
   <br />
-  <i>Estudante de Engenharia de Software @ Uniceplac</i>
+  <i>Software Engineering Student @ Uniceplac</i>
   <br />
   <br />
 
@@ -173,5 +180,5 @@ Contribuições são bem-vindas! Este é um projeto **Open Source** focado em ap
 ---
 
 <p align="center">
-  Feito com 💙 e muito café por Oliver Arthur.
+  Made with 💙 and lots of coffee by Oliver Arthur.
 </p>
