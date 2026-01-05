@@ -1,8 +1,8 @@
-const { getDb } = require('../config/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
+const User = require('../models/User');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 if (!SECRET_KEY) {
@@ -12,9 +12,8 @@ if (!SECRET_KEY) {
 exports.login = async (req, res) => {
     try {
         const { cpf, password } = req.body;
-        const db = await getDb();
 
-        const user = await db.get('SELECT * FROM profiles WHERE cpf = ?', [cpf]);
+        const user = await User.findByCpf(cpf);
 
         if (!user) {
             return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -57,14 +56,10 @@ exports.changePassword = async (req, res) => {
         const { newPassword } = req.body;
         // SECURITY FIX: Use ID from token, not body
         const userId = req.user.id;
-        const db = await getDb();
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await db.run(
-            "UPDATE profiles SET password_hash = ?, change_password_required = 0 WHERE id = ?",
-            [hashedPassword, userId]
-        );
+        await User.updatePassword(userId, hashedPassword);
 
         res.json({ message: 'Senha alterada com sucesso!' });
     } catch (error) {
@@ -76,9 +71,8 @@ exports.changePassword = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
     try {
         const { cpf } = req.body;
-        const db = await getDb();
 
-        const user = await db.get('SELECT * FROM profiles WHERE cpf = ?', [cpf]);
+        const user = await User.findByCpf(cpf);
         if (!user) {
             // Segurança: não revelar se o usuário existe
             return res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
@@ -88,10 +82,7 @@ exports.forgotPassword = async (req, res) => {
         const resetToken = uuidv4();
         const expires = new Date(Date.now() + 3600000); // 1 hora
 
-        await db.run(
-            'UPDATE profiles SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-            [resetToken, expires.toISOString(), user.id]
-        );
+        await User.setResetToken(user.id, resetToken, expires);
 
         // Enviar Email
         const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback se não houver email
@@ -107,12 +98,8 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
-        const db = await getDb();
 
-        const user = await db.get(
-            'SELECT * FROM profiles WHERE reset_token = ? AND reset_token_expires > ?',
-            [token, new Date().toISOString()]
-        );
+        const user = await User.findByResetToken(token);
 
         if (!user) {
             return res.status(400).json({ error: 'Token inválido ou expirado.' });
@@ -120,10 +107,7 @@ exports.resetPassword = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await db.run(
-            'UPDATE profiles SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, change_password_required = 0 WHERE id = ?',
-            [hashedPassword, user.id]
-        );
+        await User.clearResetTokenAndSetPassword(user.id, hashedPassword);
 
         res.json({ message: 'Senha redefinida com sucesso! Agora você pode fazer login.' });
     } catch (error) {

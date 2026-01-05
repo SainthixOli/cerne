@@ -8,24 +8,16 @@ let dbInstance = null;
 async function getDb() {
     if (dbInstance) return dbInstance;
 
-    const dbPath = path.resolve(__dirname, '../../db/database.sqlite');
+    const dbFilename = process.env.NODE_ENV === 'test' ? 'test_database.sqlite' : 'database.sqlite';
+    const dbPath = path.resolve(__dirname, `../../db/${dbFilename}`);
 
     dbInstance = await open({
         filename: dbPath,
         driver: sqlite3.Database
     });
 
-    // Inicializa o schema principal se necessário
-    const schemaPath = path.resolve(__dirname, '../../db/local_schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    await dbInstance.exec(schema);
-
-    // Inicializa o schema de auditoria e logs
-    const auditSchemaPath = path.resolve(__dirname, '../../db/audit_schema.sql');
-    if (fs.existsSync(auditSchemaPath)) {
-        const auditSchema = fs.readFileSync(auditSchemaPath, 'utf8');
-        await dbInstance.exec(auditSchema);
-    }
+    // Schema initialization is now handled by Knex migrations.
+    // Run 'npm run db:migrate' to initialize the database.
 
     return dbInstance;
 }

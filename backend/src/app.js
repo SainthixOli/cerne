@@ -29,8 +29,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Rotas
 app.use('/api', routes);
 
+const errorHandler = require('./middlewares/errorHandler');
 app.get('/', (req, res) => {
   res.send('API CERNE System is running');
 });
+
+// Global Error Handler
+app.use(errorHandler);
 
 module.exports = app;

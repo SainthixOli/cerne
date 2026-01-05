@@ -81,72 +81,65 @@ The project follows a **Monolithic Modular Architecture**, ideal for scaling wit
 | Layer | Technologies |
 | :--- | :--- |
 | **Frontend** | React.js, TailwindCSS (Glassmorphism), Framer Motion, Axios, Lucide React |
-| **Backend** | Node.js, Express, Socket.io (Realtime), PDFKit (Doc Generator) |
-| **Database** | SQLite (Dev/Staging) / PostgreSQL (Ready for Prod) |
-| **Security** | Helmet, CORS, Rate-Limit, Bcrypt, JWT |
-| **DevOps** | Vite, Nodemon, ESLint Security |
+| **Backend** | Node.js, Express, Socket.io (Realtime), PDFKit |
+| **Database** | SQLite (Dev) / PostgreSQL (Prod) - Managed by **Knex.js** |
+| **Security** | Helmet, CORS, Rate-Limit, Bcrypt, JWT, **Joi Validation** |
+| **DevOps** | Docker, Docker Compose, Jest (Testing), Winston (Logging) |
 
-### 📂 Directory Structure
+### 📂 Directory Structure (Backend)
 ```bash
-/
-├── backend/            # RESTful API & WebSocket Server
-│   ├── src/
-│   │   ├── controllers/   # Business Rules
-│   │   ├── middlewares/   # Security and Validations
-│   │   ├── routes/        # API Routes
-│   │   └── services/      # Integrations (Email, PDF)
-│   ├── db/                # Schema and Migrations
-│   └── uploads/           # Local Storage (Dev)
-│
-├── frontend/           # Modern React SPA
-│   ├── src/
-│   │   ├── components/    # Reusable UI Kit
-│   │   ├── contexts/      # Global State Management
-│   │   ├── pages/         # Application Screens
-│   │   └── hooks/         # Custom Logic
-│
-└── landing-page/       # Presentation Site (Showcase)
+/backend
+├── src/
+│   ├── config/        # Database & Environment Config
+│   ├── controllers/   # Request Handlers
+│   ├── middlewares/   # Auth, Validation, Error Handling
+│   ├── models/        # Data Access Layer (Knex)
+│   ├── routes/        # API Endpoints
+│   ├── services/      # Business Logic (Email, PDF)
+│   ├── utils/         # Helpers
+│   ├── validations/   # Joi Schemas
+│   └── app.js         # App Entry Point
+├── db/                # Migrations & Seeds
+├── tests/             # Integration Tests
+└── logs/              # Application Logs
 ```
 
 ---
 
 ## ⚡ Installation and Execution
 
-### Prerequisites
+### Option 1: Docker (Recommended)
+Run the entire stack with a single command.
+
+```bash
+docker-compose up --build
+```
+Access:
+- Frontend: http://localhost:8080
+- Backend: http://localhost:3333
+
+### Option 2: Manual Installation
+
+#### Prerequisites
 *   **Node.js** (v18 or higher)
 *   **NPM** or **Yarn**
 
-### Step by Step
+#### Backend Setup
+1.  Navigate to folder: `cd backend`
+2.  Install dependencies: `npm install`
+3.  Configure Env: `cp .env.example .env`
+4.  **Run Migrations**: `npm run db:migrate`
+5.  Start Server: `npm run dev`
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/SainthixOli/filiacao_sindicato.git
-    cd filiacao_sindicato
-    ```
+#### Frontend Setup
+1.  Navigate to folder: `cd frontend`
+2.  Install dependencies: `npm install`
+3.  Start App: `npm run dev`
 
-2.  **Configure and Run Backend**
-    ```bash
-    cd backend
-    npm install
-    cp .env.example .env # Configure your variables
-    npm run dev
-    # Server will start at http://localhost:3000
-    ```
-
-3.  **Configure and Run Frontend**
-    ```bash
-    cd ../frontend
-    npm install
-    npm run dev
-    # Application will open at http://localhost:5173
-    ```
-
-4.  **Landing Page (Optional)**
-    ```bash
-    cd ../landing-page
-    npm install
-    npm run dev
-    ```
+#### Landing Page
+1.  Navigate to folder: `cd landing-page`
+2.  Install dependencies: `npm install`
+3.  Start App: `npm run dev`
 
 ---
 

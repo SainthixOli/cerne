@@ -8,8 +8,22 @@ const reportsController = require('../controllers/reportsController');
 const upload = require('../middlewares/upload');
 const { authenticateToken, authenticateTokenOptional } = require('../middlewares/auth');
 
-router.post('/auth/login', authController.login);
-router.post('/auth/change-password', authenticateToken, authController.changePassword);
+const { loginSchema, changePasswordSchema } = require('../validations/authValidation');
+const validate = require('../middlewares/validate');
+
+const { runHealthCheck } = require('../utils/healthCheck');
+
+router.get('/health', async (req, res) => {
+    const isHealthy = await runHealthCheck();
+    if (isHealthy) {
+        res.status(200).json({ status: 'UP', uptime: process.uptime() });
+    } else {
+        res.status(503).json({ status: 'DOWN' });
+    }
+});
+
+router.post('/auth/login', validate(loginSchema), authController.login);
+router.post('/auth/change-password', authenticateToken, validate(changePasswordSchema), authController.changePassword);
 router.post('/auth/forgot-password', authController.forgotPassword);
 router.post('/auth/reset-password', authController.resetPassword);
 

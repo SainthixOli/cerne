@@ -1,16 +1,13 @@
 const { getDb } = require('../config/database');
+const User = require('../models/User');
 
 exports.getProfile = async (req, res) => {
     try {
-        const db = await getDb();
-        const userId = req.user.id; // Do middleware JWT
+        const userId = req.user.id;
+        console.log('ProfileController: userId from token:', userId); // Keep existing log
 
-        const profile = await db.get(`
-      SELECT p.*, f.status as status_filiacao
-      FROM profiles p
-      LEFT JOIN filiacoes f ON p.id = f.user_id
-      WHERE p.id = ?
-    `, [userId]);
+        const profile = await User.findByIdWithFiliation(userId);
+        console.log('ProfileController: profile found:', profile); // Keep existing log
 
         if (!profile) {
             return res.status(404).json({ error: 'Perfil não encontrado' });

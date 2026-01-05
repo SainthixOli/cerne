@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=change_this_secret_in_prod
+      - DB_NAME=database.sqlite
+      # If using Postgres:
+      # - DB_HOST=db
+      # - DB_USER=postgres
+      # - DB_PASSWORD=postgres
+    volumes:
+      - ./backend/db:/app/db # Persist SQLite DB
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+#  db: # Postgres (disabled for now as req is to keep SQLite, but ready for switch)
+#    image: postgres:15
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: cerne_db
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
