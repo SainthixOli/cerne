@@ -450,9 +450,27 @@ function App() {
                 <p>
                   Fique à vontade para ver o vídeo ao lado onde explico um pouco mais sobre a visão deste projeto.
                 </p>
-              </div>
-            </div>
 
+                <div className="mt-8 pt-8 border-t border-white/5">
+                  <h3 className="text-lg font-bold text-white mb-4">Principais Desafios Técnicos</h3>
+                  <div className="grid gap-4">
+                    <div className="bg-slate-900/50 p-4 rounded-lg border border-white/5 hover:border-blue-500/30 transition">
+                      <div className="text-blue-400 font-bold text-sm mb-1 flex items-center gap-2"><FaChartLine /> Arquitetura Escalável</div>
+                      <p className="text-xs text-slate-400">Implementação de Design Patterns para permitir que a stack cresça de um MVP para uma aplicação Enterprise sem refatoração total.</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-lg border border-white/5 hover:border-pink-500/30 transition">
+                      <div className="text-pink-400 font-bold text-sm mb-1 flex items-center gap-2"><FaComments /> Real-time Chat</div>
+                      <p className="text-xs text-slate-400">Complexidade de gerenciar estados do WebSocket e garantir segurança/sanitização em tempo real.</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-lg border border-white/5 hover:border-orange-500/30 transition">
+                      <div className="text-orange-400 font-bold text-sm mb-1 flex items-center gap-2"><FaUniversalAccess /> UX/UI Intuitiva</div>
+                      <p className="text-xs text-slate-400">Desafio de tornar processos burocráticos (filiação) em fluxos visuais simples e agradáveis para o usuário final.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
         </section>
 

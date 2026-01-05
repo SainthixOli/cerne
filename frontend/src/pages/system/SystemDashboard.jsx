@@ -8,6 +8,7 @@ const SystemDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [command, setCommand] = useState('');
     const [consoleHistory, setConsoleHistory] = useState([]);
+    const [healthLogs, setHealthLogs] = useState([]);
     const [showManual, setShowManual] = useState(false);
     const navigate = useNavigate();
 
@@ -53,15 +54,53 @@ const SystemDashboard = () => {
                 setStats(res.data);
             } catch (error) {
                 console.error(error);
-                alert('Erro ao carregar status do sistema');
+                // alert('Erro ao carregar status do sistema'); // Remove alert to avoid spam
             } finally {
                 setLoading(false);
             }
         };
+
+        const checkHealth = async () => {
+            try {
+                const start = Date.now();
+                const res = await api.get('/health');
+                const latency = Date.now() - start;
+                const timestamp = new Date().toLocaleTimeString();
+
+                const log = {
+                    time: timestamp,
+                    status: res.data.status,
+                    latency: `${latency}ms`,
+                    uptime: `${Math.floor(res.data.uptime)}s`,
+                    type: 'success'
+                };
+
+                setHealthLogs(prev => [log, ...prev].slice(0, 50)); // Keep last 50 logs
+            } catch (error) {
+                const timestamp = new Date().toLocaleTimeString();
+                const log = {
+                    time: timestamp,
+                    status: 'DOWN',
+                    latency: '-',
+                    uptime: '-',
+                    type: 'error'
+                };
+                setHealthLogs(prev => [log, ...prev].slice(0, 50));
+            }
+        };
+
         fetchStats();
-        // Poll every 30 seconds
-        const interval = setInterval(fetchStats, 30000);
-        return () => clearInterval(interval);
+        checkHealth();
+
+        // Poll stats every 30s
+        const statsInterval = setInterval(fetchStats, 30000);
+        // Poll health every 5s for "Matrix" feel
+        const healthInterval = setInterval(checkHealth, 5000);
+
+        return () => {
+            clearInterval(statsInterval);
+            clearInterval(healthInterval);
+        };
     }, []);
 
     const logout = () => {
@@ -167,48 +206,82 @@ const SystemDashboard = () => {
                 </div>
             </div>
 
-            <div className="glass-panel p-1 border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
-                <div className="bg-gray-900/80 rounded-t-xl p-3 flex items-center justify-between border-b border-white/5">
-                    <div className="flex items-center space-x-2">
-                        <Terminal size={16} className="text-gray-400" />
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">System Console</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* System Console */}
+                <div className="glass-panel p-1 border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
+                    <div className="bg-gray-900/80 rounded-t-xl p-3 flex items-center justify-between border-b border-white/5">
+                        <div className="flex items-center space-x-2">
+                            <Terminal size={16} className="text-gray-400" />
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">System Console</span>
+                        </div>
+                        <div className="flex space-x-1.5">
+                            <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                        </div>
                     </div>
-                    <div className="flex space-x-1.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                    <div className="bg-black/90 p-6 rounded-b-xl font-mono text-sm h-80 overflow-y-auto custom-scrollbar" onClick={() => document.getElementById('console-input').focus()}>
+                        <div className="text-gray-500 mb-2">CERNE System Console [v1.0.0]</div>
+                        <div className="text-gray-500 mb-6">Type 'help' for available commands.</div>
+
+                        {consoleHistory.map((line, i) => (
+                            <div key={i} className="whitespace-pre-wrap mb-2 animate-fade-in">
+                                {line.type === 'input' ? (
+                                    <div className="flex">
+                                        <span className="text-green-500 font-bold mr-2">➜</span>
+                                        <span className="text-white font-bold">{line.content}</span>
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-300 pl-6 border-l-2 border-gray-800 ml-1">{line.content}</div>
+                                )}
+                            </div>
+                        ))}
+
+                        <div className="flex items-center mt-4">
+                            <span className="text-green-500 font-bold mr-2 animate-pulse">➜</span>
+                            <input
+                                id="console-input"
+                                type="text"
+                                value={command}
+                                onChange={(e) => setCommand(e.target.value)}
+                                onKeyDown={handleCommand}
+                                className="bg-transparent border-none outline-none text-white w-full placeholder-gray-700"
+                                placeholder="Aguardando comando..."
+                                autoComplete="off"
+                            />
+                        </div>
                     </div>
                 </div>
-                <div className="bg-black/90 p-6 rounded-b-xl font-mono text-sm h-80 overflow-y-auto custom-scrollbar" onClick={() => document.getElementById('console-input').focus()}>
-                    <div className="text-gray-500 mb-2">CERNE System Console [v1.0.0]</div>
-                    <div className="text-gray-500 mb-6">Type 'help' for available commands.</div>
 
-                    {consoleHistory.map((line, i) => (
-                        <div key={i} className="whitespace-pre-wrap mb-2 animate-fade-in">
-                            {line.type === 'input' ? (
-                                <div className="flex">
-                                    <span className="text-green-500 font-bold mr-2">➜</span>
-                                    <span className="text-white font-bold">{line.content}</span>
-                                </div>
-                            ) : (
-                                <div className="text-gray-300 pl-6 border-l-2 border-gray-800 ml-1">{line.content}</div>
-                            )}
+                {/* Health Monitor */}
+                <div className="glass-panel p-1 border border-white/10 shadow-2xl bg-black/40 backdrop-blur-xl">
+                    <div className="bg-gray-900/80 rounded-t-xl p-3 flex items-center justify-between border-b border-white/5">
+                        <div className="flex items-center space-x-2">
+                            <Activity size={16} className="text-blue-400 animate-pulse" />
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Health Monitor (Real-time)</span>
                         </div>
-                    ))}
-
-                    <div className="flex items-center mt-4">
-                        <span className="text-green-500 font-bold mr-2 animate-pulse">➜</span>
-                        <input
-                            id="console-input"
-                            type="text"
-                            value={command}
-                            onChange={(e) => setCommand(e.target.value)}
-                            onKeyDown={handleCommand}
-                            className="bg-transparent border-none outline-none text-white w-full placeholder-gray-700"
-                            placeholder="Aguardando comando..."
-                            autoComplete="off"
-                            autoFocus
-                        />
+                        <div className="flex space-x-1.5">
+                            <div className="w-2 h-2 rounded-full bg-blue-500/50 animate-ping"></div>
+                        </div>
+                    </div>
+                    <div className="bg-black/95 p-4 rounded-b-xl font-mono text-xs h-80 overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-4 gap-4 mb-2 text-gray-500 border-b border-white/5 pb-2 uppercase tracking-wide">
+                            <div>Timestamp</div>
+                            <div>Status</div>
+                            <div>Latency</div>
+                            <div>Uptime</div>
+                        </div>
+                        <div className="space-y-1">
+                            {healthLogs.map((log, i) => (
+                                <div key={i} className={`grid grid-cols-4 gap-4 ${log.type === 'success' ? 'text-green-400/80' : 'text-red-400/80'} hover:bg-white/5 p-1 rounded transition`}>
+                                    <div className="text-gray-500">{log.time}</div>
+                                    <div className="font-bold">{log.status}</div>
+                                    <div>{log.latency}</div>
+                                    <div>{log.uptime}</div>
+                                </div>
+                            ))}
+                            {healthLogs.length === 0 && <div className="text-gray-600 italic">Initializing stream...</div>}
+                        </div>
                     </div>
                 </div>
             </div>
