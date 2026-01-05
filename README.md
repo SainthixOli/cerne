@@ -9,6 +9,7 @@
   ![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
   ![Node](https://img.shields.io/badge/node-v18+-339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
   ![React](https://img.shields.io/badge/react-v18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)
+  ![Tests](https://img.shields.io/badge/tests-passing-success.svg?style=for-the-badge&logo=jest&logoColor=white)
 
   ### **The Ultimate Platform for Member Management, Documents, and Communication.**
   *Corporate Security • Premium Design • Total Auditing*
@@ -108,17 +109,36 @@ The project follows a **Monolithic Modular Architecture**, ideal for scaling wit
 
 ## ⚡ Installation and Execution
 
-### Option 1: Docker (Recommended)
-Run the entire stack with a single command.
+## ⚡ Installation and Execution
 
+### 🐳 Quickstart via Docker (Recommended)
+Get the entire application (Backend + Frontend) running in under 2 minutes.
+
+1. **Clone & Run:**
 ```bash
 docker-compose up --build
 ```
-Access:
-- Frontend: http://localhost:8080
-- Backend: http://localhost:3333
 
-### Option 2: Manual Installation
+2. **Access:**
+- **Frontend (App):** http://localhost:8080
+- **backend API:** http://localhost:3333
+
+> **Note:** The `docker-compose.yml` is configured to spin up the Node.js backend and React frontend. PostgreSQL can be enabled by uncommenting the service block.
+
+---
+
+### 🟢 Running Automated Tests
+The project includes a suite of integration tests covering Authentication, Profile Management, and RBAC.
+
+```bash
+cd backend
+npm test
+```
+*Tests use an isolated in-memory SQLite database to ensure speed and safety.*
+
+---
+
+### 🔧 Manual Installation (Dev Mode)
 
 #### Prerequisites
 *   **Node.js** (v18 or higher)
@@ -128,7 +148,8 @@ Access:
 1.  Navigate to folder: `cd backend`
 2.  Install dependencies: `npm install`
 3.  Configure Env: `cp .env.example .env`
-4.  **Run Migrations**: `npm run db:migrate`
+    *   *By default, it uses SQLite. To use **PostgreSQL**, update `.env` with DB_HOST, DB_USER, etc.*
+4.  **Run Migrations:** `npm run db:migrate`
 5.  Start Server: `npm run dev`
 
 #### Frontend Setup

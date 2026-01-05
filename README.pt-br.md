@@ -9,6 +9,7 @@
   ![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
   ![Node](https://img.shields.io/badge/node-v18+-339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
   ![React](https://img.shields.io/badge/react-v18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)
+  ![Tests](https://img.shields.io/badge/tests-passing-success.svg?style=for-the-badge&logo=jest&logoColor=white)
 
   ### **A Plataforma Definitiva para Gestão de Filiados, Documentos e Comunicação.**
   *Segurança Corporativa • Design Premium • Auditoria Total*
@@ -112,41 +113,58 @@ O projeto segue uma **Arquitetura Modular Monolítica**, ideal para escalar sem 
 
 ## ⚡ Instalação e Execução
 
-### Pré-requisitos
+## ⚡ Instalação e Execução
+
+### 🐳 Quickstart via Docker (Recomendado)
+Tenha a aplicação completa (Backend + Frontend) rodando em menos de 2 minutos.
+
+1. **Clone e Execute:**
+```bash
+docker-compose up --build
+```
+
+2. **Acesse:**
+- **Frontend (App):** http://localhost:8080
+- **backend API:** http://localhost:3333
+
+> **Nota:** O `docker-compose.yml` está configurado para subir o backend Node.js e o frontend React. O PostgreSQL pode ser ativado descomentando o bloco de serviço no arquivo.
+
+---
+
+### 🟢 Executando Testes Automatizados
+O projeto inclui uma suíte de testes de integração cobrindo Autenticação, Gestão de Perfil e RBAC.
+
+```bash
+cd backend
+npm test
+```
+*Os testes usam um banco SQLite em memória isolado para garantir velocidade e segurança.*
+
+---
+
+### 🔧 Instalação Manual (Modo Dev)
+
+#### Pré-requisitos
 *   **Node.js** (v18 ou superior)
 *   **NPM** ou **Yarn**
 
-### Passo a Passo
+#### Configuração do Backend
+1.  Navegue até a pasta: `cd backend`
+2.  Instale as dependências: `npm install`
+3.  Configure o Env: `cp .env.example .env`
+    *   *Por padrão, usa SQLite. Para usar **PostgreSQL**, atualize o `.env` com DB_HOST, DB_USER, etc.*
+4.  **Rode as Migrations:** `npm run db:migrate`
+5.  Inicie o Servidor: `npm run dev`
 
-1.  **Clone o repositório**
-    ```bash
-    git clone https://github.com/SainthixOli/filiacao_sindicato.git
-    cd filiacao_sindicato
-    ```
+#### Configuração do Frontend
+1.  Navegue até a pasta: `cd frontend`
+2.  Instale as dependências: `npm install`
+3.  Inicie o App: `npm run dev`
 
-2.  **Configure e Rode o Backend**
-    ```bash
-    cd backend
-    npm install
-    cp .env.example .env # Configure suas variáveis
-    npm run dev
-    # O servidor iniciará em http://localhost:3000
-    ```
-
-3.  **Configure e Rode o Frontend**
-    ```bash
-    cd ../frontend
-    npm install
-    npm run dev
-    # A aplicação abrirá em http://localhost:5173
-    ```
-
-4.  **Landing Page (Opcional)**
-    ```bash
-    cd ../landing-page
-    npm install
-    npm run dev
-    ```
+#### Landing Page
+1.  Navegue até a pasta: `cd landing-page`
+2.  Instale as dependências: `npm install`
+3.  Inicie o App: `npm run dev`
 
 ---
 
