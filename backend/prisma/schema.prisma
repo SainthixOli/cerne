@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         String   @default("user") // "admin", "super_admin", "support", "member"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  profile      Profile?
+  affiliations Affiliation[]
+  documents    Document[]
+  logs         AuditLog[]
+
+  @@map("users")
+}
+
+model Profile {
+  id               String  @id @default(uuid())
+  userId           String  @unique
+  cpf              String  @unique
+  rg               String?
+  matricula        String?
+  phone            String?
+  address          String?
+  city             String?
+  state            String?
+  zipCode          String?
+  maritalStatus    String?
+  nationality      String?
+  issuingBody      String? // Orgão Emissor
+
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Affiliation {
+  id             String   @id @default(uuid())
+  userId         String
+  status         String   @default("pending") // pending, approved, rejected, suspended
+  requestDate    DateTime @default(now())
+  approvalDate   DateTime?
+  rejectionReason String?
+  
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("affiliations")
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // "rg", "cpf", "address_proof", "paycheck"
+  filePath  String
+  fileName  String
+  mimeType  String
+  size      Int
+  uploadedAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String   // "LOGIN", "UPDATE_PROFILE", "DELETE_DOC"
+  resource  String?
+  metadata  String?  // JSON string
+  ip        String?
+  timestamp DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
