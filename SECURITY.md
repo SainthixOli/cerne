@@ -6,7 +6,7 @@ Prezamos pela segurança de nossos usuários e dados. Se você descobrir uma vul
 
 **NÃO crie issues públicas no GitHub para vulnerabilidades de segurança.**
 
-Envie um email para: security@example.com (substituir por email real do projeto)
+Envie um email para: oliverarthursouzapinheiro@gmail.com
 
 ### O que incluir no seu reporte:
 - Descrição da vulnerabilidade.
