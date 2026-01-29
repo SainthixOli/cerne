@@ -147,10 +147,16 @@ const Login = () => {
                         Filiar-se Agora
                     </Link>
                 </div>
-                <div className="mt-6 text-center">
-                    <Link to="/check-status" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors font-medium">
-                        Consultar Situação do Pedido
-                    </Link>
+                <div className="mt-8 border-t border-gray-200/50 dark:border-white/10 pt-6">
+                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl border border-gray-100 dark:border-white/10 text-center">
+                        <p className="text-gray-500 dark:text-gray-400 mb-3 text-sm font-medium">Já fez seu pedido?</p>
+                        <Link
+                            to="/check-status"
+                            className="block w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/30 transform transition hover:-translate-y-0.5 active:scale-95"
+                        >
+                            Consultar Situação do Pedido
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Powered By Footer */}

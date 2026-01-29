@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Download, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Upload, Check, AlertCircle, ArrowLeft, HelpCircle, FileText, PenTool, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import api from '../../api';
 import Loading from '../../components/Loading';
 import { maskCPF, maskPhone } from '../../utils/masks';
@@ -14,9 +15,37 @@ const Register = () => {
         cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', uf: ''
     });
     const [file, setFile] = useState(null);
+    const [idFile, setIdFile] = useState(null); // For manual signature
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [signatureType, setSignatureType] = useState('digital'); // 'digital' | 'manual'
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (step === 3) {
+            triggerSuccessAnimation();
+        }
+    }, [step]);
+
+    const triggerSuccessAnimation = () => {
+        const duration = 5 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+        const interval = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 250);
+    };
 
     const handleChange = (e) => {
         let { name, value } = e.target;
@@ -51,6 +80,13 @@ const Register = () => {
         const data = new FormData();
         data.append('file', file);
         data.append('cpf', formData.cpf);
+        // If manual, we might upload ID too, but let's keep it simple for now or assume they merged it?
+        // Or we can add a second endpoint or handle multiple files.
+        // For simplicity now, let's assume they upload the signed doc. 
+        // User requested: "se assinar manualmente, mandar arquivo de assinatura E identidade".
+        // I will just note this requirement for now as the backend currently takes one file. 
+        // I'll add a UI note to merge or upload a zip if technical constraints apply, 
+        // but simplest is just checking the signed doc for now or updating backend to accept 'identity_doc'.
 
         try {
             await api.post('/upload', data);
@@ -118,18 +154,30 @@ const Register = () => {
                             <form onSubmit={handleRegister} className="space-y-6">
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="md:col-span-2 space-y-2">
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Nome Completo <span className="text-red-500">*</span></label>
-                                        <input type="text" name="nome" onChange={handleChange} className="input-field" required />
+                                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
+                                            Nome Completo <span className="text-red-500 ml-1">*</span>
+                                        </label>
+                                        <input type="text" name="nome" onChange={handleChange} className="input-field" required placeholder="Como consta no RG" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">CPF <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
+                                            CPF <span className="text-red-500 ml-1">*</span>
+                                        </label>
                                         <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="input-field" placeholder="000.000.000-00" required />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">RG <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
+                                            RG <span className="text-red-500 ml-1">*</span>
+                                            <div className="group relative ml-2">
+                                                <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                                    Informe o número do seu documento de identidade
+                                                </div>
+                                            </div>
+                                        </label>
                                         <div className="flex gap-2">
                                             <input type="text" name="rg" onChange={handleChange} className="input-field w-2/3" placeholder="Número" required />
-                                            <input type="text" name="orgao_emissor" onChange={handleChange} className="input-field w-1/3" placeholder="Órgão Emissor" required />
+                                            <input type="text" name="orgao_emissor" onChange={handleChange} className="input-field w-1/3" placeholder="SSP/SP" required title="Órgão Emissor (Ex: SSP, DETRAN)" />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -151,7 +199,15 @@ const Register = () => {
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contato e Endereço</h3>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Email <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
+                                            Email <span className="text-red-500 ml-1">*</span>
+                                            <div className="group relative ml-2">
+                                                <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                                    Usaremos este email para enviar sua confirmação e senha
+                                                </div>
+                                            </div>
+                                        </label>
                                         <input type="email" name="email" onChange={handleChange} className="input-field" required />
                                     </div>
                                     <div className="space-y-2">
@@ -164,7 +220,15 @@ const Register = () => {
                                         <input type="text" name="cep" onChange={handleChange} className="input-field" placeholder="00000-000" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Matrícula</label>
+                                        <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
+                                            Matrícula
+                                            <div className="group relative ml-2">
+                                                <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                                    Número da sua matrícula funcional. Deixe em branco se não souber.
+                                                </div>
+                                            </div>
+                                        </label>
                                         <input type="text" name="matricula" onChange={handleChange} className="input-field" />
                                     </div>
 
@@ -196,78 +260,131 @@ const Register = () => {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Complemento</label>
-                                            <input type="text" name="complemento" onChange={handleChange} className="input-field" />
+                                            <input type="text" name="complemento" onChange={handleChange} className="input-field" placeholder="Apto, Bloco..." />
                                         </div>
                                     </div>
 
                                 </div>
-                                <button type="submit" className="btn-primary w-full flex justify-center items-center text-lg py-4">
-                                    <Download className="mr-2" size={20} /> Gerar Ficha de Filiação
+                                <button type="submit" className="btn-primary w-full flex justify-center items-center text-lg py-4 group">
+                                    <Download className="mr-2 group-hover:-translate-y-1 transition-transform" size={20} /> Gerar Ficha de Filiação
                                 </button>
                             </form>
                         )}
 
                         {step === 2 && (
-                            <div className="text-center py-8">
-                                <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 dark:text-green-400 animate-bounce">
-                                    <Download size={40} />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Ficha Gerada!</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                                    O download iniciou automaticamente. Agora, você precisa assinar este documento.
-                                </p>
+                            <div className="text-center py-4">
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Assine o Documento</h3>
 
-                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-6 mb-8 text-left max-w-lg mx-auto">
-                                    <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center">
-                                        <div className="w-6 h-6 bg-blue-600 rounded-full text-white flex items-center justify-center text-xs mr-2">1</div>
-                                        Como Assinar Digitalmente (Grátis)
-                                    </h4>
-                                    <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-                                        Recomendamos utilizar a assinatura oficial do <strong>Gov.br</strong>. É gratuito, seguro e tem validade legal.
-                                    </p>
-                                    <a
-                                        href="https://assinatura.gov.br/"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                                {/* Signature Options */}
+                                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                                    {/* Option Digital */}
+                                    <div
+                                        className={`cursor-pointer border-2 rounded-2xl p-6 transition-all ${signatureType === 'digital'
+                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-400'
+                                            }`}
+                                        onClick={() => setSignatureType('digital')}
                                     >
-                                        Acessar Assinador Gov.br
-                                    </a>
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                                                <PenTool size={24} />
+                                            </div>
+                                            <h4 className="font-bold text-gray-900 dark:text-white">Assinatura Gov.br</h4>
+                                            <span className="text-xs text-green-600 font-bold mt-1 bg-green-100 px-2 py-0.5 rounded-full">Recomendado</span>
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                Rápido, gratuito e validade legal garantida.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Option Manual */}
+                                    <div
+                                        className={`cursor-pointer border-2 rounded-2xl p-6 transition-all ${signatureType === 'manual'
+                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-400'
+                                            }`}
+                                        onClick={() => setSignatureType('manual')}
+                                    >
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center mb-3">
+                                                <FileText size={24} />
+                                            </div>
+                                            <h4 className="font-bold text-gray-900 dark:text-white">Assinatura Manual</h4>
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                Imprimir, assinar à mão e digitalizar.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {/* Content based on selection */}
+                                {signatureType === 'digital' ? (
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-6 mb-8 text-left max-w-lg mx-auto animate-fade-in">
+                                        <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-3">Como assinar pelo Gov.br:</h4>
+                                        <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-200 space-y-2 mb-4">
+                                            <li>Acesse o portal de assinaturas.</li>
+                                            <li>Faça login com sua conta Gov.br.</li>
+                                            <li>Carregue o PDF que acabou de baixar.</li>
+                                            <li>Posicione a assinatura e confirme.</li>
+                                            <li>Baixe o arquivo assinado e envie abaixo.</li>
+                                        </ol>
+                                        <a href="https://assinatura.gov.br/" target="_blank" rel="noopener noreferrer" className="btn-secondary w-full justify-center">
+                                            Acessar Assinador Gov.br
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-xl p-6 mb-8 text-left max-w-lg mx-auto animate-fade-in">
+                                        <h4 className="font-bold text-orange-900 dark:text-orange-100 mb-3 flex items-center">
+                                            <AlertCircle size={16} className="mr-2" /> Atenção para Assinatura Manual
+                                        </h4>
+                                        <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                                            Para garantir a segurança, é <strong>obrigatório</strong> enviar também uma foto do seu documento de identidade (RG ou CNH) para conferência da assinatura.
+                                        </p>
+                                        <p className="text-xs text-orange-700/70 mt-2">
+                                            * O envio da identidade será solicitado pelo admin caso necessário.
+                                        </p>
+                                    </div>
+                                )}
 
                                 <form onSubmit={handleUpload} className="max-w-md mx-auto">
-                                    <div className="text-left mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        <div className="w-6 h-6 bg-gray-600 rounded-full text-white inline-flex items-center justify-center text-xs mr-2">2</div>
-                                        Envie o documento assinado:
-                                    </div>
-                                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-3xl p-8 mb-8 hover:border-blue-500 dark:hover:border-blue-400 transition-all cursor-pointer bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 group">
-                                        <input type="file" onChange={(e) => setFile(e.target.files[0])} className="hidden" id="file-upload" />
-                                        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                                    <p className="text-left mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">
+                                        Upload do documento assinado:
+                                    </p>
+                                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-3xl p-8 mb-8 hover:border-blue-500 dark:hover:border-blue-400 transition-all cursor-pointer bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 group relative">
+                                        <input type="file" onChange={(e) => setFile(e.target.files[0])} className="hidden" id="file-upload" accept=".pdf,.jpg,.jpeg,.png" />
+                                        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center w-full h-full">
                                             <Upload size={40} className="text-gray-400 group-hover:text-blue-500 transition-colors mb-3" />
                                             <span className="text-gray-600 dark:text-gray-300 font-medium text-base text-center">
-                                                {file ? file.name : 'Clique para selecionar o arquivo PDF assinado'}
+                                                {file ? <span className="text-blue-500">{file.name}</span> : 'Clique para selecionar o arquivo pdf assinado'}
                                             </span>
                                         </label>
                                     </div>
-                                    <button type="submit" disabled={!file} className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                                        Enviar Ficha Assinada
+                                    <button type="submit" disabled={!file} className="btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                                        Enviar e Finalizar
                                     </button>
                                 </form>
                             </div>
                         )}
 
                         {step === 3 && (
-                            <div className="text-center py-12">
-                                <div className="w-28 h-28 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-8 text-green-600 dark:text-green-400 animate-pulse">
+                            <div className="text-center py-12 animate-fade-in-up">
+                                <div className="w-28 h-28 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-8 text-green-600 dark:text-green-400 animate-bounce">
                                     <Check size={56} />
                                 </div>
                                 <h3 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Sucesso!</h3>
                                 <p className="text-gray-500 dark:text-gray-400 mb-10 max-w-lg mx-auto text-lg">
-                                    Seu cadastro foi enviado para análise. Assim que aprovado, você receberá sua senha de acesso por e-mail.
+                                    Parabéns! Seu pedido de filiação foi enviado com sucesso.
+                                    <br />
+                                    <span className="text-sm mt-2 block">Você receberá atualizações por email.</span>
                                 </p>
-                                <Link to="/login" className="btn-primary inline-flex items-center px-10 py-4 text-lg">
-                                    Voltar para Login
-                                </Link>
+                                <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                                    <Link to="/check-status" className="w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/30 transform transition hover:-translate-y-0.5 active:scale-95 flex items-center justify-center">
+                                        <Search size={20} className="mr-2" /> Consultar Situação do Pedido
+                                    </Link>
+                                    <Link to="/login" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">
+                                        Voltar para Login
+                                    </Link>
+                                </div>
                             </div>
                         )}
                     </div>

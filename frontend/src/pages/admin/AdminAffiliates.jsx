@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';
+import { toast } from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 const AdminAffiliates = () => {
     const navigate = useNavigate();
@@ -49,7 +51,7 @@ const AdminAffiliates = () => {
                 setHistoryData(res.data);
             } catch (err) {
                 console.error(err);
-                alert('Erro ao carregar histórico');
+                toast.error('Erro ao carregar histórico');
                 return;
             }
         }
@@ -76,30 +78,37 @@ const AdminAffiliates = () => {
                 });
 
                 if (response.data.tempPassword) {
-                    alert(`Aprovado com sucesso!\nSenha Temporária: ${response.data.tempPassword}\n(Enviada por email simulado)`);
+                    toast.success(`Aprovado! Senha Temp: ${response.data.tempPassword}`, { duration: 6000 });
                 } else {
-                    alert('Aprovado com sucesso!');
+                    toast.success('Filiação aprovada com sucesso!', {
+                        icon: '👏',
+                        style: {
+                            borderRadius: '10px',
+                            background: '#333',
+                            color: '#fff',
+                        },
+                    });
                 }
             } else {
-                alert('Rejeitado com sucesso!');
+                toast.error('Filiação rejeitada.', { duration: 4000 });
             }
 
             setModalOpen(false);
             fetchAffiliations();
         } catch (error) {
             console.error(error);
-            alert('Erro ao processar ação');
+            toast.error('Erro ao processar ação');
         }
     };
 
     const handleSendBroadcast = async () => {
         try {
             await api.post('/notifications/broadcast', broadcastData);
-            alert('Notificação enviada para aprovação do Super Admin!');
+            toast.success('Comunicado enviado com sucesso!');
             setModalOpen(false);
             setBroadcastData({ title: '', message: '', target_group: 'all' });
         } catch (error) {
-            alert('Erro ao enviar notificação');
+            toast.error('Erro ao enviar comunicado');
         }
     };
 

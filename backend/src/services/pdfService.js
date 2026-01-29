@@ -18,7 +18,10 @@ exports.generateAffiliationPDF = async (data, res) => {
     }
 
     // Replace placeholders - Complete List
-    const dynamicText = terms
+    // Fix potential literal "\n" strings from DB
+    const sanitizedTerms = terms.replace(/\\n/g, '\n');
+
+    const dynamicText = sanitizedTerms
         .replace(/{{NOME}}/g, data.nome_completo || data.nome) // Handle both naming conventions
         .replace(/{{CPF}}/g, data.cpf)
         .replace(/{{EMAIL}}/g, data.email || '')

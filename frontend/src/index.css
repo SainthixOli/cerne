@@ -167,3 +167,167 @@ body {
 .black .border-gray-700 {
   border-color: #1f1f1f;
 }
+
+/* --- Accessibility Modes --- */
+
+/* 1. Neon Mode - Yellow on Black (Aggressive) */
+html.hc-neon {
+  filter: contrast(120%);
+}
+
+html.hc-neon body,
+html.hc-neon #root {
+  background-color: #000000 !important;
+  color: #FFFF00 !important;
+  /* Increased spacing as requested by user */
+  letter-spacing: 0.08em !important;
+  line-height: 1.8 !important;
+}
+
+html.hc-neon * {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #FFFF00 !important;
+  border-color: #FFFF00 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html.hc-neon .glass,
+html.hc-neon .glass-panel,
+html.hc-neon .glass-dark,
+html.hc-neon .mesh-gradient-bg,
+html.hc-neon .bg-white,
+html.hc-neon .bg-gray-50,
+html.hc-neon .bg-gray-900,
+html.hc-neon .bg-gray-800 {
+  background-color: #000000 !important;
+  border: 1px solid #FFFF00 !important;
+}
+
+html.hc-neon input,
+html.hc-neon textarea,
+html.hc-neon select,
+html.hc-neon button {
+  background-color: #000000 !important;
+  border: 2px solid #FFFF00 !important;
+  color: #FFFF00 !important;
+  font-weight: bold !important;
+}
+
+html.hc-neon a {
+  text-decoration: underline !important;
+  color: #FFFF00 !important;
+}
+
+html.hc-neon svg {
+  fill: #FFFF00 !important;
+  stroke: #FFFF00 !important;
+}
+
+html.hc-neon ::placeholder {
+  color: #FFFF00 !important;
+  opacity: 0.7;
+}
+
+/* 2. Clean Mode - Bold Black on White (Structural, Paper-like) */
+html.hc-clean {
+  filter: contrast(110%);
+}
+
+html.hc-clean body,
+html.hc-clean #root {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Force solid white backgrounds to remove gradients/glass/DARK modes */
+html.hc-clean .glass,
+html.hc-clean .glass-panel,
+html.hc-clean .glass-dark,
+html.hc-clean .mesh-gradient-bg,
+html.hc-clean .bg-gray-900,
+html.hc-clean .bg-gray-800,
+html.hc-clean .bg-black,
+html.hc-clean aside,
+/* Sidebars */
+html.hc-clean nav,
+/* Navbars */
+html.hc-clean [class*="bg-slate-"],
+html.hc-clean [class*="bg-gray-"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 2px solid #000000 !important;
+  backdrop-filter: none !important;
+}
+
+/* Force Black Text Everywhere */
+html.hc-clean h1,
+html.hc-clean h2,
+html.hc-clean h3,
+html.hc-clean h4,
+html.hc-clean h5,
+html.hc-clean h6,
+html.hc-clean p,
+html.hc-clean span,
+html.hc-clean div,
+html.hc-clean label,
+html.hc-clean a,
+html.hc-clean li,
+html.hc-clean td,
+html.hc-clean th {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Force Boldness */
+html.hc-clean h1,
+html.hc-clean h2,
+html.hc-clean h3 {
+  font-weight: 900 !important;
+  /* Extra Bold Headings */
+  text-decoration: underline;
+}
+
+html.hc-clean p,
+html.hc-clean span,
+html.hc-clean label,
+html.hc-clean button,
+html.hc-clean input {
+  font-weight: 700 !important;
+  /* Bold Body */
+}
+
+/* Clean Inputs */
+html.hc-clean input,
+html.hc-clean textarea,
+html.hc-clean select {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+  box-shadow: none !important;
+}
+
+html.hc-clean button,
+html.hc-clean .btn-primary,
+html.hc-clean .btn-secondary {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  /* Retro Brutalist Shadow */
+  transform: none !important;
+}
+
+html.hc-clean button:hover {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Fix Icons */
+html.hc-clean svg {
+  stroke: #000000 !important;
+  fill: transparent !important;
+}

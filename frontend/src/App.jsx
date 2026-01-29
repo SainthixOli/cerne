@@ -24,6 +24,7 @@ import ChatManager from './pages/shared/ChatManager';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import CheckStatus from './pages/public/CheckStatus';
 import SystemDashboard from './pages/system/SystemDashboard';
+import AccessibilityWidget from './components/AccessibilityWidget';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
               <Route path="settings" element={<ProfessorSettings />} />
             </Route>
           </Routes>
+          <AccessibilityWidget />
         </Router>
       </LoadingProvider>
     </ThemeProvider>
