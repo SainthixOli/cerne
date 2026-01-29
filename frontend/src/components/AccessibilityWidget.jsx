@@ -158,18 +158,18 @@ const AccessibilityWidget = () => {
                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                                 <Type className="mr-2" size={16} /> Tamanho da Fonte
                             </label>
-                            <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                            <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
                                 <button
                                     onClick={() => setFontSize(Math.max(80, fontSize - 10))}
-                                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors w-full flex justify-center"
+                                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors w-full flex justify-center text-gray-700 dark:text-gray-200"
                                     aria-label="Diminuir fonte"
                                 >
                                     <ZoomOut size={18} />
                                 </button>
-                                <span className="font-mono text-sm w-12 text-center">{fontSize}%</span>
+                                <span className="font-mono text-sm w-12 text-center font-bold text-gray-900 dark:text-white">{fontSize}%</span>
                                 <button
                                     onClick={() => setFontSize(Math.min(150, fontSize + 10))}
-                                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors w-full flex justify-center"
+                                    className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors w-full flex justify-center text-gray-700 dark:text-gray-200"
                                     aria-label="Aumentar fonte"
                                 >
                                     <ZoomIn size={18} />
@@ -186,8 +186,8 @@ const AccessibilityWidget = () => {
                                 <button
                                     onClick={() => setContrastMode('normal')}
                                     className={`flex-1 py-1 text-xs rounded-md transition-all ${contrastMode === 'normal'
-                                            ? 'bg-white shadow text-gray-900 font-bold'
-                                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                        ? 'bg-white shadow text-gray-900 font-bold'
+                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                 >
                                     Padrão
@@ -195,8 +195,8 @@ const AccessibilityWidget = () => {
                                 <button
                                     onClick={() => setContrastMode('clean')}
                                     className={`flex-1 py-1 text-xs rounded-md transition-all ${contrastMode === 'clean'
-                                            ? 'bg-white shadow text-black font-extrabold border-2 border-black'
-                                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                        ? 'bg-white shadow text-black font-extrabold border-2 border-black'
+                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                 >
                                     Bolder
@@ -204,8 +204,8 @@ const AccessibilityWidget = () => {
                                 <button
                                     onClick={() => setContrastMode('neon')}
                                     className={`flex-1 py-1 text-xs rounded-md transition-all ${contrastMode === 'neon'
-                                            ? 'bg-black text-yellow-400 font-bold border border-yellow-400'
-                                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                        ? 'bg-black text-yellow-400 font-bold border border-yellow-400'
+                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                 >
                                     Neon

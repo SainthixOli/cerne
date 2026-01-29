@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning } from 'lucide-react';
+import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning, MoreVertical } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';
 import { toast } from 'react-hot-toast';
@@ -353,45 +353,40 @@ const AdminAffiliates = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-right space-x-2">
-                                            {affiliation.url_arquivo && (
-                                                <button
-                                                    onClick={() => {
-                                                        const filename = affiliation.url_arquivo.split('/').pop().split('\\').pop();
-                                                        window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
-                                                    }}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
-                                                    title="Ver Documento"
-                                                >
-                                                    <FileText size={20} />
-                                                </button>
-                                            )}
+                                        <td className="px-6 py-5 text-right relative">
+                                            <div className="flex justify-end gap-2 items-center">
+                                                {/* Primary Actions (Always Visible if applicable) */}
 
-                                            {/* Logic for actions: */}
-                                            {/* 1. If not assumed by anyone: Show "Assume" button */}
-                                            {/* 2. If assumed by ME: Show Approve/Reject AND Request Transfer */}
-                                            {/* 3. If assumed by OTHERS: Show View Only (maybe chat) - buttons hidden */}
-
-                                            {(!affiliation.responsavel_admin_id && affiliation.status !== 'concluido' && affiliation.status !== 'rejeitado') && (
-                                                <button
-                                                    onClick={() => handleAssumeProtocol(affiliation.id)}
-                                                    className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition"
-                                                >
-                                                    Assumir
-                                                </button>
-                                            )}
-
-                                            {/* Super Admin Transfer Button OR if Transfer Requested */}
-                                            {(currentUser.role === 'super_admin' && (affiliation.status_atendimento === 'em_andamento' || affiliation.transfer_status === 'pending')) && (
-                                                <div className="flex gap-1">
+                                                {(!affiliation.responsavel_admin_id && affiliation.status !== 'concluido' && affiliation.status !== 'rejeitado') && (
                                                     <button
-                                                        onClick={() => openModal(affiliation, 'transfer')}
-                                                        className={`p-2 rounded-xl transition ${affiliation.transfer_status === 'pending' ? 'text-orange-600 bg-orange-100 hover:bg-orange-200 animate-pulse' : 'text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
-                                                        title={affiliation.transfer_status === 'pending' ? "Aprovar Transferência (Trocar Admin)" : "Transferir Atendimento"}
+                                                        onClick={() => handleAssumeProtocol(affiliation.id)}
+                                                        className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition"
                                                     >
-                                                        <ArrowRightLeft size={20} />
+                                                        Assumir
                                                     </button>
-                                                    {affiliation.transfer_status === 'pending' && (
+                                                )}
+
+                                                {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
+                                                    <>
+                                                        <button onClick={() => openModal(affiliation, 'approve')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition" title="Aprovar">
+                                                            <Check size={20} />
+                                                        </button>
+                                                        <button onClick={() => openModal(affiliation, 'reject')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition" title="Rejeitar">
+                                                            <X size={20} />
+                                                        </button>
+                                                    </>
+                                                )}
+
+                                                {/* Super Admin Transfer Request Actions (Always Visible for ease of access) */}
+                                                {(currentUser.role === 'super_admin' && affiliation.transfer_status === 'pending') && (
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={() => openModal(affiliation, 'transfer')}
+                                                            className="p-2 rounded-xl transition text-orange-600 bg-orange-100 hover:bg-orange-200 animate-pulse"
+                                                            title="Aprovar Transferência"
+                                                        >
+                                                            <Check size={20} />
+                                                        </button>
                                                         <button
                                                             onClick={async () => {
                                                                 if (!window.confirm('Negar solicitação de transferência?')) return;
@@ -406,53 +401,62 @@ const AdminAffiliates = () => {
                                                         >
                                                             <X size={20} />
                                                         </button>
-                                                    )}
-                                                </div>
-                                            )}
+                                                    </div>
+                                                )}
 
-                                            {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
-                                                <>
-                                                    <button onClick={() => openModal(affiliation, 'approve')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition" title="Aprovar">
-                                                        <Check size={20} />
+                                                {/* More Options Dropdown */}
+                                                <div className="relative group">
+                                                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-xl transition">
+                                                        <MoreVertical size={20} />
                                                     </button>
-                                                    <button onClick={() => openModal(affiliation, 'reject')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition" title="Rejeitar">
-                                                        <X size={20} />
-                                                    </button>
-                                                    {/* Request Transfer Button for Regular Admins */}
-                                                    {!affiliation.transfer_status && (
-                                                        <button
-                                                            onClick={() => handleRequestTransfer(affiliation.id)}
-                                                            className="p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition"
-                                                            title="Solicitar Transferência"
-                                                        >
-                                                            <MessageCircleWarning size={20} />
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                            <button
-                                                onClick={() => {
-                                                    // Logic:
-                                                    // If Approved -> Official Chat (ChatManager)
-                                                    // If Pending/Rejected -> Affiliation Chat (Modal)
-                                                    if (affiliation.status === 'concluido') {
-                                                        navigate('/admin/chat', {
-                                                            state: {
-                                                                startChatWith: affiliation.user_id,
-                                                                userName: affiliation.nome
-                                                            }
-                                                        });
-                                                    } else {
-                                                        openModal(affiliation, 'chat');
-                                                    }
-                                                }}
-                                                className={`p-2 rounded-xl transition ${affiliation.status === 'concluido'
-                                                    ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-                                                    : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-                                                title={affiliation.status === 'concluido' ? "Chat Oficial" : "Chat de Protocolo"}
-                                            >
-                                                <MessageCircle size={20} />
-                                            </button>
+                                                    <div className="absolute right-0 top-10 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all transform origin-top-right">
+                                                        <div className="p-1 space-y-1">
+                                                            {affiliation.url_arquivo && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const filename = affiliation.url_arquivo.split('/').pop().split('\\').pop();
+                                                                        window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
+                                                                    }}
+                                                                    className="flex w-full items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"
+                                                                >
+                                                                    <FileText size={16} className="mr-2" /> Ver Documento
+                                                                </button>
+                                                            )}
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (affiliation.status === 'concluido') {
+                                                                        navigate('/admin/chat', { state: { startChatWith: affiliation.user_id, userName: affiliation.nome } });
+                                                                    } else {
+                                                                        openModal(affiliation, 'chat');
+                                                                    }
+                                                                }}
+                                                                className="flex w-full items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"
+                                                            >
+                                                                <MessageCircle size={16} className="mr-2" /> Chat / Docs
+                                                            </button>
+
+                                                            {(currentUser.role === 'super_admin' && affiliation.status_atendimento === 'em_andamento' && affiliation.transfer_status !== 'pending') && (
+                                                                <button
+                                                                    onClick={() => openModal(affiliation, 'transfer')}
+                                                                    className="flex w-full items-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg"
+                                                                >
+                                                                    <ArrowRightLeft size={16} className="mr-2" /> Transferir
+                                                                </button>
+                                                            )}
+
+                                                            {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && !affiliation.transfer_status && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
+                                                                <button
+                                                                    onClick={() => handleRequestTransfer(affiliation.id)}
+                                                                    className="flex w-full items-center px-3 py-2 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg"
+                                                                >
+                                                                    <MessageCircleWarning size={16} className="mr-2" /> Solicitar Transf.
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
