@@ -477,6 +477,92 @@ function App() {
           </div>
         </section>
 
+
+
+        {/* NOVAS ATUALIZAÇÕES - VERCEL RELEASE */}
+        <section className="py-20 border-t border-white/5 bg-white/5 rounded-[3rem] my-20 px-6">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-block px-4 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-mono mb-4"
+            >
+              LATEST RELEASE v2.0
+            </motion.div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">O Que Há de Novo?</h2>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              Confira as últimas melhorias de Acessibilidade, Identidade e Funcionalidades implementadas nesta versão.
+            </p>
+          </div>
+
+          {/* GALERIA DE NOVIDADES */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-20">
+            {[
+              { img: avaliacaoImg, title: "Avaliação 360º", desc: "Novo módulo de desempenho pessoal com gráficos." },
+              { img: modoCleanImg, title: "Acessibilidade: Clean", desc: "Modo de alto contraste estrutural para leitura." },
+              { img: modoNeonImg, title: "Acessibilidade: Neon", desc: "Modo otimizado para baixa visão com cores vibrantes." }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.2 }}
+                className="group relative rounded-2xl overflow-hidden border border-white/10 aspect-video bg-slate-900"
+              >
+                <img src={item.img} alt={item.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500 group-hover:scale-105" />
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
+                  <h4 className="font-bold text-white text-lg">{item.title}</h4>
+                  <p className="text-sm text-slate-300">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* LISTA DE MUDANÇAS (CHANGELOG) */}
+          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 text-left">
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <FaUniversalAccess className="text-blue-500" /> Acessibilidade & UI
+              </h3>
+              <ul className="space-y-4 text-slate-400">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span><strong>Novo Widget Flutuante:</strong> Controle total de contraste, tamanho de fonte e leitura TTS em todas as páginas.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span><strong>Identidade Visual CERNE:</strong> Nova animação de login "Orbiting Nucleus" e favicon personalizado.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span><strong>Menu Flutuante:</strong> Ações rápidas na tabela de filiados (estilo Docs).</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <FaShieldAlt className="text-purple-500" /> Sistema & Segurança
+              </h3>
+              <ul className="space-y-4 text-slate-400">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
+                  <span><strong>Transferência de Protocolos:</strong> Super Admins podem gerenciar e repassar atendimentos.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
+                  <span><strong>Chat Otimizado:</strong> Correção de Rate Limit e modo espectador para auditoria sem interferência.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
+                  <span><strong>Health Checks:</strong> Script de auto-recuperação e verificação de integridade no boot.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
         {/* CHAMADA PARA AÇÃO FINAL (CTA) */}
         <section className="text-center py-24 px-6 rounded-[3rem] relative overflow-hidden glass-card border border-blue-500/30">
           <div className="absolute inset-0 bg-blue-600/10 blur-3xl"></div>
@@ -501,7 +587,7 @@ function App() {
         </footer>
 
       </div>
-    </div>
+    </div >
   );
 }
 
