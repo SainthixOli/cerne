@@ -42,3 +42,47 @@
 {"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-26T18:34:46.180Z"}
 {"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T15:48:05.123Z"}
 {"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T15:48:05.140Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T16:39:16.273Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T16:39:16.288Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T16:45:20.123Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T16:45:20.135Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T16:45:21.140Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T16:45:21.143Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T17:16:56.379Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T17:16:56.403Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T17:23:52.757Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T17:23:52.768Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T17:35:57.874Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T17:35:57.884Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T18:08:19.273Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T18:08:19.282Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T18:20:00.964Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T18:20:00.972Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T18:23:57.995Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T18:23:58.006Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T18:27:06.212Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T18:27:06.238Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:14:31.019Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:14:31.027Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:18:29.004Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:18:29.016Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:22:44.918Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:22:44.930Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:22:46.820Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:22:46.824Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:31:22.277Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:31:22.290Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:31:33.533Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:31:33.538Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:40:12.634Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:40:12.647Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:40:14.457Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:40:14.462Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:40:16.333Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:40:16.338Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:46:33.826Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:46:33.835Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:46:36.004Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:46:36.008Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-01-29T20:46:37.014Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-01-29T20:46:37.018Z"}

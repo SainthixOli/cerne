@@ -61,9 +61,12 @@ exports.register = async (req, res) => {
         // Usuário disse: "Linha do histórico... eu rejeitei... eu fiz um novo".
         // Então devemos permitir múltiplos.
 
+        // Generate Protocol (Simple 8-char alphanumeric, uppercase)
+        const protocol = '#' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
         await db.run(
-            `INSERT INTO filiacoes (user_id, status) VALUES (?, 'em_processamento')`,
-            [profileId]
+            `INSERT INTO filiacoes (user_id, status, protocolo, status_atendimento) VALUES (?, 'em_processamento', ?, 'aberto')`,
+            [profileId, protocol]
         );
 
         // Gerar PDF
@@ -134,6 +137,10 @@ exports.getAllAffiliations = async (req, res) => {
                 f.status, 
                 f.data_solicitacao, 
                 f.observacoes_admin,
+                f.protocolo,
+                f.responsavel_admin_id,
+                f.status_atendimento,
+                f.transfer_status,
                 d.url_arquivo,
                 (SELECT COUNT(*) FROM filiacoes WHERE user_id = p.id) as total_requests
             FROM filiacoes f
@@ -212,6 +219,9 @@ exports.approveAffiliation = async (req, res) => {
             console.error('Email Send Failed:', emailErr.message);
         }
 
+        // 7. DELETAR Chat de Filiação (Requisito: Chat temporário deve sumir ao aprovar)
+        await db.run('DELETE FROM filiation_chat WHERE filiacao_id = ?', [id]);
+
         // APENAS DEV: Retornar senha temporária
         res.status(200).json({ message: `Affiliation approved.`, tempPassword });
     } catch (error) {
@@ -262,6 +272,148 @@ exports.rejectAffiliation = async (req, res) => {
     }
 };
 
+exports.assumeAffiliation = async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.id;
+
+    try {
+        const db = await getDb();
+
+        // Check if already assumed
+        const current = await db.get('SELECT responsavel_admin_id, protocolo FROM filiacoes WHERE id = ?', [id]);
+        if (!current) return res.status(404).json({ error: 'Affiliation not found' });
+
+        if (current.responsavel_admin_id && current.responsavel_admin_id !== adminId) {
+            // Check if Super Admin? For now, just block.
+            return res.status(400).json({ error: 'Este protocolo já está sendo atendido por outro administrador.' });
+        }
+
+        if (current.responsavel_admin_id === adminId) {
+            return res.status(200).json({ message: 'Você já assumiu este protocolo.', protocol: current.protocolo });
+        }
+
+        // Assume
+        await db.run(
+            `UPDATE filiacoes SET responsavel_admin_id = ?, status_atendimento = 'em_andamento' WHERE id = ?`,
+            [adminId, id]
+        );
+
+        // Notify in chat
+        await db.run(`
+            INSERT INTO filiation_chat (filiacao_id, sender_id, message)
+            VALUES (?, ?, ?)
+        `, [id, adminId, `Olá, eu sou o administrador ${req.user.nome} e assumi seu protocolo ${current.protocolo}. Como posso ajudar?`]);
+
+        res.json({ message: 'Protocolo assumido com sucesso.', protocol: current.protocolo });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.requestTransfer = async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.id; // The requestor
+
+    try {
+        const db = await getDb();
+        const filiacao = await db.get('SELECT responsavel_admin_id FROM filiacoes WHERE id = ?', [id]);
+
+        if (!filiacao) return res.status(404).json({ error: 'Filiation not found' });
+        if (filiacao.responsavel_admin_id !== adminId) return res.status(403).json({ error: 'Você não é o responsável por este protocolo.' });
+
+        await db.run(
+            `UPDATE filiacoes SET transfer_status = 'pending' WHERE id = ?`,
+            [id]
+        );
+
+        res.json({ message: 'Solicitação de transferência enviada ao Super Admin.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.denyTransferRequest = async (req, res) => {
+    const { id } = req.params;
+    const requesterId = req.user.id;
+    const requesterRole = req.user.role;
+
+    if (requesterRole !== 'super_admin') {
+        return res.status(403).json({ error: 'Apenas Super Admins podem gerenciar transferências.' });
+    }
+
+    try {
+        const db = await getDb();
+        const filiacao = await db.get('SELECT responsavel_admin_id FROM filiacoes WHERE id = ?', [id]);
+
+        if (!filiacao) return res.status(404).json({ error: 'Filiação não encontrada.' });
+
+        await db.run(
+            `UPDATE filiacoes SET transfer_status = NULL WHERE id = ?`,
+            [id]
+        );
+
+        await db.run(`
+            INSERT INTO filiation_chat (filiacao_id, sender_id, message)
+            VALUES (?, ?, ?)
+        `, [id, requesterId, `Solicitação de transferência negada.`]);
+
+        res.json({ message: 'Solicitação de transferência negada.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.transferAffiliation = async (req, res) => {
+    const { id } = req.params;
+    const { targetAdminId } = req.body;
+    const requesterId = req.user.id;
+    const requesterRole = req.user.role;
+
+    try {
+        if (requesterRole !== 'super_admin') {
+            return res.status(403).json({ error: 'Apenas Super Admins podem transferir atendimentos.' });
+        }
+
+        const db = await getDb();
+
+        // Check affiliation
+        const current = await db.get('SELECT responsavel_admin_id, protocolo FROM filiacoes WHERE id = ?', [id]);
+
+        if (!current) return res.status(404).json({ error: 'Filiação não encontrada.' });
+
+        // Check target admin
+        const targetAdmin = await db.get('SELECT id, nome_completo, email FROM profiles WHERE id = ?', [targetAdminId]);
+        if (!targetAdmin) return res.status(404).json({ error: 'Admin de destino não encontrado.' });
+
+        // Update (Clear transfer_status if it was set)
+        await db.run(
+            `UPDATE filiacoes SET responsavel_admin_id = ?, status_atendimento = 'em_andamento', transfer_status = NULL WHERE id = ?`,
+            [targetAdminId, id]
+        );
+
+        // Notify in Chat
+        await db.run(`
+            INSERT INTO filiation_chat (filiacao_id, sender_id, message)
+            VALUES (?, ?, ?)
+        `, [id, requesterId, `Atendimento transferido para o administrador ${targetAdmin.nome_completo}.`]);
+
+        // Audit
+        await auditService.logAction(requesterId, 'TRANSFER_AFFILIATION', id, {
+            from: current.responsavel_admin_id,
+            to: targetAdminId,
+            to_name: targetAdmin.nome_completo
+        });
+
+        res.json({ message: `Atendimento transferido para ${targetAdmin.nome_completo}.` });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.checkStatus = async (req, res) => {
     const { cpf } = req.body;
     try {
@@ -270,21 +422,19 @@ exports.checkStatus = async (req, res) => {
 
         if (!user) return res.status(404).json({ error: 'CPF não encontrado.' });
 
-        const filiacao = await db.get(
-            'SELECT id, status, observacoes_admin, data_aprovacao FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1',
-            [user.id]
-        );
+        // Update query to fetch protocol info and responsible admin
+        const filiacao = await db.get(`
+            SELECT 
+                f.id, f.status, f.observacoes_admin, f.data_aprovacao, f.protocolo, f.status_atendimento,
+                p_admin.nome_completo as responsavel_nome
+            FROM filiacoes f
+            LEFT JOIN profiles p_admin ON f.responsavel_admin_id = p_admin.id
+            WHERE f.user_id = ? 
+            ORDER BY f.data_solicitacao DESC 
+            LIMIT 1
+        `, [user.id]);
 
         if (!filiacao) return res.status(404).json({ error: 'Nenhuma solicitação encontrada.' });
-
-        // Se aprovado, podemos querer "simular" o envio da senha novamente ou apenas mostrá-la se tiver sido aprovada recentemente?
-        // Na verdade, não conseguimos recuperar o hash da senha.
-        // Mas o usuário pediu para "receber uma senha padrão" aqui.
-        // Não podemos mostrar a senha a menos que a redefinamos ou se a armazenarmos temporariamente (má prática).
-        // Por causa do pedido específico do usuário "receber uma senha padrão... aqui é só pra gente ter uma noção":
-        // Vamos retornar uma mensagem dizendo "Verifique seu email", mas se o usuário insistir em ver aqui,
-        // não podemos mostrar a ANTIGA. Só podemos mostrar se acabamos de gerá-la.
-        // Vamos apenas retornar o status. O Admin vê a senha no console/resposta ao aprovar.
 
         // Check for messages
         const messageCount = await db.get(
@@ -298,7 +448,10 @@ exports.checkStatus = async (req, res) => {
             status: filiacao.status, // em_processamento, concluido, rejeitado
             observacoes: filiacao.observacoes_admin,
             status_conta: user.status_conta,
-            message_count: messageCount?.count || 0
+            message_count: messageCount?.count || 0,
+            protocolo: filiacao.protocolo || 'Pendente',
+            responsavel: filiacao.responsavel_nome || null,
+            status_atendimento: filiacao.status_atendimento
         });
 
     } catch (error) {
@@ -359,11 +512,16 @@ exports.getChatMessages = async (req, res) => {
 
         if (!filiacao) return res.status(404).json({ error: 'Filiation not found' });
 
-        const isPublicAccess = cpfHeader && filiacao.cpf === cpfHeader;
+        const isPublicAccess = cpfHeader && filiacao.cpf.replace(/\D/g, '') === cpfHeader.replace(/\D/g, '');
         const isAuthAccess = req.user && (req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.id === filiacao.user_id);
 
         if (!isPublicAccess && !isAuthAccess) {
             return res.status(403).json({ error: 'Access denied' });
+        }
+
+        // Auto-clean para Rejeitados (7 dias de expiração)
+        if (filiacao.status === 'rejeitado') {
+            await db.run(`DELETE FROM filiation_chat WHERE filiacao_id = ? AND created_at < date('now', '-7 days')`, [id]);
         }
 
         const messages = await db.all(`
@@ -387,6 +545,8 @@ exports.sendChatMessage = async (req, res) => {
     const { message } = req.body;
     const cpfHeader = req.headers['x-cpf'];
 
+    console.log(`[ChatDebug] Sending message to ${id}. Content: ${message}. CPF Header: ${cpfHeader}, User ID: ${req.user?.id}`);
+
     // Filtro de Palavras (Simples)
     if (hasProfanity(message)) {
         return res.status(400).json({ error: 'Mensagem inadequada. Por favor, atente-se às regras do chat.' });
@@ -409,7 +569,7 @@ exports.sendChatMessage = async (req, res) => {
 
         let senderId;
 
-        if (cpfHeader && filiacao.cpf === cpfHeader) {
+        if (cpfHeader && filiacao.cpf.replace(/\D/g, '') === cpfHeader.replace(/\D/g, '')) {
             senderId = filiacao.user_id; // O próprio usuário
         } else if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin' || req.user.id === filiacao.user_id)) {
             senderId = req.user.id;

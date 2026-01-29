@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone } from 'lucide-react';
+import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';
 import { toast } from 'react-hot-toast';
@@ -11,14 +11,17 @@ const AdminAffiliates = () => {
     const [affiliations, setAffiliations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('pendentes'); // 'pendentes' | 'aprovados'
+    const [activeTab, setActiveTab] = useState('pendentes'); // 'pendentes' | 'aprovados' | 'meus_protocolos'
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalAction, setModalAction] = useState(null); // 'approve' | 'reject' | 'history' | 'chat' | 'broadcast'
+    const [modalAction, setModalAction] = useState(null); // 'approve' | 'reject' | 'history' | 'chat' | 'broadcast' | 'transfer'
     const [selectedAffiliation, setSelectedAffiliation] = useState(null);
     const [observation, setObservation] = useState('');
     const [historyData, setHistoryData] = useState([]);
+    const [adminsList, setAdminsList] = useState([]); // For Transfer
+    const [selectedAdminId, setSelectedAdminId] = useState(''); // For Transfer
 
     // Broadcast State
     const [broadcastData, setBroadcastData] = useState({ title: '', message: '', target_group: 'all' });
@@ -56,48 +59,84 @@ const AdminAffiliates = () => {
             }
         }
 
+        if (action === 'transfer') {
+            try {
+                const res = await api.get('/admin/users');
+                // Filter only active admins/super_admins
+                const availableAdmins = res.data.filter(u => u.status_conta === 'ativo' && (u.role === 'admin' || u.role === 'super_admin'));
+                setAdminsList(availableAdmins);
+            } catch (err) {
+                toast.error('Erro ao carregar lista de admins');
+            }
+        }
+
         setModalOpen(true);
+    };
+
+    const handleTransfer = async () => {
+        if (!selectedAdminId) return toast.error('Selecione um administrador.');
+
+        try {
+            const res = await api.post(`/affiliations/${selectedAffiliation.id}/transfer`, { targetAdminId: selectedAdminId });
+            toast.success(res.data.message);
+            setModalOpen(false);
+            fetchAffiliations();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Erro ao transferir.');
+        }
+    };
+
+    const handleRequestTransfer = async (id) => {
+        const confirm = window.confirm('Deseja solicitar ao Super Admin a transferência deste atendimento?');
+        if (!confirm) return;
+
+        try {
+            const res = await api.post(`/affiliations/${id}/request-transfer`);
+            toast.success(res.data.message);
+            fetchAffiliations();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Erro ao solicitar transferência.');
+        }
     };
 
     const handleConfirmAction = async () => {
         if (!selectedAffiliation) return;
 
-        try {
-            const endpoint = modalAction === 'approve'
-                ? `/affiliations/${selectedAffiliation.id}/approve`
-                : `/affiliations/${selectedAffiliation.id}/reject`;
+        const endpoint = modalAction === 'approve'
+            ? `/affiliations/${selectedAffiliation.id}/approve`
+            : `/affiliations/${selectedAffiliation.id}/reject`;
 
-            const response = await api.post(endpoint, { observacoes: observation });
+        const promise = api.post(endpoint, { observacoes: observation });
 
-            if (modalAction === 'approve') {
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#3b82f6', '#10b981', '#ffffff']
-                });
-
-                if (response.data.tempPassword) {
-                    toast.success(`Aprovado! Senha Temp: ${response.data.tempPassword}`, { duration: 6000 });
-                } else {
-                    toast.success('Filiação aprovada com sucesso!', {
-                        icon: '👏',
-                        style: {
-                            borderRadius: '10px',
-                            background: '#333',
-                            color: '#fff',
-                        },
+        toast.promise(promise, {
+            loading: 'Processando solicitação...',
+            success: (response) => {
+                if (modalAction === 'approve') {
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#3b82f6', '#10b981', '#ffffff']
                     });
+                    if (response.data.tempPassword) {
+                        return `Aprovado! Senha Temp: ${response.data.tempPassword}`;
+                    }
+                    return 'Filiação aprovada com sucesso!';
                 }
-            } else {
-                toast.error('Filiação rejeitada.', { duration: 4000 });
+                return 'Filiação rejeitada com sucesso.';
+            },
+            error: (err) => {
+                console.error(err);
+                return 'Erro ao processar ação. Tente novamente.';
             }
+        });
 
+        try {
+            await promise;
             setModalOpen(false);
             fetchAffiliations();
         } catch (error) {
-            console.error(error);
-            toast.error('Erro ao processar ação');
+            // Error is handled by toast.promise
         }
     };
 
@@ -112,11 +151,34 @@ const AdminAffiliates = () => {
         }
     };
 
+    const handleAssumeProtocol = async (id) => {
+        try {
+            const response = await api.post(`/affiliations/${id}/assume`);
+            toast.success(response.data.message);
+            fetchAffiliations();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Erro ao assumir protocolo');
+        }
+    };
+
     const filteredAffiliations = affiliations.filter(aff => {
-        const matchesSearch = aff.nome.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = aff.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (aff.protocolo && aff.protocolo.toLowerCase().includes(searchTerm.toLowerCase()));
+
         const isApproved = aff.status === 'concluido';
 
+        if (activeTab === 'meus_protocolos') {
+            return matchesSearch && aff.responsavel_admin_id === currentUser.id;
+        }
         if (activeTab === 'aprovados') return matchesSearch && isApproved;
+
+        if (activeTab === 'solicitacoes') {
+            // Only show those with transfer_status 'pending'
+            return matchesSearch && aff.transfer_status === 'pending';
+        }
+
+        // Pendentes: Not approved AND (Not assigned OR Assigned to me OR Assigned to someone else but showed in general list? 
+        // Usually 'pendentes' implies 'work queue'. Let's show all unapproved.)
         return matchesSearch && !isApproved;
     });
 
@@ -173,17 +235,37 @@ const AdminAffiliates = () => {
                         : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                         }`}
                 >
-                    Solicitações Pendentes
+                    Fila Geral
+                </button>
+                <button
+                    onClick={() => setActiveTab('meus_protocolos')}
+                    className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'meus_protocolos'
+                        ? 'bg-white dark:bg-white/10 text-purple-600 dark:text-purple-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
+                        }`}
+                >
+                    Meus Protocolos
                 </button>
                 <button
                     onClick={() => setActiveTab('aprovados')}
                     className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'aprovados'
-                        ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm'
+                        ? 'bg-white dark:bg-white/10 text-green-600 dark:text-green-400 shadow-sm'
                         : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                         }`}
                 >
-                    Filiados Ativos
+                    Histórico
                 </button>
+                {currentUser.role === 'super_admin' && (
+                    <button
+                        onClick={() => setActiveTab('solicitacoes')}
+                        className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'solicitacoes'
+                            ? 'bg-white dark:bg-white/10 text-orange-600 dark:text-orange-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
+                            }`}
+                    >
+                        Solicitações
+                    </button>
+                )}
             </div>
 
             <div className="glass-panel overflow-hidden">
@@ -222,18 +304,25 @@ const AdminAffiliates = () => {
                                 filteredAffiliations.map((affiliation) => (
                                     <tr key={affiliation.id} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition duration-200">
                                         <td className="px-8 py-5 font-medium text-gray-900 dark:text-white">
-                                            <div className="flex items-center">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs mr-3">
-                                                    {affiliation.nome.charAt(0)}
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs mr-3">
+                                                        {affiliation.nome.charAt(0)}
+                                                    </div>
+                                                    {affiliation.nome}
+                                                    {affiliation.total_requests > 1 && (
+                                                        <button
+                                                            onClick={() => openModal(affiliation, 'history')}
+                                                            className="ml-2 inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 cursor-pointer"
+                                                        >
+                                                            +{affiliation.total_requests - 1}
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                {affiliation.nome}
-                                                {affiliation.total_requests > 1 && (
-                                                    <button
-                                                        onClick={() => openModal(affiliation, 'history')}
-                                                        className="ml-2 inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 hover:bg-purple-200 cursor-pointer"
-                                                    >
-                                                        +{affiliation.total_requests - 1}
-                                                    </button>
+                                                {affiliation.protocolo && (
+                                                    <span className="ml-11 text-xs text-gray-400 font-mono mt-1">
+                                                        {affiliation.protocolo}
+                                                    </span>
                                                 )}
                                             </div>
                                         </td>
@@ -242,15 +331,27 @@ const AdminAffiliates = () => {
                                             {new Date(affiliation.data_solicitacao).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-5">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${affiliation.status === 'concluido' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' :
-                                                affiliation.status === 'rejeitado' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
-                                                    affiliation.status_conta === 'pendente_docs' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
-                                                        'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
-                                                }`}>
-                                                {affiliation.status === 'concluido' ? 'Aprovado' :
-                                                    affiliation.status === 'rejeitado' ? 'Rejeitado' :
-                                                        affiliation.status_conta === 'pendente_docs' ? 'Aguardando Docs' : 'Em Análise'}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold w-fit border ${affiliation.status === 'concluido' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' :
+                                                    affiliation.status === 'rejeitado' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
+                                                        affiliation.status_conta === 'pendente_docs' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
+                                                            'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
+                                                    }`}>
+                                                    {affiliation.status === 'concluido' ? 'Aprovado' :
+                                                        affiliation.status === 'rejeitado' ? 'Rejeitado' :
+                                                            affiliation.status_conta === 'pendente_docs' ? 'Aguardando Docs' : 'Em Análise'}
+                                                </span>
+                                                {affiliation.status_atendimento === 'em_andamento' && (
+                                                    <span className="text-[10px] text-blue-500 font-semibold uppercase tracking-wide">
+                                                        {affiliation.responsavel_admin_id === currentUser.id ? 'Atendido por você' : 'Em atendimento'}
+                                                    </span>
+                                                )}
+                                                {affiliation.transfer_status === 'pending' && (
+                                                    <span className="flex items-center gap-1 text-[10px] text-orange-500 font-bold uppercase tracking-wide">
+                                                        <MessageCircleWarning size={12} /> Solic. Transferência
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-5 text-right space-x-2">
                                             {affiliation.url_arquivo && (
@@ -265,31 +366,93 @@ const AdminAffiliates = () => {
                                                     <FileText size={20} />
                                                 </button>
                                             )}
+
+                                            {/* Logic for actions: */}
+                                            {/* 1. If not assumed by anyone: Show "Assume" button */}
+                                            {/* 2. If assumed by ME: Show Approve/Reject AND Request Transfer */}
+                                            {/* 3. If assumed by OTHERS: Show View Only (maybe chat) - buttons hidden */}
+
+                                            {(!affiliation.responsavel_admin_id && affiliation.status !== 'concluido' && affiliation.status !== 'rejeitado') && (
+                                                <button
+                                                    onClick={() => handleAssumeProtocol(affiliation.id)}
+                                                    className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-200 transition"
+                                                >
+                                                    Assumir
+                                                </button>
+                                            )}
+
+                                            {/* Super Admin Transfer Button OR if Transfer Requested */}
+                                            {(currentUser.role === 'super_admin' && (affiliation.status_atendimento === 'em_andamento' || affiliation.transfer_status === 'pending')) && (
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={() => openModal(affiliation, 'transfer')}
+                                                        className={`p-2 rounded-xl transition ${affiliation.transfer_status === 'pending' ? 'text-orange-600 bg-orange-100 hover:bg-orange-200 animate-pulse' : 'text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
+                                                        title={affiliation.transfer_status === 'pending' ? "Aprovar Transferência (Trocar Admin)" : "Transferir Atendimento"}
+                                                    >
+                                                        <ArrowRightLeft size={20} />
+                                                    </button>
+                                                    {affiliation.transfer_status === 'pending' && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (!window.confirm('Negar solicitação de transferência?')) return;
+                                                                try {
+                                                                    await api.post(`/affiliations/${affiliation.id}/deny-transfer`);
+                                                                    toast.success('Solicitação negada.');
+                                                                    fetchAffiliations();
+                                                                } catch (e) { toast.error('Erro ao negar.'); }
+                                                            }}
+                                                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition"
+                                                            title="Negar Transferência"
+                                                        >
+                                                            <X size={20} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
+                                                <>
+                                                    <button onClick={() => openModal(affiliation, 'approve')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition" title="Aprovar">
+                                                        <Check size={20} />
+                                                    </button>
+                                                    <button onClick={() => openModal(affiliation, 'reject')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition" title="Rejeitar">
+                                                        <X size={20} />
+                                                    </button>
+                                                    {/* Request Transfer Button for Regular Admins */}
+                                                    {!affiliation.transfer_status && (
+                                                        <button
+                                                            onClick={() => handleRequestTransfer(affiliation.id)}
+                                                            className="p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition"
+                                                            title="Solicitar Transferência"
+                                                        >
+                                                            <MessageCircleWarning size={20} />
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
                                             <button
                                                 onClick={() => {
-                                                    // Redirect to ChatManager with user context
-                                                    navigate('/admin/chat', {
-                                                        state: {
-                                                            startChatWith: affiliation.user_id,
-                                                            userName: affiliation.nome
-                                                        }
-                                                    });
+                                                    // Logic:
+                                                    // If Approved -> Official Chat (ChatManager)
+                                                    // If Pending/Rejected -> Affiliation Chat (Modal)
+                                                    if (affiliation.status === 'concluido') {
+                                                        navigate('/admin/chat', {
+                                                            state: {
+                                                                startChatWith: affiliation.user_id,
+                                                                userName: affiliation.nome
+                                                            }
+                                                        });
+                                                    } else {
+                                                        openModal(affiliation, 'chat');
+                                                    }
                                                 }}
-                                                className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition"
-                                                title="Chat"
+                                                className={`p-2 rounded-xl transition ${affiliation.status === 'concluido'
+                                                    ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                                    : 'text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                                                title={affiliation.status === 'concluido' ? "Chat Oficial" : "Chat de Protocolo"}
                                             >
                                                 <MessageCircle size={20} />
                                             </button>
-                                            {activeTab === 'pendentes' && affiliation.status !== 'rejeitado' && (
-                                                <>
-                                                    <button onClick={() => openModal(affiliation, 'approve')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition">
-                                                        <Check size={20} />
-                                                    </button>
-                                                    <button onClick={() => openModal(affiliation, 'reject')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition">
-                                                        <X size={20} />
-                                                    </button>
-                                                </>
-                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -368,6 +531,31 @@ const AdminAffiliates = () => {
                                 <div className="flex justify-end mt-4 space-x-3">
                                     <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
                                     <button onClick={handleSendBroadcast} className="btn-primary px-4 py-2 bg-purple-600 hover:bg-purple-700">Enviar</button>
+                                </div>
+                            </div>
+                        ) : modalAction === 'transfer' ? (
+                            <div className="space-y-4">
+                                <p className="text-gray-600 dark:text-gray-300">
+                                    Selecione o novo responsável pelo protocolo <strong>{selectedAffiliation?.protocolo}</strong>.
+                                </p>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Novo Responsável</label>
+                                    <select
+                                        className="input-field"
+                                        value={selectedAdminId}
+                                        onChange={(e) => setSelectedAdminId(e.target.value)}
+                                    >
+                                        <option value="">Selecione um administrador...</option>
+                                        {adminsList.map(admin => (
+                                            <option key={admin.id} value={admin.id}>
+                                                {admin.nome_completo} ({admin.role === 'super_admin' ? 'Super' : 'Admin'})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex justify-end mt-4 space-x-3">
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
+                                    <button onClick={handleTransfer} className="btn-primary px-4 py-2">Transferir</button>
                                 </div>
                             </div>
                         ) : (

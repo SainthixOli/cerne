@@ -94,13 +94,29 @@ exports.saveEvaluation = async (req, res) => {
         const evaluatorId = req.user.id;
 
         await db.run(`
-            INSERT INTO admin_evaluations (admin_id, evaluator_id, month_ref, score, feedback)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO admin_evaluations (
+                admin_id, evaluator_id, month_ref, score, feedback,
+                criteria_productivity, criteria_quality, criteria_proactivity, criteria_punctuality,
+                visible_to_collaborator
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(admin_id, month_ref) DO UPDATE SET
             score = excluded.score,
             feedback = excluded.feedback,
-            evaluator_id = excluded.evaluator_id
-        `, [adminId, evaluatorId, month, score, feedback]);
+            evaluator_id = excluded.evaluator_id,
+            criteria_productivity = excluded.criteria_productivity,
+            criteria_quality = excluded.criteria_quality,
+            criteria_proactivity = excluded.criteria_proactivity,
+            criteria_punctuality = excluded.criteria_punctuality,
+            visible_to_collaborator = excluded.visible_to_collaborator
+        `, [
+            adminId, evaluatorId, month, score, feedback,
+            req.body.criteria_productivity || 0,
+            req.body.criteria_quality || 0,
+            req.body.criteria_proactivity || 0,
+            req.body.criteria_punctuality || 0,
+            req.body.visible ? 1 : 0
+        ]);
 
         // Auditoria
         await auditService.logAction(evaluatorId, 'EVALUATE_ADMIN', adminId, { month, score });
@@ -113,6 +129,7 @@ exports.saveEvaluation = async (req, res) => {
 
 exports.getEvaluations = async (req, res) => {
     const { adminId } = req.params;
+    console.log(`[AdminController] getEvaluations. Requester: ${req.user.id} (${req.user.role}), Target: ${adminId}`);
     try {
         if (req.user.role !== 'super_admin' && req.user.id !== adminId) {
             // Admins podem ver suas próprias? O usuário não disse estritamente, mas implicou.
@@ -120,13 +137,22 @@ exports.getEvaluations = async (req, res) => {
             return res.status(403).json({ error: 'Acesso negado.' });
         }
         const db = await getDb();
-        const evaluations = await db.all(`
+
+        let query = `
             SELECT e.*, p.nome_completo as evaluator_name
             FROM admin_evaluations e
             LEFT JOIN profiles p ON e.evaluator_id = p.id
             WHERE e.admin_id = ?
-            ORDER BY e.month_ref DESC
-        `, [adminId]);
+        `;
+
+        // If not super_admin, only show visible evaluations
+        if (req.user.role !== 'super_admin') {
+            query += ` AND e.visible_to_collaborator = 1`;
+        }
+
+        query += ` ORDER BY e.month_ref DESC`;
+
+        const evaluations = await db.all(query, [adminId]);
 
         res.json(evaluations);
     } catch (error) {

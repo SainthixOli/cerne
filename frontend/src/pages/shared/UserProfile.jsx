@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, Briefcase, Save, Edit2, Camera, Shield, BadgeCheck } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
+import EvaluationHistory from '../../components/EvaluationHistory';
 
 const UserProfile = () => {
     const [user, setUser] = useState(null);
@@ -272,6 +273,18 @@ const UserProfile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Performance Section for Admins */}
+            {(user.role === 'admin' || user.role === 'system_manager') && (
+                <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <BadgeCheck className="text-purple-500" /> Minhas Avaliações de Desempenho
+                    </h3>
+                    <div className="glass-panel p-6">
+                        <EvaluationHistory userId={user.id} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

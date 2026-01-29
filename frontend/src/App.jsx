@@ -30,7 +30,46 @@ function App() {
   return (
     <ThemeProvider>
       <LoadingProvider>
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            className: '',
+            style: {
+              background: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              padding: '16px',
+              color: '#1f2937',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              borderRadius: '16px',
+              fontSize: '14px',
+              fontWeight: '500',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10B981',
+                secondary: 'white',
+              },
+              style: {
+                borderLeft: '4px solid #10B981',
+              }
+            },
+            error: {
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: 'white',
+              },
+              style: {
+                borderLeft: '4px solid #EF4444',
+              }
+            },
+            loading: {
+              style: {
+                borderLeft: '4px solid #3B82F6',
+              }
+            }
+          }}
+        />
         <Router>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />

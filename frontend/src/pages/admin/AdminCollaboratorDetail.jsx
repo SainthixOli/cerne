@@ -73,11 +73,24 @@ const AdminCollaboratorDetail = () => {
     const handleEvaluationSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Calculate average score automatically
+            const avgScore = Math.round(
+                ((evaluation.criteria_productivity || 0) +
+                    (evaluation.criteria_quality || 0) +
+                    (evaluation.criteria_proactivity || 0) +
+                    (evaluation.criteria_punctuality || 0)) / 4
+            );
+
             await api.post('/admin/evaluation', {
                 adminId: id,
                 month,
-                score: evaluation.score,
-                feedback: evaluation.feedback
+                score: avgScore, // Keep legacy score column populated just in case
+                feedback: evaluation.feedback,
+                criteria_productivity: evaluation.criteria_productivity,
+                criteria_quality: evaluation.criteria_quality,
+                criteria_proactivity: evaluation.criteria_proactivity,
+                criteria_punctuality: evaluation.criteria_punctuality,
+                visible: evaluation.visible // Send visibility flag
             });
             toast.success('Avaliação salva com sucesso!');
         } catch (error) {
@@ -164,22 +177,52 @@ const AdminCollaboratorDetail = () => {
                     </h2>
 
                     <form onSubmit={handleEvaluationSubmit} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nota de Desempenho</label>
-                            <div className="flex gap-2">
-                                {[1, 2, 3, 4, 5].map(star => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setEvaluation({ ...evaluation, score: star })}
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${evaluation.score >= star
-                                            ? 'bg-yellow-400 text-yellow-900 scale-110 shadow-lg shadow-yellow-400/30'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                            }`}
-                                    >
-                                        ★
-                                    </button>
-                                ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {[
+                                { key: 'criteria_productivity', label: 'Produtividade' },
+                                { key: 'criteria_quality', label: 'Qualidade do Trabalho' },
+                                { key: 'criteria_proactivity', label: 'Proatividade' },
+                                { key: 'criteria_punctuality', label: 'Pontualidade/Assiduidade' }
+                            ].map(criterion => (
+                                <div key={criterion.key}>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">{criterion.label}</label>
+                                        <span className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400">
+                                            {evaluation[criterion.key] || 0}/5
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setEvaluation({ ...evaluation, [criterion.key]: star })}
+                                                className={`flex-1 h-8 rounded-md transition-all ${(evaluation[criterion.key] || 0) >= star
+                                                    ? 'bg-purple-500 text-white shadow-sm'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-300'
+                                                    }`}
+                                                title={`${star} Estrela(s)`}
+                                            >
+                                                ★
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-100 dark:border-white/10">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nota Geral Calculada</label>
+                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl text-center">
+                                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {(
+                                        ((evaluation.criteria_productivity || 0) +
+                                            (evaluation.criteria_quality || 0) +
+                                            (evaluation.criteria_proactivity || 0) +
+                                            (evaluation.criteria_punctuality || 0)) / 4
+                                    ).toFixed(1)}
+                                </span>
+                                <span className="text-xs text-gray-400 ml-2">/ 5.0</span>
                             </div>
                         </div>
 
@@ -192,6 +235,22 @@ const AdminCollaboratorDetail = () => {
                                 onChange={(e) => setEvaluation({ ...evaluation, feedback: e.target.value })}
                                 placeholder="Escreva um parecer sobre o desempenho deste colaborador..."
                             />
+                        </div>
+
+                        <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800/30">
+                            <div>
+                                <h4 className="font-bold text-gray-900 dark:text-white">Compartilhar Avaliação</h4>
+                                <p className="text-xs text-gray-500">Se ativo, o colaborador verá esta nota no perfil dele.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={evaluation.visible || false}
+                                    onChange={(e) => setEvaluation({ ...evaluation, visible: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                            </label>
                         </div>
 
                         <button

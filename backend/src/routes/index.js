@@ -34,6 +34,10 @@ router.get('/affiliations', authenticateToken, affiliationController.getAllAffil
 router.get('/affiliations/:userId/history', authenticateToken, affiliationController.getAffiliationHistory);
 router.post('/affiliations/:id/approve', authenticateToken, affiliationController.approveAffiliation);
 router.post('/affiliations/:id/reject', authenticateToken, affiliationController.rejectAffiliation);
+router.post('/affiliations/:id/assume', authenticateToken, affiliationController.assumeAffiliation);
+router.post('/affiliations/:id/transfer', authenticateToken, affiliationController.transferAffiliation);
+router.post('/affiliations/:id/request-transfer', authenticateToken, affiliationController.requestTransfer);
+router.post('/affiliations/:id/deny-transfer', authenticateToken, affiliationController.denyTransferRequest);
 router.post('/affiliations/status', affiliationController.checkStatus); // Public
 router.get('/affiliations/certificate', authenticateToken, affiliationController.getCertificate);
 

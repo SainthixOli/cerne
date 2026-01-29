@@ -11,6 +11,7 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
 
     const loadMessages = () => {
         const headers = cpf ? { 'x-cpf': cpf } : {};
+        console.log(`[ChatComponent] Fetching messages for Filiacao: ${filiacaoId} | CPF: ${cpf ? cpf : 'Auth'}`);
         api.get(`/affiliations/${filiacaoId}/chat`, { headers, silent: true })
             .then(res => {
                 setMessages(res.data);
@@ -42,8 +43,10 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
             await api.post(`/affiliations/${filiacaoId}/chat`, { message: newMessage }, { headers, silent: true });
             setNewMessage('');
             loadMessages();
+            loadMessages();
         } catch (error) {
-            toast.error('Erro ao enviar mensagem.');
+            console.error(error);
+            toast.error('Erro ao enviar. Verifique sua conexão ou recarregue.');
         }
     };
 
@@ -60,10 +63,11 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
                         </div>
                     </div>
                     <div>
-                        <h3 className="font-bold text-white text-sm">Suporte & Filação</h3>
+                        <h3 className="font-bold text-white text-sm">Suporte & Filiação</h3>
                         <div className="flex items-center space-x-1">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-xs text-blue-200/70">Online</span>
+                            <span className="text-xs text-blue-200/70">Online • ID: {filiacaoId}</span>
+                            <button onClick={loadMessages} className="ml-2 text-xs text-white/50 hover:text-white" title="Recarregar">↻</button>
                         </div>
                     </div>
                 </div>
@@ -91,13 +95,27 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
 
                     let isMe = false;
                     if (cpf) {
-                        // Acesso Público: Eu sou Usuário. Então, se a msg NÃO for admin, sou eu.
+                        // Acesso Público: Eu sou o Usuário (não-admin)
+                        // Mensagens de Admin (esquerda) vs Minhas (direita)
                         isMe = !isAdmin;
                     } else {
-                        // Acesso Logado
-                        const user = JSON.parse(localStorage.getItem('user') || '{}');
-                        const myId = user.id;
-                        isMe = msg.sender_id === myId;
+                        // Acesso Interno (Admin Dashboard ou Logged User)
+                        // Para resolver o conflito de "Auto-Teste" (Admin = Usuário), baseamos no Papel.
+                        // Se estou no Painel Admin, "Eu" sou a Instituição (Admins).
+                        // Mensagens de Usuário -> Esquerda.
+                        // Mensagens de Admin -> Direita.
+
+                        // Verificamos o papel do visualizador atual
+                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        const isViewerAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
+
+                        if (isViewerAdmin) {
+                            // Se sou Admin vendo isso, mensagens de Admin ficam na direita.
+                            isMe = isAdmin;
+                        } else {
+                            // Se sou User logado vendo histórico, mensagens minhas (User) na direita.
+                            isMe = !isAdmin;
+                        }
                     }
 
                     return (

@@ -201,7 +201,10 @@ const CheckStatus = () => {
                                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm bg-white dark:bg-gray-800">
                                     <div>
                                         <h3 className="font-bold text-gray-800 dark:text-white">Suporte Online</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Protocolo: #{String(statusData.id).slice(0, 8)}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {statusData.protocolo ? `Protocolo: ${statusData.protocolo}` : `ID: ${String(statusData.id).slice(0, 8)}`}
+                                            {statusData.responsavel && <span className="block text-blue-600 dark:text-blue-400 font-semibold mt-0.5">Atendido por: {statusData.responsavel}</span>}
+                                        </p>
                                     </div>
                                     <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
                                         <X size={20} className="text-gray-500 dark:text-gray-400" />
