@@ -12,6 +12,9 @@ import filiadoImg from './assets/filiado_dashboard.png';
 import gerenciadorImg from './assets/gerenciador_filiados_superadmin.png';
 import techadminImg from './assets/techadmin_dashboard.png';
 import loginImg from './assets/login.png';
+import avaliacaoImg from './assets/avaliaçao_desempenho_pessoal.png';
+import modoCleanImg from './assets/modo_border_acessibilidade.png';
+import modoNeonImg from './assets/modo_neon_acessibilidade.png';
 import presentationVideo from './assets/video_presentation_updated.mp4';
 
 
