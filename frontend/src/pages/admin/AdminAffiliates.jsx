@@ -493,37 +493,150 @@ const AdminAffiliates = () => {
                                     <button onClick={handleTransfer} className="btn-primary px-4 py-2">Transferir</button>
                                 </div>
                             </div>
-                            </div>
-                    ) : (
-                    <>
-                        <p className="text-gray-600 dark:text-gray-300 mb-6">
-                            {modalAction === 'approve' ? `Aprovar ${selectedAffiliation?.nome}?` : `Rejeitar ${selectedAffiliation?.nome}?`}
-                        </p>
-                        <div className="mb-6">
-                            <label className="block text-sm font-bold mb-2">Observações</label>
-                            <textarea
-                                value={observation}
-                                onChange={(e) => setObservation(e.target.value)}
-                                className="input-field h-32 resize-none"
-                                placeholder="Digite aqui..."
-                            />
-                        </div>
-                        <div className="flex justify-end space-x-4">
-                            <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
-                            <button
-                                onClick={handleConfirmAction}
-                                className={`px-8 py-2 text-white rounded-xl font-bold ${modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
-                            >
-                                Confirmar
-                            </button>
-                        </div>
-                    </>
+                        ) : (
+                            <>
+                                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                                    {modalAction === 'approve' ? `Aprovar ${selectedAffiliation?.nome}?` : `Rejeitar ${selectedAffiliation?.nome}?`}
+                                </p>
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold mb-2">Observações</label>
+                                    <textarea
+                                        value={observation}
+                                        onChange={(e) => setObservation(e.target.value)}
+                                        className="input-field h-32 resize-none"
+                                        placeholder="Digite aqui..."
+                                    />
+                                </div>
+                                <div className="flex justify-end space-x-4">
+                                    <button onClick={() => setModalOpen(false)} className="btn-secondary px-4 py-2">Cancelar</button>
+                                    <button
+                                        onClick={handleConfirmAction}
+                                        className={`px-8 py-2 text-white rounded-xl font-bold ${modalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                                    >
+                                        Confirmar
+                                    </button>
+                                </div>
+                            </>
                         )}
+                    </div>
                 </div>
-                </div>
-    )
-}
-        </div >
+            )}
+
+            {/* Global Floating Dropdown (Google Docs Style) */}
+            {activeDropdownId && (() => {
+                const affiliation = affiliations.find(a => a.id === activeDropdownId);
+                if (!affiliation) return null;
+
+                return (
+                    <div
+                        className="fixed z-[9999] w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-100"
+                        style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                    >
+                        <div className="p-1 space-y-1">
+                            {affiliation.url_arquivo && (
+                                <button
+                                    onClick={() => {
+                                        const filename = affiliation.url_arquivo.split('/').pop().split('\\').pop();
+                                        window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
+                                        setActiveDropdownId(null);
+                                    }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"
+                                >
+                                    <FileText size={16} className="mr-2" /> Ver Documento
+                                </button>
+                            )}
+
+                            {(!affiliation.responsavel_admin_id && affiliation.status !== 'concluido' && affiliation.status !== 'rejeitado') && (
+                                <button
+                                    onClick={() => { handleAssumeProtocol(affiliation.id); setActiveDropdownId(null); }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg font-bold"
+                                >
+                                    <Check size={16} className="mr-2" /> Assumir
+                                </button>
+                            )}
+
+                            {/* My Protocol Actions */}
+                            {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
+                                <>
+                                    <button
+                                        onClick={() => { openModal(affiliation, 'approve'); setActiveDropdownId(null); }}
+                                        className="flex w-full items-center px-3 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
+                                    >
+                                        <Check size={16} className="mr-2" /> Aprovar
+                                    </button>
+                                    <button
+                                        onClick={() => { openModal(affiliation, 'reject'); setActiveDropdownId(null); }}
+                                        className="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                    >
+                                        <X size={16} className="mr-2" /> Rejeitar
+                                    </button>
+                                </>
+                            )}
+
+                            <button
+                                onClick={() => {
+                                    if (affiliation.status === 'concluido') {
+                                        navigate('/admin/chat', { state: { startChatWith: affiliation.user_id, userName: affiliation.nome } });
+                                    } else {
+                                        openModal(affiliation, 'chat');
+                                    }
+                                    setActiveDropdownId(null);
+                                }}
+                                className="flex w-full items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"
+                            >
+                                <MessageCircle size={16} className="mr-2" /> Chat / Docs
+                            </button>
+
+                            {(currentUser.role === 'super_admin' && affiliation.status_atendimento === 'em_andamento' && affiliation.transfer_status !== 'pending') && (
+                                <button
+                                    onClick={() => { openModal(affiliation, 'transfer'); setActiveDropdownId(null); }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg"
+                                >
+                                    <ArrowRightLeft size={16} className="mr-2" /> Transferir
+                                </button>
+                            )}
+
+                            {/* Transfer Request Logic */}
+                            {(String(affiliation.responsavel_admin_id) === String(currentUser.id) && !affiliation.transfer_status && affiliation.status !== 'rejeitado' && affiliation.status !== 'concluido') && (
+                                <button
+                                    onClick={() => { handleRequestTransfer(affiliation.id); setActiveDropdownId(null); }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg"
+                                >
+                                    <MessageCircleWarning size={16} className="mr-2" /> Solicitar Transf.
+                                </button>
+                            )}
+
+                            {/* Super Admin Transfer Request Management */}
+                            {(currentUser.role === 'super_admin' && affiliation.transfer_status === 'pending') && (
+                                <>
+                                    <button
+                                        onClick={() => { openModal(affiliation, 'transfer'); setActiveDropdownId(null); }}
+                                        className="flex w-full items-center px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg font-bold"
+                                    >
+                                        <Check size={16} className="mr-2" /> Aceitar Transf.
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!window.confirm('Negar solicitação de transferência?')) return;
+                                            try {
+                                                await api.post(`/affiliations/${affiliation.id}/deny-transfer`);
+                                                toast.success('Solicitação negada.');
+                                                fetchAffiliations();
+                                                setActiveDropdownId(null);
+                                            } catch (e) { toast.error('Erro ao negar.'); }
+                                        }}
+                                        className="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                    >
+                                        <X size={16} className="mr-2" /> Negar Transf.
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+        </div>
     );
 };
 

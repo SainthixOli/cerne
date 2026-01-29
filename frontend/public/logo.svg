@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0284c7;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background Circle (Core) -->
+  <circle cx="256" cy="256" r="240" fill="url(#grad1)" />
+  
+  <!-- Abstract Nucleus/Cerne Shapes -->
+  <path d="M256 120C180.88 120 120 180.88 120 256C120 331.12 180.88 392 256 392C331.12 392 392 331.12 392 256" stroke="white" stroke-width="32" stroke-linecap="round" fill="none" opacity="0.9" />
+  
+  <circle cx="256" cy="256" r="60" fill="white" filter="url(#glow)" />
+  
+  <!-- Orbiting Dot -->
+  <circle cx="392" cy="256" r="24" fill="white" />
+</svg>
