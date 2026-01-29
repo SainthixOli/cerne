@@ -44,6 +44,10 @@
     @apply w-full px-5 py-3 bg-white/50 border border-gray-200/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white/80 outline-none transition-all duration-300 placeholder-gray-400 backdrop-blur-sm dark:bg-white/5 dark:border-white/10 dark:text-white dark:focus:bg-white/10;
   }
 
+  .action-btn-modal {
+    @apply flex items-center justify-start gap-3 w-full p-4 rounded-xl transition-all duration-200 font-medium text-left border border-transparent hover:border-blue-200 dark:hover:border-blue-800 shadow-sm hover:shadow-md hover:-translate-y-0.5;
+  }
+
   .btn-primary {
     @apply bg-gray-900 text-white hover:bg-black transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 rounded-2xl px-6 py-3 font-medium tracking-wide dark:bg-white dark:text-black dark:hover:bg-gray-200;
   }
