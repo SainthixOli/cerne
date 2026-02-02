@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import SkeletonRow from '../../components/SkeletonRow';
 import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning, MoreVertical } from 'lucide-react';
 import api from '../../api';
@@ -325,7 +326,10 @@ const AdminAffiliates = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">Carregando...</td></tr>
+                                // Show 5 skeleton rows
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <SkeletonRow key={i} />
+                                ))
                             ) : filteredAffiliations.length === 0 ? (
                                 <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">Nenhum registro encontrado.</td></tr>
                             ) : (
