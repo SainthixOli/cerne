@@ -496,67 +496,91 @@ function App() {
             </p>
           </div>
 
-          {/* GALERIA DE NOVIDADES */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-20">
+          {/* GALERIA DE NOVIDADES (LAYOUT EXPANDIDO) */}
+          <div className="flex flex-col gap-12 max-w-5xl mx-auto mb-20 px-4">
             {[
-              { img: avaliacaoImg, title: "Avaliação 360º", desc: "Novo módulo de desempenho pessoal com gráficos." },
-              { img: modoCleanImg, title: "Acessibilidade: Clean", desc: "Modo de alto contraste estrutural para leitura." },
-              { img: modoNeonImg, title: "Acessibilidade: Neon", desc: "Modo otimizado para baixa visão com cores vibrantes." }
+              { img: avaliacaoImg, title: "Avaliação 360º", desc: "Novo módulo de desempenho pessoal com gráficos detalhados." },
+              { img: modoCleanImg, title: "Acessibilidade: Modo Clean", desc: "Alto contraste estrutural. Remove distrações visuais e foca na legibilidade total (ideal para leitura focada)." },
+              { img: modoNeonImg, title: "Acessibilidade: Modo Neon", desc: "Otimização para Baixa Visão. Cores vibrantes sobre fundo escuro para maximizar a distinção de elementos." }
             ].map((item, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.2 }}
-                className="group relative rounded-2xl overflow-hidden border border-white/10 aspect-video bg-slate-900"
+                transition={{ delay: index * 0.1 }}
+                className="group relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
               >
-                <img src={item.img} alt={item.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500 group-hover:scale-105" />
-                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
-                  <h4 className="font-bold text-white text-lg">{item.title}</h4>
-                  <p className="text-sm text-slate-300">{item.desc}</p>
+                {/* Imagem em tamanho maior sem aspect-ratio forçado para desktop */}
+                <div className="relative w-full md:h-[500px] h-[300px]">
+                  <img src={item.img} alt={item.title} className="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition duration-700" />
+                </div>
+
+                <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent">
+                  <h4 className="font-bold text-white text-2xl mb-2">{item.title}</h4>
+                  <p className="text-lg text-slate-300">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
           </div>
 
-          {/* LISTA DE MUDANÇAS (CHANGELOG) */}
-          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 text-left">
+          {/* LISTA DE MUDANÇAS (CHANGELOG DETALHADO) */}
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 text-left p-8 glass-panel rounded-3xl">
             <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <FaUniversalAccess className="text-blue-500" /> Acessibilidade & UI
+              <h3 className="text-3xl font-bold text-white mb-8 flex items-center gap-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400"><FaUniversalAccess size={28} /></div>
+                Acessibilidade Completa
               </h3>
-              <ul className="space-y-4 text-slate-400">
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span><strong>Novo Widget Flutuante:</strong> Controle total de contraste, tamanho de fonte e leitura TTS em todas as páginas.</span>
+              <ul className="space-y-6 text-slate-300 text-lg">
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Leitor de Voz (Text-to-Speech) 🗣️</strong>
+                    O sistema agora "fala". Implementamos um leitor nativo que narra os textos da tela ao clicar, essencial para usuários com dificuldades de leitura ou visão.
+                  </span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span><strong>Identidade Visual CERNE:</strong> Nova animação de login "Orbiting Nucleus" e favicon personalizado.</span>
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Contraste Dinâmico Inteligente 👁️</strong>
+                    Não é apenas inverter cores. O <strong>Modo Neon</strong> usa paletas vibrantes para baixa visão, e o <strong>Modo Clean</strong> simula papel para evitar fadiga visual.
+                  </span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span><strong>Menu Flutuante:</strong> Ações rápidas na tabela de filiados (estilo Docs).</span>
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Controle de Fonte Granular 🔎</strong>
+                    Aumente ou diminua o tamanho do texto em tempo real sem quebrar o layout da aplicação.
+                  </span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <FaShieldAlt className="text-purple-500" /> Sistema & Segurança
+              <h3 className="text-3xl font-bold text-white mb-8 flex items-center gap-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl text-purple-400"><FaShieldAlt size={28} /></div>
+                Sistema & Segurança
               </h3>
-              <ul className="space-y-4 text-slate-400">
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span><strong>Transferência de Protocolos:</strong> Super Admins podem gerenciar e repassar atendimentos.</span>
+              <ul className="space-y-6 text-slate-300 text-lg">
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Transferência de Protocolos 🔄</strong>
+                    Super Admins agora podem intervir, aprovar transferências de responsabilidade e "assumir" filiados órfãos com um clique.
+                  </span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span><strong>Chat Otimizado:</strong> Correção de Rate Limit e modo espectador para auditoria sem interferência.</span>
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Chat Auditável & Spectator Mode 🛡️</strong>
+                    Admins podem monitorar atendimentos em tempo real (modo somente leitura) para garantir a qualidade do suporte, com proteção anti-flood.
+                  </span>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span><strong>Health Checks:</strong> Script de auto-recuperação e verificação de integridade no boot.</span>
+                <li className="flex items-start gap-4">
+                  <span className="mt-2 w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                  <span>
+                    <strong className="text-white block mb-1">Identidade & Auto-Cura 🏥</strong>
+                    Nova identidade visual CERNE com animações de performance. Script de <em className="text-white">Self-Healing</em> verifica a integridade do banco a cada boot.
+                  </span>
                 </li>
               </ul>
             </div>
