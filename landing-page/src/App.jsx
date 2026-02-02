@@ -21,6 +21,43 @@ import presentationVideo from './assets/video_presentation_updated.mp4';
 
 
 
+
+// Components for 3D Tilt
+function TiltCard({ children, className }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-100, 100], [10, -10]);
+  const rotateY = useTransform(x, [-100, 100], [-10, 10]);
+
+  function handleMouse(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    x.set(event.clientX - rect.left - rect.width / 2);
+    y.set(event.clientY - rect.top - rect.height / 2);
+  }
+
+  return (
+    <motion.div
+      style={{ rotateX, rotateY, perspective: 1000 }}
+      onMouseMove={handleMouse}
+      onMouseLeave={() => { x.set(0); y.set(0); }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Text-to-Speech Helper
+const speakText = (text) => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    window.speechSynthesis.speak(utterance);
+  } else {
+    alert("Seu navegador não suporta TTS.");
+  }
+};
+
 function App() {
   const [scrollY, setScrollY] = useState(0);
   const { scrollYProgress } = useScroll();
@@ -182,43 +219,7 @@ function App() {
         </section>
 
 
-// Components for 3D Tilt
-        function TiltCard({children, className}) {
-  const x = useMotionValue(0);
-        const y = useMotionValue(0);
-        const rotateX = useTransform(y, [-100, 100], [10, -10]);
-        const rotateY = useTransform(x, [-100, 100], [-10, 10]);
 
-        function handleMouse(event) {
-    const rect = event.currentTarget.getBoundingClientRect();
-        x.set(event.clientX - rect.left - rect.width / 2);
-        y.set(event.clientY - rect.top - rect.height / 2);
-  }
-
-        return (
-        <motion.div
-          style={{ rotateX, rotateY, perspective: 1000 }}
-          onMouseMove={handleMouse}
-          onMouseLeave={() => { x.set(0); y.set(0); }}
-          className={className}
-        >
-          {children}
-        </motion.div>
-        );
-}
-
-// Text-to-Speech Helper
-const speakText = (text) => {
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'pt-BR';
-        window.speechSynthesis.speak(utterance);
-  } else {
-          alert("Seu navegador não suporta TTS.");
-  }
-};
-
-        // ... (rest of imports)
 
         {/* DEEP DIVE EM SEGURANÇA */}
         <section id="seguranca" className="py-32 relative">
