@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import SkeletonRow from '../../components/SkeletonRow';
 import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning, MoreVertical } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';

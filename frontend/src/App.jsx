@@ -25,6 +25,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import CheckStatus from './pages/public/CheckStatus';
 import SystemDashboard from './pages/system/SystemDashboard';
 import AccessibilityWidget from './components/AccessibilityWidget';
+import CommandPalette from './components/CommandPalette';
 
 function App() {
   return (
@@ -106,6 +107,7 @@ function App() {
             </Route>
           </Routes>
           <AccessibilityWidget />
+          <CommandPalette />
         </Router>
       </LoadingProvider>
     </ThemeProvider>

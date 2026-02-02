@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 import { FaShieldAlt, FaRocket, FaUserShield, FaChartLine, FaComments, FaBolt, FaLock, FaDatabase, FaGithub, FaUniversalAccess } from 'react-icons/fa';
 import logo from './assets/logo.svg';
 
@@ -181,6 +181,45 @@ function App() {
           </div>
         </section>
 
+
+// Components for 3D Tilt
+        function TiltCard({children, className}) {
+  const x = useMotionValue(0);
+        const y = useMotionValue(0);
+        const rotateX = useTransform(y, [-100, 100], [10, -10]);
+        const rotateY = useTransform(x, [-100, 100], [-10, 10]);
+
+        function handleMouse(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+        x.set(event.clientX - rect.left - rect.width / 2);
+        y.set(event.clientY - rect.top - rect.height / 2);
+  }
+
+        return (
+        <motion.div
+          style={{ rotateX, rotateY, perspective: 1000 }}
+          onMouseMove={handleMouse}
+          onMouseLeave={() => { x.set(0); y.set(0); }}
+          className={className}
+        >
+          {children}
+        </motion.div>
+        );
+}
+
+// Text-to-Speech Helper
+const speakText = (text) => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        window.speechSynthesis.speak(utterance);
+  } else {
+          alert("Seu navegador não suporta TTS.");
+  }
+};
+
+        // ... (rest of imports)
+
         {/* DEEP DIVE EM SEGURANÇA */}
         <section id="seguranca" className="py-32 relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[500px] bg-green-500/5 blur-[120px] -z-10"></div>
@@ -194,7 +233,7 @@ function App() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <div className="glass-card p-10 rounded-3xl border border-green-500/20 bg-green-900/5">
+            <TiltCard className="glass-card p-10 rounded-3xl border border-green-500/20 bg-green-900/5 transform transition-transform duration-200">
               <FaShieldAlt className="text-5xl text-green-400 mb-6" />
               <h3 className="text-2xl font-bold mb-4">Pentesting & Auditoria</h3>
               <p className="text-slate-400 leading-relaxed mb-6">
@@ -206,9 +245,9 @@ function App() {
                 <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-md text-xs font-mono text-green-400">SAST/DAST</span>
                 <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-md text-xs font-mono text-green-400">Penetration Testing</span>
               </div>
-            </div>
+            </TiltCard>
 
-            <div className="glass-card p-10 rounded-3xl border border-purple-500/20 bg-purple-900/5">
+            <TiltCard className="glass-card p-10 rounded-3xl border border-purple-500/20 bg-purple-900/5 transform transition-transform duration-200">
               <FaLock className="text-5xl text-purple-400 mb-6" />
               <h3 className="text-2xl font-bold mb-4">Criptografia & Dados</h3>
               <p className="text-slate-400 leading-relaxed mb-6">
@@ -220,7 +259,7 @@ function App() {
                 <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md text-xs font-mono text-purple-400">JWT Seguro</span>
                 <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-md text-xs font-mono text-purple-400">Sanitização SQL</span>
               </div>
-            </div>
+            </TiltCard>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -262,6 +301,12 @@ function App() {
                   <span>Responsividade total para acesso via Celulares simples.</span>
                 </li>
               </ul>
+              <button
+                onClick={() => speakText("Inclusão Digital na Prática. A área do filiado foi desenhada com foco total em acessibilidade. Interface limpa, feedback visual claro e responsividade total.")}
+                className="mt-4 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-bold flex items-center gap-2 hover:bg-orange-500/20 transition cursor-pointer"
+              >
+                <span>🔊</span> Ouvir Exemplo (TTS)
+              </button>
             </div>
             <div className="relative">
               <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-[2rem]"></div>
