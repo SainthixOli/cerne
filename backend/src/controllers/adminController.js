@@ -5,11 +5,26 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.getAuditLogs = async (req, res) => {
     try {
-        // Garantir que apenas super_admin possa acessar
-        if (req.user.role !== 'super_admin') {
-            return res.status(403).json({ error: 'Acesso negado. Apenas Super Admin.' });
+        const db = await getDb();
+        let logs;
+
+        if (req.user.role === 'super_admin') {
+            // Super Admin: Vê tudo
+            logs = await auditService.getLogs(); // Retorna tudo
+        } else {
+            // Regular Admin: Vê suas ações E ações onde ele foi o alvo (ex: Transferência)
+            // Precisamos filtrar. O auditService.getLogs padrão não filtra.
+            // Vamos fazer query direta aqui ou melhorar o service.
+            // Query direta é mais rápido para agora.
+            logs = await db.all(`
+                SELECT a.*, p.nome_completo as admin_name 
+                FROM audit_logs a
+                LEFT JOIN profiles p ON a.admin_id = p.id
+                WHERE a.admin_id = ? 
+                OR a.details LIKE ?
+                ORDER BY a.created_at DESC
+            `, [req.user.id, `%"to":"${req.user.id}"%`]);
         }
-        const logs = await auditService.getLogs();
         res.json(logs);
     } catch (error) {
         res.status(500).json({ error: error.message });

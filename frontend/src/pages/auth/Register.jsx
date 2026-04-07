@@ -47,15 +47,69 @@ const Register = () => {
         }, 250);
     };
 
+    const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
+
+    // Simple validation logic
+    const validate = (fieldName, value) => {
+        let errorMsg = '';
+        if (!value) return ''; // Don't validate empty unless required check
+
+        switch (fieldName) {
+            case 'email':
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) errorMsg = 'Email inválido';
+                break;
+            case 'cpf':
+                if (value.length < 14) errorMsg = 'CPF incompleto';
+                break;
+            case 'nome':
+                if (value.split(' ').length < 2) errorMsg = 'Digite seu nome completo';
+                break;
+            default:
+                break;
+        }
+        return errorMsg;
+    };
+
     const handleChange = (e) => {
         let { name, value } = e.target;
         if (name === 'cpf') value = maskCPF(value);
         if (name === 'telefone') value = maskPhone(value);
+
         setFormData({ ...formData, [name]: value });
+
+        // Inline validation
+        if (touched[name]) {
+            const errorMsg = validate(name, value);
+            setErrors(prev => ({ ...prev, [name]: errorMsg }));
+        }
     };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        const errorMsg = validate(name, value);
+        setErrors(prev => ({ ...prev, [name]: errorMsg }));
+    }
 
     const handleRegister = async (e) => {
         e.preventDefault();
+
+        // Final validation check
+        const newErrors = {};
+        Object.keys(formData).forEach(key => {
+            const error = validate(key, formData[key]);
+            if (error) newErrors[key] = error;
+        });
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            setTouched(Object.keys(formData).reduce((acc, k) => ({ ...acc, [k]: true }), {}));
+            setError('Por favor, corrija os erros no formulário.');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await api.post('/register', formData, { responseType: 'blob' });
@@ -67,7 +121,7 @@ const Register = () => {
             link.click();
             setStep(2);
         } catch (err) {
-            setError('Erro ao registrar. Verifique os dados.');
+            setError(err.response?.data?.message || 'Erro ao registrar. Verifique os dados.');
         } finally {
             setLoading(false);
         }
@@ -157,13 +211,32 @@ const Register = () => {
                                         <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
                                             Nome Completo <span className="text-red-500 ml-1">*</span>
                                         </label>
-                                        <input type="text" name="nome" onChange={handleChange} className="input-field" required placeholder="Como consta no RG" />
+                                        <input
+                                            type="text"
+                                            name="nome"
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`input-field ${errors.nome && touched.nome ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            required
+                                            placeholder="Como consta no RG"
+                                        />
+                                        {errors.nome && touched.nome && <span className="text-xs text-red-500 ml-1">{errors.nome}</span>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
                                             CPF <span className="text-red-500 ml-1">*</span>
                                         </label>
-                                        <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="input-field" placeholder="000.000.000-00" required />
+                                        <input
+                                            type="text"
+                                            name="cpf"
+                                            value={formData.cpf}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`input-field ${errors.cpf && touched.cpf ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="000.000.000-00"
+                                            required
+                                        />
+                                        {errors.cpf && touched.cpf && <span className="text-xs text-red-500 ml-1">{errors.cpf}</span>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">
@@ -208,7 +281,15 @@ const Register = () => {
                                                 </div>
                                             </div>
                                         </label>
-                                        <input type="email" name="email" onChange={handleChange} className="input-field" required />
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className={`input-field ${errors.email && touched.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            required
+                                        />
+                                        {errors.email && touched.email && <span className="text-xs text-red-500 ml-1">{errors.email}</span>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 ml-1">Telefone</label>

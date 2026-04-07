@@ -27,7 +27,7 @@ const Sidebar = () => {
                 <img src={brand.client.logo} alt="Logo" className="w-10 h-10" />
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 tracking-tight">{brand.client.shortName}</h2>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Member</p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Área do Filiado</p>
                 </div>
             </div>
 

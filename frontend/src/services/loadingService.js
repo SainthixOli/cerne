@@ -1,39 +1,41 @@
-class LoadingService {
-    constructor() {
-        this.listeners = [];
-        this.isLoading = false;
-        this.requestCount = 0;
-    }
+const subscribers = new Set();
+let requestCount = 0;
+let startTime = 0;
+const minDuration = 800; // 0.8s minimum display
 
-    subscribe(listener) {
-        this.listeners.push(listener);
-        return () => {
-            this.listeners = this.listeners.filter(l => l !== listener);
-        };
-    }
+export const loadingService = {
+    subscribe: (callback) => {
+        subscribers.add(callback);
+        return () => subscribers.delete(callback);
+    },
 
-    notify() {
-        this.listeners.forEach(listener => listener(this.isLoading));
-    }
-
-    start() {
-        this.requestCount++;
-        if (!this.isLoading) {
-            this.isLoading = true;
-            this.notify();
+    start: () => {
+        if (requestCount === 0) {
+            startTime = Date.now();
+            subscribers.forEach(callback => callback(true));
         }
-    }
+        requestCount++;
+    },
 
-    stop() {
-        if (this.requestCount > 0) {
-            this.requestCount--;
+    stop: () => {
+        if (requestCount > 0) {
+            requestCount--;
         }
 
-        if (this.requestCount === 0 && this.isLoading) {
-            this.isLoading = false;
-            this.notify();
+        if (requestCount === 0) {
+            const elapsed = Date.now() - startTime;
+            const remaining = minDuration - elapsed;
+
+            if (remaining > 0) {
+                setTimeout(() => {
+                    // Double check if still 0 requests (user didn't trigger another load)
+                    if (requestCount === 0) {
+                        subscribers.forEach(callback => callback(false));
+                    }
+                }, remaining);
+            } else {
+                subscribers.forEach(callback => callback(false));
+            }
         }
     }
-}
-
-export const loadingService = new LoadingService();
+};

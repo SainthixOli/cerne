@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadingService } from '../services/loadingService';
-import ProceduralLoader from '../components/ProceduralLoader';
+import OrbitLoader from '../components/OrbitLoader';
 
 const LoadingContext = createContext();
 
@@ -16,7 +16,7 @@ export const LoadingProvider = ({ children }) => {
 
     return (
         <LoadingContext.Provider value={{ isLoading }}>
-            {isLoading && <ProceduralLoader />}
+            {isLoading && <OrbitLoader />}
             {children}
         </LoadingContext.Provider>
     );

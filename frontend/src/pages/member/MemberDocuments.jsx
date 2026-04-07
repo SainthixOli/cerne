@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FileText, Download, Eye, UploadCloud, X, File } from 'lucide-react';
 import api from '../../api';
 
-const ProfessorDocuments = () => {
+const MemberDocuments = () => {
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
@@ -47,6 +47,9 @@ const ProfessorDocuments = () => {
         }
     };
 
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isInactive = user?.status_conta === 'inativo'; // Simple check from storage
+
     return (
         <div className="max-w-5xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
@@ -54,22 +57,24 @@ const ProfessorDocuments = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Meus Documentos</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Gerencie seus arquivos e comprovantes.</p>
                 </div>
-                <div className="flex space-x-3">
-                    <button
-                        onClick={() => setIsUploading(true)}
-                        className="glass px-4 py-2.5 rounded-xl flex items-center hover:bg-white/20 transition group"
-                    >
-                        <UploadCloud size={18} className="mr-2 text-blue-500 group-hover:scale-110 transition-transform" />
-                        <span className="font-medium text-gray-700 dark:text-gray-200">Novo Documento</span>
-                    </button>
-                    <button
-                        onClick={() => window.open('http://localhost:3000/api/affiliations/certificate', '_blank')}
-                        className="btn-primary flex items-center px-6 py-2.5"
-                    >
-                        <Download size={18} className="mr-2" />
-                        Baixar Carteirinha
-                    </button>
-                </div>
+                {!isInactive && (
+                    <div className="flex space-x-3">
+                        <button
+                            onClick={() => setIsUploading(true)}
+                            className="glass px-4 py-2.5 rounded-xl flex items-center hover:bg-white/20 transition group"
+                        >
+                            <UploadCloud size={18} className="mr-2 text-blue-500 group-hover:scale-110 transition-transform" />
+                            <span className="font-medium text-gray-700 dark:text-gray-200">Novo Documento</span>
+                        </button>
+                        <button
+                            onClick={() => window.open('http://localhost:3000/api/affiliations/certificate', '_blank')}
+                            className="btn-primary flex items-center px-6 py-2.5"
+                        >
+                            <Download size={18} className="mr-2" />
+                            Baixar Carteirinha
+                        </button>
+                    </div>
+                )}
             </div>
 
             {isUploading && (
@@ -179,4 +184,4 @@ const ProfessorDocuments = () => {
     );
 };
 
-export default ProfessorDocuments;
+export default MemberDocuments;

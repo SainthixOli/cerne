@@ -124,21 +124,25 @@ const UserProfile = () => {
                                         </div>
                                     )}
 
-                                    {/* Upload Overlay */}
-                                    <label htmlFor="photo-upload" className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
-                                        <Camera className="text-white mb-1" size={24} />
-                                        <span className="text-white text-xs font-medium">Alterar Foto</span>
-                                    </label>
-                                    <input
-                                        type="file"
-                                        id="photo-upload"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handlePhotoUpload}
-                                    />
+                                    {/* Upload Overlay - Only if Active */}
+                                    {user.status_conta !== 'inativo' && (
+                                        <>
+                                            <label htmlFor="photo-upload" className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                                                <Camera className="text-white mb-1" size={24} />
+                                                <span className="text-white text-xs font-medium">Alterar Foto</span>
+                                            </label>
+                                            <input
+                                                type="file"
+                                                id="photo-upload"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handlePhotoUpload}
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             </div>
-                            <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full shadow-sm"></div>
+                            <div className={`absolute bottom-2 right-2 w-6 h-6 border-2 border-white dark:border-gray-800 rounded-full shadow-sm ${user.status_conta === 'inativo' ? 'bg-red-500' : 'bg-green-500'}`}></div>
                         </div>
 
                         <div className="flex-grow md:ml-4 mb-2">
@@ -152,15 +156,17 @@ const UserProfile = () => {
                             </p>
                         </div>
 
-                        <button
-                            onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                            className={`px-6 py-2.5 rounded-xl text-white font-medium transition-all shadow-lg flex items-center ${isEditing
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-500/30'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30'
-                                }`}
-                        >
-                            {isEditing ? <><Save size={18} className="mr-2" /> Salvar Alterações</> : <><Edit2 size={18} className="mr-2" /> Editar Perfil</>}
-                        </button>
+                        {user.status_conta !== 'inativo' && (
+                            <button
+                                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                                className={`px-6 py-2.5 rounded-xl text-white font-medium transition-all shadow-lg flex items-center ${isEditing
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-green-500/30'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30'
+                                    }`}
+                            >
+                                {isEditing ? <><Save size={18} className="mr-2" /> Salvar Alterações</> : <><Edit2 size={18} className="mr-2" /> Editar Perfil</>}
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
@@ -263,10 +269,17 @@ const UserProfile = () => {
                             <div className="group">
                                 <label className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Status da Conta</label>
                                 <div className="flex items-center">
-                                    <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                        Ativo
-                                    </span>
+                                    {user.status_conta === 'inativo' ? (
+                                        <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800">
+                                            <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                            Desfiliado / Inativo
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                                            Ativo
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>

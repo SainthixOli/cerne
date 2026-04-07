@@ -58,11 +58,14 @@ const AdminAffiliates = () => {
     const fetchAffiliations = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/affiliations');
+            // Artificial delay to prevent "flicker" and show skeleton
+            const [response] = await Promise.all([
+                api.get('/affiliations'),
+                new Promise(resolve => setTimeout(resolve, 600))
+            ]);
             setAffiliations(response.data);
         } catch (error) {
             console.error('Error fetching affiliations:', error);
-            // alert('Erro ao buscar filiações'); // Removed alert to be less intrusive on load
         } finally {
             setLoading(false);
         }
@@ -133,7 +136,9 @@ const AdminAffiliates = () => {
 
         const endpoint = modalAction === 'approve'
             ? `/affiliations/${selectedAffiliation.id}/approve`
-            : `/affiliations/${selectedAffiliation.id}/reject`;
+            : modalAction === 'reject' ? `/affiliations/${selectedAffiliation.id}/reject`
+                : modalAction === 'approve_disaffiliation' ? `/affiliations/${selectedAffiliation.id}/approve-disaffiliation`
+                    : `/affiliations/${selectedAffiliation.id}/approve-reactivation`;
 
         const promise = api.post(endpoint, { observacoes: observation });
 
@@ -206,9 +211,14 @@ const AdminAffiliates = () => {
             return matchesSearch && aff.transfer_status === 'pending';
         }
 
-        // Pendentes: Not approved AND (Not assigned OR Assigned to me OR Assigned to someone else but showed in general list? 
-        // Usually 'pendentes' implies 'work queue'. Let's show all unapproved.)
-        return matchesSearch && !isApproved;
+        if (activeTab === 'desfiliacoes') {
+            return matchesSearch && (aff.status === 'solicitando_desfiliacao' || aff.status === 'solicitando_reativacao');
+        }
+
+        // Pendentes: Not approved AND (Not assigned OR Assigned to me OR Assigned to someone else but showed in general list?)
+        // Also exclude Disaffiliation requests from "General Queue" if we have a separate tab? 
+        // Maybe keep them but visually distinct. For now, let's exclude specific disaffiliation requests from general queue to keep it clean.
+        return matchesSearch && !isApproved && aff.status !== 'solicitando_desfiliacao' && aff.status !== 'solicitando_reativacao';
     });
 
     const handleExportCSV = () => {
@@ -277,17 +287,27 @@ const AdminAffiliates = () => {
                 </button>
                 <button
                     onClick={() => setActiveTab('aprovados')}
-                    className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'aprovados'
+                    className={`px-6 py-2 rounded-xl font-bold transition-all duration-300 ${activeTab === 'aprovados'
                         ? 'bg-white dark:bg-white/10 text-green-600 dark:text-green-400 shadow-sm'
                         : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                         }`}
                 >
                     Histórico
                 </button>
+                <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-2 self-center"></div>
+                <button
+                    onClick={() => setActiveTab('desfiliacoes')}
+                    className={`px-6 py-2 rounded-xl font-bold transition-all duration-300 ${activeTab === 'desfiliacoes'
+                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
+                        }`}
+                >
+                    Desfiliações
+                </button>
                 {currentUser.role === 'super_admin' && (
                     <button
                         onClick={() => setActiveTab('solicitacoes')}
-                        className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 ${activeTab === 'solicitacoes'
+                        className={`px-6 py-2 rounded-xl font-bold transition-all duration-300 ${activeTab === 'solicitacoes'
                             ? 'bg-white dark:bg-white/10 text-orange-600 dark:text-orange-400 shadow-sm'
                             : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/5'
                             }`}
@@ -411,7 +431,9 @@ const AdminAffiliates = () => {
                                 modalAction === 'reject' ? 'Rejeitar Filiação' :
                                     modalAction === 'history' ? 'Histórico' :
                                         modalAction === 'broadcast' ? 'Novo Comunicado' :
-                                            `Chat - ${selectedAffiliation?.nome}`}
+                                            modalAction === 'approve_disaffiliation' ? 'Confirmar Desfiliação' :
+                                                modalAction === 'approve_reactivation' ? 'Confirmar Reativação' :
+                                                    `Chat - ${selectedAffiliation?.nome}`}
                         </h3>
 
                         {modalAction === 'history' ? (
@@ -593,7 +615,7 @@ const AdminAffiliates = () => {
                                 <MessageCircle size={16} className="mr-2" /> Chat / Docs
                             </button>
 
-                            {(currentUser.role === 'super_admin' && affiliation.status_atendimento === 'em_andamento' && affiliation.transfer_status !== 'pending') && (
+                            {(currentUser.role === 'super_admin' && affiliation.status !== 'concluido' && affiliation.status !== 'rejeitado' && affiliation.transfer_status !== 'pending') && (
                                 <button
                                     onClick={() => { openModal(affiliation, 'transfer'); setActiveDropdownId(null); }}
                                     className="flex w-full items-center px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg"
@@ -636,6 +658,24 @@ const AdminAffiliates = () => {
                                         <X size={16} className="mr-2" /> Negar Transf.
                                     </button>
                                 </>
+                            )}
+
+                            {/* Actions for Disaffiliation / Reactivation */}
+                            {affiliation.status === 'solicitando_desfiliacao' && (
+                                <button
+                                    onClick={() => { openModal(affiliation, 'approve_disaffiliation'); setActiveDropdownId(null); }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold"
+                                >
+                                    <X size={16} className="mr-2" /> Aprovar Desfiliação
+                                </button>
+                            )}
+                            {affiliation.status === 'solicitando_reativacao' && (
+                                <button
+                                    onClick={() => { openModal(affiliation, 'approve_reactivation'); setActiveDropdownId(null); }}
+                                    className="flex w-full items-center px-3 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg font-bold"
+                                >
+                                    <Check size={16} className="mr-2" /> Aprovar Reativação
+                                </button>
                             )}
                         </div>
                     </div>

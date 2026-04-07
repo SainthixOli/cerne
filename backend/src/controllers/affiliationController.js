@@ -418,7 +418,16 @@ exports.checkStatus = async (req, res) => {
     const { cpf } = req.body;
     try {
         const db = await getDb();
-        const user = await db.get('SELECT id, nome_completo, status_conta FROM profiles WHERE cpf = ?', [cpf]);
+
+        // Clean CPF input
+        const cleanCpf = cpf.replace(/\D/g, '');
+
+        // Find user ignoring formatting
+        const user = await db.get(`
+            SELECT id, nome_completo, status_conta 
+            FROM profiles 
+            WHERE REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?
+        `, [cleanCpf]);
 
         if (!user) return res.status(404).json({ error: 'CPF não encontrado.' });
 
@@ -583,6 +592,96 @@ exports.sendChatMessage = async (req, res) => {
         `, [id, senderId, message]);
 
         res.json({ message: 'Message sent' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// --- Desfiliação / Reativação ---
+
+exports.requestDisaffiliation = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const db = await getDb();
+        // Buscar afiliação ativa
+        const lastAffiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? ORDER BY id DESC LIMIT 1', [userId]);
+
+        if (!lastAffiliation) return res.status(404).json({ error: 'Afiliação não encontrada' });
+
+        await db.run('UPDATE filiacoes SET status = ?, status_atendimento = ? WHERE id = ?',
+            ['solicitando_desfiliacao', 'em_andamento', lastAffiliation.id]);
+
+        await auditService.logAction(userId, 'REQUEST_DISAFFILIATION', lastAffiliation.id, { reason: 'Solicitado pelo usuário' });
+
+        res.json({ message: 'Solicitação de desfiliação enviada.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.approveDisaffiliation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = await getDb();
+
+        await db.run(`
+            UPDATE filiacoes 
+            SET status = 'desfiliado', status_atendimento = 'concluido' 
+            WHERE id = ?
+        `, [id]);
+
+        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
+        if (affiliation) {
+            await db.run("UPDATE profiles SET status_conta = 'inativo' WHERE id = ?", [affiliation.user_id]);
+        }
+
+        await auditService.logAction(req.user.id, 'APPROVE_DISAFFILIATION', id, {});
+        res.json({ message: 'Desfiliação concluída.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.requestReactivation = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const db = await getDb();
+
+        const affiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? ORDER BY id DESC LIMIT 1', [userId]);
+        if (!affiliation) return res.status(404).json({ error: 'Registro não encontrado' });
+
+        await db.run(`
+            UPDATE filiacoes 
+            SET status = 'solicitando_reativacao', status_atendimento = 'em_andamento' 
+            WHERE id = ?
+        `, [affiliation.id]);
+
+        await auditService.logAction(userId, 'REQUEST_REACTIVATION', affiliation.id, {});
+        res.json({ message: 'Solicitação de reativação enviada.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.approveReactivation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = await getDb();
+
+        await db.run(`
+            UPDATE filiacoes 
+            SET status = 'concluido', status_atendimento = 'concluido' 
+            WHERE id = ?
+        `, [id]);
+
+        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
+        if (affiliation) {
+            await db.run("UPDATE profiles SET status_conta = 'ativo' WHERE id = ?", [affiliation.user_id]);
+        }
+
+        await auditService.logAction(req.user.id, 'APPROVE_REACTIVATION', id, {});
+        res.json({ message: 'Conta reativada com sucesso.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

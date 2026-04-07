@@ -41,6 +41,12 @@ router.post('/affiliations/:id/deny-transfer', authenticateToken, affiliationCon
 router.post('/affiliations/status', affiliationController.checkStatus); // Public
 router.get('/affiliations/certificate', authenticateToken, affiliationController.getCertificate);
 
+// Desfiliação / Reativação
+router.post('/affiliations/request-disaffiliation', authenticateToken, affiliationController.requestDisaffiliation);
+router.post('/affiliations/request-reactivation', authenticateToken, affiliationController.requestReactivation);
+router.post('/affiliations/:id/approve-disaffiliation', authenticateToken, affiliationController.approveDisaffiliation);
+router.post('/affiliations/:id/approve-reactivation', authenticateToken, affiliationController.approveReactivation);
+
 router.get('/documents/my', authenticateToken, documentController.getMyDocuments);
 router.post('/documents', authenticateToken, upload.single('document'), documentController.uploadDocument);
 router.post('/documents/template', authenticateToken, upload.single('document'), documentController.uploadTemplate);

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, Navigate, useNavigate } from 'react-router-dom';
+import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import NotificationBell from '../components/NotificationBell';
 import AdminSidebar from '../components/AdminSidebar';
+import ProceduralLoader from '../components/ProceduralLoader';
 import api from '../api';
 
 const AdminLayout = () => {
@@ -37,7 +39,7 @@ const AdminLayout = () => {
         verifyAuth();
     }, [token, navigate]);
 
-    if (isAuthenticated === null) return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+    if (isAuthenticated === null) return <div className="flex h-screen items-center justify-center"><ProceduralLoader /></div>;
     if (isAuthenticated === false) return <Navigate to="/login" replace />;
 
     return (
@@ -50,8 +52,17 @@ const AdminLayout = () => {
                     </div>
                     <NotificationBell />
                 </header>
-                <main className="flex-grow overflow-y-auto p-8">
-                    <Outlet />
+                <main className="flex-grow overflow-y-auto p-8 relative">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="h-full"
+                    >
+                        <Outlet />
+                    </motion.div>
                 </main>
             </div>
         </div>

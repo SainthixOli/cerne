@@ -146,25 +146,31 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <form onSubmit={handleSend} className="p-4 bg-white/5 border-t border-white/10 backdrop-blur-md">
-                <div className="relative flex items-center gap-2">
-                    <input
-                        type="text"
-                        className="w-full bg-black/20 text-white placeholder-white/30 border border-white/10 rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all shadow-inner"
-                        placeholder="Digite sua mensagem..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!newMessage.trim()}
-                        className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-600/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                        <Send size={18} />
-                    </button>
+            {/* Input Area - Disabled if Inactive */}
+            {JSON.parse(localStorage.getItem('user') || '{}').status_conta === 'inativo' ? (
+                <div className="p-4 bg-red-500/10 border-t border-red-500/20 backdrop-blur-md text-center">
+                    <p className="text-red-300 text-sm font-medium">Sua conta está desativada. O chat está disponível apenas para leitura.</p>
                 </div>
-            </form>
+            ) : (
+                <form onSubmit={handleSend} className="p-4 bg-white/5 border-t border-white/10 backdrop-blur-md">
+                    <div className="relative flex items-center gap-2">
+                        <input
+                            type="text"
+                            className="w-full bg-black/20 text-white placeholder-white/30 border border-white/10 rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all shadow-inner"
+                            placeholder="Digite sua mensagem..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!newMessage.trim()}
+                            className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-600/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            <Send size={18} />
+                        </button>
+                    </div>
+                </form>
+            )}
         </div>
     );
 };

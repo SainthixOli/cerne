@@ -3,7 +3,7 @@ import { User, Mail, Phone, Briefcase, Save, Edit2, Camera, Shield } from 'lucid
 import api from '../../api';
 import toast from 'react-hot-toast';
 
-const ProfessorProfile = () => {
+const MemberProfile = () => {
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
@@ -239,4 +239,4 @@ const ProfessorProfile = () => {
     );
 };
 
-export default ProfessorProfile;
+export default MemberProfile;

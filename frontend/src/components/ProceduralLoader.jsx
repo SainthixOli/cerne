@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProceduralLoader = () => {
+const ProceduralLoader = ({ message }) => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300">
             <div className="relative w-32 h-32 flex items-center justify-center">
@@ -40,9 +40,9 @@ const ProceduralLoader = () => {
                 </svg>
 
                 {/* Loading Text */}
-                <div className="absolute -bottom-12 text-center">
+                <div className="absolute -bottom-12 text-center w-64">
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-bold tracking-widest text-sm uppercase animate-pulse">
-                        Carregando Dados
+                        {message || 'Carregando Dados'}
                     </span>
                 </div>
             </div>

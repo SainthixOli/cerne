@@ -22,45 +22,17 @@ import presentationVideo from './assets/video_presentation_updated.mp4';
 
 
 
-// Components for 3D Tilt
-function TiltCard({ children, className }) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-100, 100], [10, -10]);
-  const rotateY = useTransform(x, [-100, 100], [-10, 10]);
 
-  function handleMouse(event) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    x.set(event.clientX - rect.left - rect.width / 2);
-    y.set(event.clientY - rect.top - rect.height / 2);
-  }
-
-  return (
-    <motion.div
-      style={{ rotateX, rotateY, perspective: 1000 }}
-      onMouseMove={handleMouse}
-      onMouseLeave={() => { x.set(0); y.set(0); }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-// Text-to-Speech Helper
-const speakText = (text) => {
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    window.speechSynthesis.speak(utterance);
-  } else {
-    alert("Seu navegador não suporta TTS.");
-  }
-};
 
 function App() {
   const [scrollY, setScrollY] = useState(0);
   const { scrollYProgress } = useScroll();
+
+  // Parallax Effects for Orbs
+  const yOrb1 = useTransform(scrollYProgress, [0, 1], [0, 400]);
+  const yOrb2 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const yOrb3 = useTransform(scrollYProgress, [0, 1], [0, 200]);
+
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
@@ -82,10 +54,16 @@ function App() {
         style={{ scaleX }}
       />
 
-      {/* Background Dinâmico (Orbs) */}
-      <div className="glow-blob bg-blue-600 top-[-20%] left-[-10%] mix-blend-screen"></div>
-      <div className="glow-blob bg-purple-600 top-[20%] right-[-10%] animation-delay-2000 mix-blend-screen"></div>
-      <div className="glow-blob bg-pink-600 bottom-[-20%] left-[20%] animation-delay-4000 mix-blend-screen"></div>
+      {/* Background Dinâmico (Parallax Orbs) */}
+      <motion.div style={{ y: yOrb1 }} className="absolute top-[-20%] left-[-10%] z-0">
+        <div className="glow-blob bg-blue-600 mix-blend-screen opacity-30"></div>
+      </motion.div>
+      <motion.div style={{ y: yOrb2 }} className="absolute top-[20%] right-[-10%] z-0">
+        <div className="glow-blob bg-purple-600 animation-delay-2000 mix-blend-screen opacity-30"></div>
+      </motion.div>
+      <motion.div style={{ y: yOrb3 }} className="absolute bottom-[-20%] left-[20%] z-0">
+        <div className="glow-blob bg-pink-600 animation-delay-4000 mix-blend-screen opacity-30"></div>
+      </motion.div>
 
       {/* Barra de Navegação - Glassmorphism */}
       <nav className={`fixed w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-slate-900/80 backdrop-blur-md border-b border-white/5 py-3' : 'py-6'}`}>
@@ -116,20 +94,18 @@ function App() {
               </motion.a>
             ))}
           </div>
-          <motion.a
+          <a
             href="https://github.com/SainthixOli/filiacao_sindicato"
             target="_blank"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-300 px-4 py-2 border border-white/5 rounded-full hover:bg-white/5 hover:border-white/20 transition-all"
+            className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-300 px-4 py-2 border border-white/5 rounded-full hover:bg-white/5 hover:border-white/20 transition-all hover:scale-105"
           >
             <FaGithub size={16} />
             github.com/SainthixOli
-          </motion.a>
+          </a>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
 
         {/* SEÇÃO HERO - Apresentação Principal */}
         <main className="text-center relative z-10 min-h-[80vh] flex flex-col justify-center items-center">
@@ -168,10 +144,10 @@ function App() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex flex-col sm:flex-row justify-center gap-5 mb-20"
           >
-            <a href="https://github.com/SainthixOli/filiacao_sindicato" target="_blank" className="px-8 py-4 bg-white text-slate-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
+            <a href="https://github.com/SainthixOli/filiacao_sindicato" target="_blank" className="px-8 py-4 bg-white text-slate-900 rounded-full font-bold text-lg hover:bg-blue-50 transition-colors flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105">
               <FaGithub /> Acessar Repositório
             </a>
-            <a href="#arquitetura" className="px-8 py-4 glass-panel rounded-full font-bold text-lg hover:bg-white/5 border border-white/10 hover:border-white/30 transition-all flex items-center gap-3">
+            <a href="#arquitetura" className="px-8 py-4 glass-panel rounded-full font-bold text-lg hover:bg-white/5 border border-white/10 hover:border-white/30 transition-colors flex items-center gap-3 hover:scale-105">
               <FaChartLine /> Ver Arquitetura
             </a>
           </motion.div>
@@ -302,12 +278,6 @@ function App() {
                   <span>Responsividade total para acesso via Celulares simples.</span>
                 </li>
               </ul>
-              <button
-                onClick={() => speakText("Inclusão Digital na Prática. A área do filiado foi desenhada com foco total em acessibilidade. Interface limpa, feedback visual claro e responsividade total.")}
-                className="mt-4 px-5 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-bold flex items-center gap-2 hover:bg-orange-500/20 transition cursor-pointer"
-              >
-                <span>🔊</span> Ouvir Exemplo (TTS)
-              </button>
             </div>
             <div className="relative">
               <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-[2rem]"></div>
@@ -658,6 +628,38 @@ function App() {
 
       </div>
     </div >
+  );
+}
+
+
+function TiltCard({ children, className }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-100, 100], [10, -10]);
+  const rotateY = useTransform(x, [-100, 100], [-10, 10]);
+
+  function handleMouseMove(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set(e.clientX - centerX);
+    y.set(e.clientY - centerY);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, perspective: 1000 }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }
 

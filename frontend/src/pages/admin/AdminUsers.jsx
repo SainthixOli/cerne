@@ -134,37 +134,64 @@ const AdminUsers = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {admins.map((admin) => (
-                            <tr
-                                key={admin.id}
-                                onClick={() => navigate(`/admin/users/${admin.id}`)}
-                                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer"
-                            >
-                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{admin.nome_completo}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.cpf}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.email}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${admin.role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                        {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {admin.status_conta}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={(e) => handleStartChat(e, admin.id)}
-                                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition"
-                                        title="Iniciar Conversa"
-                                    >
-                                        <MessageCircle size={18} />
-                                    </button>
+                        {loading ? (
+                            // Skeleton Loading State
+                            [...Array(5)].map((_, i) => (
+                                <tr key={i} className="animate-pulse">
+                                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div></td>
+                                    <td className="px-6 py-4"><div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full ml-auto"></div></td>
+                                </tr>
+                            ))
+                        ) : admins.length === 0 ? (
+                            // Empty State
+                            <tr>
+                                <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                            <Users size={32} className="text-gray-400" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Nenhum colaborador encontrado</h3>
+                                        <p className="text-sm">Cadastre um novo administrador para começar.</p>
+                                    </div>
                                 </td>
                             </tr>
-                        ))}
+                        ) : (
+                            admins.map((admin) => (
+                                <tr
+                                    key={admin.id}
+                                    onClick={() => navigate(`/admin/users/${admin.id}`)}
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition cursor-pointer group"
+                                >
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{admin.nome_completo}</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.cpf}</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{admin.email}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${admin.role === 'super_admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                            }`}>
+                                            {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${admin.status_conta === 'ativo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                                            {admin.status_conta}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={(e) => handleStartChat(e, admin.id)}
+                                            className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition opacity-0 group-hover:opacity-100"
+                                            title="Iniciar Conversa"
+                                        >
+                                            <MessageCircle size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
