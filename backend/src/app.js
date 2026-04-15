@@ -7,6 +7,13 @@ const { csrfProtection } = require('./middlewares/csrf');
 const { sanitizationMiddleware } = require('./middlewares/sanitization');
 const { auditMiddleware } = require('./middlewares/audit');
 const { auditAccessDeniedMiddleware } = require('./middlewares/auditAccessDenied');
+const {
+    detectLoginAnomalies,
+    detectAccessAnomalies,
+    detectXSSAnomalies,
+    detectSQLInjectionAnomalies,
+    detectTokenAnomalies
+} = require('./middlewares/securityDetection');
 
 const app = express();
 
@@ -36,6 +43,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // XSS Sanitization: Remove malicious scripts from input
 app.use(sanitizationMiddleware);
+
+// Security Detection Middleware: Detecta anomalias e padrões suspeitos
+app.use(detectSQLInjectionAnomalies);  // Detecta SQL injection antes de outras operações
+app.use(detectXSSAnomalies);            // Detecta XSS patterns
+app.use(detectTokenAnomalies);          // Detecta token abuse
+app.use(detectAccessAnomalies);         // Detecta access denied spikes
+app.use(detectLoginAnomalies);          // Detecta brute force de login
 
 // Audit Logging: Log sensitive operations
 app.use(auditMiddleware);

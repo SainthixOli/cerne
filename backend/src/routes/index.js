@@ -154,4 +154,7 @@ router.get('/notifications/my', authenticateToken, notificationController.listMy
 const settingsRoutes = require('./settingsRoutes');
 router.use('/settings', settingsRoutes);
 
+const securityRoutes = require('./securityRoutes');
+router.use('/admin/security', securityRoutes);
+
 module.exports = router;
