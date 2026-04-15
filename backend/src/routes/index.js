@@ -154,10 +154,7 @@ router.get('/notifications/my', authenticateToken, notificationController.listMy
 const settingsRoutes = require('./settingsRoutes');
 router.use('/settings', settingsRoutes);
 
-<<<<<<< HEAD
 // Security Alerts Routes (Phase 2 - Admin Técnico Dashboard)
-=======
->>>>>>> 7bd6a32 (FEATURE: Sistema de Alertas de Segurança para Admin Técnico - Detecção em Tempo Real de Anomalias)
 const securityRoutes = require('./securityRoutes');
 router.use('/admin/security', securityRoutes);
 

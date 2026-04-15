@@ -1,19 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
+const path = require('path');
 
 const helmet = require('helmet');
 const { csrfProtection } = require('./middlewares/csrf');
 const { sanitizationMiddleware } = require('./middlewares/sanitization');
 const { auditMiddleware } = require('./middlewares/audit');
 const { auditAccessDeniedMiddleware } = require('./middlewares/auditAccessDenied');
-const {
-    detectLoginAnomalies,
-    detectAccessAnomalies,
-    detectXSSAnomalies,
-    detectSQLInjectionAnomalies,
-    detectTokenAnomalies
-} = require('./middlewares/securityDetection');
 
 // Security Detection Middleware (Phase 2 - Alerts System)
 const {
@@ -52,16 +46,10 @@ app.use(detectSQLInjectionAnomalies);
 app.use(detectXSSAnomalies);
 app.use(detectTokenAnomalies);
 app.use(detectAccessAnomalies);
+app.use(detectLoginAnomalies);
 
 // XSS Sanitization: Remove malicious scripts from input
 app.use(sanitizationMiddleware);
-
-// Security Detection Middleware: Detecta anomalias e padrões suspeitos
-app.use(detectSQLInjectionAnomalies);  // Detecta SQL injection antes de outras operações
-app.use(detectXSSAnomalies);            // Detecta XSS patterns
-app.use(detectTokenAnomalies);          // Detecta token abuse
-app.use(detectAccessAnomalies);         // Detecta access denied spikes
-app.use(detectLoginAnomalies);          // Detecta brute force de login
 
 // Audit Logging: Log sensitive operations
 app.use(auditMiddleware);
@@ -69,11 +57,7 @@ app.use(auditMiddleware);
 // Audit Access Denied: Log 401/403 responses
 app.use(auditAccessDeniedMiddleware);
 
-// Login Anomalies Detection: Brute force, geographic anomalies
-app.use(detectLoginAnomalies);
-
 // Static Files
-const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rotas
