@@ -22,4 +22,10 @@ async function getDb() {
     return dbInstance;
 }
 
-module.exports = { getDb };
+async function closeDb() {
+    if (!dbInstance) return;
+    await dbInstance.close();
+    dbInstance = null;
+}
+
+module.exports = { getDb, closeDb };

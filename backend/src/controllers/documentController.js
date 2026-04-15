@@ -15,8 +15,30 @@ exports.serveDocument = async (req, res) => {
             return res.status(404).json({ error: 'Documento não encontrado' });
         }
 
-        // TODO: Adicionar verificação de permissão aqui (o usuário é admin ou proprietário?)
-        // Por enquanto, assumindo que a rota é protegida por middleware de autenticação (a ser adicionado)
+        const db = await getDb();
+
+        // SECURITY FIX: Verificação de propriedade robusta
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+        
+        if (!isAdmin) {
+            // Usuários comuns: Verificação rigorosa de propriedade
+            const document = await db.get(
+                'SELECT user_id FROM documentos WHERE LOWER(url_arquivo) LIKE LOWER(?) LIMIT 1',
+                [`%${safeFilename}`]
+            );
+
+            if (!document) {
+                return res.status(404).json({ error: 'Documento não encontrado' });
+            }
+
+            // Verificação explícita de propriedade
+            if (document.user_id !== req.user.id) {
+                return res.status(403).json({ 
+                    error: 'Acesso negado: este documento não é seu',
+                    code: 'FORBIDDEN_DOCUMENT_ACCESS'
+                });
+            }
+        }
 
         res.sendFile(filePath);
     } catch (error) {

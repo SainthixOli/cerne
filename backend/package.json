@@ -29,7 +29,12 @@
         "sqlite": "^5.1.1",
         "sqlite3": "^5.1.7",
         "uuid": "^9.0.0",
-        "winston": "^3.19.0"
+<<<<<<< HEAD
+        "winston": "^3.19.0",
+        "xss": "^1.0.15",
+        "speakeasy": "^2.0.0",
+        "qrcode": "^1.5.0",
+        "bcryptjs": "^2.4.3"
     },
     "devDependencies": {
         "cross-env": "^10.1.0",

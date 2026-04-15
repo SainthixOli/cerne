@@ -20,15 +20,27 @@ exports.up = async function (knex) {
         table.datetime('data_solicitacao').defaultTo(knex.fn.now());
         table.datetime('data_aprovacao');
         table.string('status').notNullable().defaultTo('em_processamento');
-        // New constraint note: we just don't add the raw SQL check, allowing any string. 
-        // Or we could add a broader check if we wanted strictness.
-
+        table.string('protocolo');
+        table.string('responsavel_admin_id').references('profiles.id');
+        table.string('status_atendimento').defaultTo('aberto');
+        table.string('transfer_status').nullable();
         table.string('aprovado_por_admin_id').references('profiles.id').onDelete('SET NULL');
         table.text('observacoes_admin');
     });
 
     // 3. Copy data
-    await knex.raw('INSERT INTO filiacoes (id, user_id, data_solicitacao, data_aprovacao, status, aprovado_por_admin_id, observacoes_admin) SELECT id, user_id, data_solicitacao, data_aprovacao, status, aprovado_por_admin_id, observacoes_admin FROM filiacoes_old');
+    await knex.raw(`
+        INSERT INTO filiacoes (
+            id, user_id, data_solicitacao, data_aprovacao, status,
+            protocolo, responsavel_admin_id, status_atendimento, transfer_status,
+            aprovado_por_admin_id, observacoes_admin
+        )
+        SELECT
+            id, user_id, data_solicitacao, data_aprovacao, status,
+            protocolo, responsavel_admin_id, status_atendimento, transfer_status,
+            aprovado_por_admin_id, observacoes_admin
+        FROM filiacoes_old
+    `);
 
     // 4. Drop old table
     await knex.schema.dropTable('filiacoes_old');

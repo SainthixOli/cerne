@@ -1,10 +1,20 @@
 
-exports.up = function (knex) {
+exports.up = async function (knex) {
+    const hasProtocolo = await knex.schema.hasColumn('filiacoes', 'protocolo');
+    const hasResponsavel = await knex.schema.hasColumn('filiacoes', 'responsavel_admin_id');
+    const hasStatusAtendimento = await knex.schema.hasColumn('filiacoes', 'status_atendimento');
+
     return knex.schema.table('filiacoes', function (table) {
-        // Restore columns lost during table recreation
-        table.string('protocolo').unique();
-        table.string('responsavel_admin_id').references('profiles.id');
-        table.string('status_atendimento').defaultTo('aberto');
+        // Idempotent restore for environments where columns already exist.
+        if (!hasProtocolo) {
+            table.string('protocolo').unique();
+        }
+        if (!hasResponsavel) {
+            table.string('responsavel_admin_id').references('profiles.id');
+        }
+        if (!hasStatusAtendimento) {
+            table.string('status_atendimento').defaultTo('aberto');
+        }
     });
 };
 

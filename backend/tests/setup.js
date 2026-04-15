@@ -1,14 +1,17 @@
 process.env.JWT_SECRET = 'test_secret_key_123';
 process.env.NODE_ENV = 'test';
 const knex = require('../src/config/connection');
+const { closeDb } = require('../src/config/database');
 
 beforeAll(async () => {
-    // Run migrations on the test database
+    // Reset schema to avoid stale migration states between runs.
+    await knex.migrate.rollback(undefined, true);
     await knex.migrate.latest();
 });
 
 afterAll(async () => {
-    // Close connection
+    // Close both knex and sqlite singleton used by controllers.
+    await closeDb();
     await knex.destroy();
 });
 

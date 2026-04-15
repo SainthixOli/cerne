@@ -3,7 +3,7 @@ module.exports = {
     testMatch: ['**/tests/**/*.test.js'],
     setupFilesAfterEnv: ['./tests/setup.js'],
     verbose: true,
-    forceExit: true,
+    maxWorkers: 1,
     clearMocks: true,
     resetModules: true,
     restoreMocks: true,

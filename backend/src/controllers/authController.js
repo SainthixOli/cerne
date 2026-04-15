@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 const User = require('../models/User');
+const AuditLogger = require('../config/auditLogger');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 if (!SECRET_KEY) {
@@ -12,22 +13,35 @@ if (!SECRET_KEY) {
 exports.login = async (req, res) => {
     try {
         const { cpf, password } = req.body;
+        const ip = req.ip;
+        const userAgent = req.get('user-agent') || 'unknown';
 
         const user = await User.findByCpf(cpf);
 
         if (!user) {
+            // Log falha de autenticação
+            AuditLogger.authFailure('unknown', ip, 'CPF not found', '/auth/login');
+            AuditLogger.loginAttempt(cpf, ip, userAgent, false, 'user_not_found');
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
 
         if (!user.password_hash) {
+            AuditLogger.authFailure(user.id, ip, 'Password not set', '/auth/login');
+            AuditLogger.loginAttempt(cpf, ip, userAgent, false, 'no_password');
             return res.status(401).json({ error: 'Conta ainda não aprovada ou sem senha definida.' });
         }
 
         const match = await bcrypt.compare(password, user.password_hash);
 
         if (!match) {
+            // Log falha de autenticação
+            AuditLogger.authFailure(user.id, ip, 'Invalid password', '/auth/login');
+            AuditLogger.loginAttempt(cpf, ip, userAgent, false, 'invalid_password');
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
+
+        // Login bem-sucedido - registrar
+        AuditLogger.loginAttempt(cpf, ip, userAgent, true, 'success');
 
         const token = jwt.sign(
             { id: user.id, role: user.role, name: user.nome_completo },
@@ -47,6 +61,7 @@ exports.login = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+        AuditLogger.authFailure('unknown', req.ip, 'Server error', '/auth/login');
         res.status(500).json({ error: 'Erro interno no servidor' });
     }
 };
@@ -56,14 +71,19 @@ exports.changePassword = async (req, res) => {
         const { newPassword } = req.body;
         // SECURITY FIX: Use ID from token, not body
         const userId = req.user.id;
+        const ip = req.ip;
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         await User.updatePassword(userId, hashedPassword);
 
+        // Log mudança de senha bem-sucedida
+        AuditLogger.passwordChange(userId, ip, true, 'success');
+
         res.json({ message: 'Senha alterada com sucesso!' });
     } catch (error) {
         console.error(error);
+        AuditLogger.passwordChange(req.user?.id, req.ip, false, error.message);
         res.status(500).json({ error: 'Erro ao alterar senha' });
     }
 };

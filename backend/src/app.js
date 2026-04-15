@@ -3,24 +3,60 @@ const cors = require('cors');
 const routes = require('./routes');
 
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const { csrfProtection } = require('./middlewares/csrf');
+const { sanitizationMiddleware } = require('./middlewares/sanitization');
+const { auditMiddleware } = require('./middlewares/audit');
+const { auditAccessDeniedMiddleware } = require('./middlewares/auditAccessDenied');
+
+// Security Detection Middleware (Phase 2 - Alerts System)
+const {
+    detectSQLInjectionAnomalies,
+    detectXSSAnomalies,
+    detectTokenAnomalies,
+    detectAccessAnomalies,
+    detectLoginAnomalies
+} = require('./middlewares/securityDetection');
 
 const app = express();
 
 // Security Middleware
 app.use(helmet());
-app.use(cors());
 
-// Limit requests (100 per 15 mins)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
-  message: { error: 'Too many requests, please try again later.' }
-});
-app.use(limiter);
+// CORS: Restritivo - whitelist de origens
+const allowedOrigins = process.env.CORS_ORIGIN ? 
+    process.env.CORS_ORIGIN.split(',') : 
+    ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// CSRF Protection: Proteção leve contra CSRF
+app.use(csrfProtection);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Security Detection: Anomaly detection for real-time alerts
+app.use(detectSQLInjectionAnomalies);
+app.use(detectXSSAnomalies);
+app.use(detectTokenAnomalies);
+app.use(detectAccessAnomalies);
+
+// XSS Sanitization: Remove malicious scripts from input
+app.use(sanitizationMiddleware);
+
+// Audit Logging: Log sensitive operations
+app.use(auditMiddleware);
+
+// Audit Access Denied: Log 401/403 responses
+app.use(auditAccessDeniedMiddleware);
+
+// Login Anomalies Detection: Brute force, geographic anomalies
+app.use(detectLoginAnomalies);
 
 // Static Files
 const path = require('path');
@@ -31,7 +67,7 @@ app.use('/api', routes);
 
 const errorHandler = require('./middlewares/errorHandler');
 app.get('/', (req, res) => {
-  res.send('API CERNE System is running');
+    res.send('API CERNE System is running');
 });
 
 // Global Error Handler

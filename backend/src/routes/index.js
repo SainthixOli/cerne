@@ -5,8 +5,19 @@ const authController = require('../controllers/authController');
 const documentController = require('../controllers/documentController');
 const profileController = require('../controllers/profileController');
 const reportsController = require('../controllers/reportsController');
-const upload = require('../middlewares/upload');
+const { upload, validateAndSaveUpload, saveUploadToDisk, SIZE_LIMITS } = require('../middlewares/upload');
 const { authenticateToken, authenticateTokenOptional } = require('../middlewares/auth');
+const { checkResourceOwnership, checkDocumentOwnership } = require('../middlewares/resourceOwnership');
+const {
+    globalLimiter,
+    authLimiter,
+    passwordResetLimiter,
+    changePasswordLimiter,
+    adminOperationLimiter,
+    uploadLimiter,
+    publicLimiter,
+    sensibleOperationLimiter,
+} = require('../middlewares/rateLimiting');
 
 const { loginSchema, changePasswordSchema } = require('../validations/authValidation');
 const validate = require('../middlewares/validate');
@@ -22,23 +33,30 @@ router.get('/health', async (req, res) => {
     }
 });
 
-router.post('/auth/login', validate(loginSchema), authController.login);
-router.post('/auth/change-password', authenticateToken, validate(changePasswordSchema), authController.changePassword);
-router.post('/auth/forgot-password', authController.forgotPassword);
-router.post('/auth/reset-password', authController.resetPassword);
+router.post('/auth/login', authLimiter, validate(loginSchema), authController.login);
+router.post('/auth/change-password', authenticateToken, changePasswordLimiter, validate(changePasswordSchema), authController.changePassword);
+router.post('/auth/forgot-password', passwordResetLimiter, authController.forgotPassword);
+router.post('/auth/reset-password', passwordResetLimiter, authController.resetPassword);
 
-router.post('/register', affiliationController.register);
-router.post('/upload', upload.single('file'), affiliationController.uploadSignedForm);
+router.post('/register', publicLimiter, affiliationController.register);
+router.post('/upload', 
+    publicLimiter,
+    uploadLimiter,
+    upload.single('file'), 
+    validateAndSaveUpload('file', SIZE_LIMITS.DOCUMENT),
+    saveUploadToDisk(),
+    affiliationController.uploadSignedForm
+);
 
 router.get('/affiliations', authenticateToken, affiliationController.getAllAffiliations);
-router.get('/affiliations/:userId/history', authenticateToken, affiliationController.getAffiliationHistory);
-router.post('/affiliations/:id/approve', authenticateToken, affiliationController.approveAffiliation);
-router.post('/affiliations/:id/reject', authenticateToken, affiliationController.rejectAffiliation);
-router.post('/affiliations/:id/assume', authenticateToken, affiliationController.assumeAffiliation);
-router.post('/affiliations/:id/transfer', authenticateToken, affiliationController.transferAffiliation);
-router.post('/affiliations/:id/request-transfer', authenticateToken, affiliationController.requestTransfer);
-router.post('/affiliations/:id/deny-transfer', authenticateToken, affiliationController.denyTransferRequest);
-router.post('/affiliations/status', affiliationController.checkStatus); // Public
+router.get('/affiliations/:userId/history', authenticateToken, checkResourceOwnership('userId'), affiliationController.getAffiliationHistory);
+router.post('/affiliations/:id/approve', authenticateToken, sensibleOperationLimiter, affiliationController.approveAffiliation);
+router.post('/affiliations/:id/reject', authenticateToken, sensibleOperationLimiter, affiliationController.rejectAffiliation);
+router.post('/affiliations/:id/assume', authenticateToken, adminOperationLimiter, affiliationController.assumeAffiliation);
+router.post('/affiliations/:id/transfer', authenticateToken, sensibleOperationLimiter, affiliationController.transferAffiliation);
+router.post('/affiliations/:id/request-transfer', authenticateToken, adminOperationLimiter, affiliationController.requestTransfer);
+router.post('/affiliations/:id/deny-transfer', authenticateToken, sensibleOperationLimiter, affiliationController.denyTransferRequest);
+router.post('/affiliations/status', publicLimiter, affiliationController.checkStatus); // Public
 router.get('/affiliations/certificate', authenticateToken, affiliationController.getCertificate);
 
 // Desfiliação / Reativação
@@ -48,13 +66,32 @@ router.post('/affiliations/:id/approve-disaffiliation', authenticateToken, affil
 router.post('/affiliations/:id/approve-reactivation', authenticateToken, affiliationController.approveReactivation);
 
 router.get('/documents/my', authenticateToken, documentController.getMyDocuments);
-router.post('/documents', authenticateToken, upload.single('document'), documentController.uploadDocument);
-router.post('/documents/template', authenticateToken, upload.single('document'), documentController.uploadTemplate);
-router.get('/documents/:filename', documentController.serveDocument); // Segurança dentro do controlador ou adicione middleware se necessário
+router.post('/documents', 
+    authenticateToken, 
+    upload.single('document'), 
+    validateAndSaveUpload('document', SIZE_LIMITS.DOCUMENT),
+    saveUploadToDisk(),
+    documentController.uploadDocument
+);
+router.post('/documents/template', 
+    authenticateToken, 
+    upload.single('document'), 
+    validateAndSaveUpload('document', SIZE_LIMITS.TEMPLATE),
+    saveUploadToDisk(),
+    documentController.uploadTemplate
+);
+router.get('/documents/:filename', authenticateToken, checkDocumentOwnership, documentController.serveDocument);
 
-router.get('/profile', authenticateToken, profileController.getProfile);
-router.put('/profile', authenticateToken, profileController.updateProfile);
-router.post('/profile/photo', authenticateToken, upload.single('photo'), profileController.uploadPhoto);
+router.get('/profile', authenticateToken, checkResourceOwnership('id'), profileController.getProfile);
+router.put('/profile', authenticateToken, checkResourceOwnership('id'), profileController.updateProfile);
+router.post('/profile/photo', 
+    authenticateToken, 
+    checkResourceOwnership('id'),
+    upload.single('photo'), 
+    validateAndSaveUpload('photo', SIZE_LIMITS.PHOTO),
+    saveUploadToDisk(),
+    profileController.uploadPhoto
+);
 
 router.get('/reports', authenticateToken, reportsController.getReports);
 
@@ -94,5 +131,9 @@ router.get('/notifications/my', authenticateToken, notificationController.listMy
 
 const settingsRoutes = require('./settingsRoutes');
 router.use('/settings', settingsRoutes);
+
+// Security Alerts Routes (Phase 2 - Admin Técnico Dashboard)
+const securityRoutes = require('./securityRoutes');
+router.use('/admin/security', securityRoutes);
 
 module.exports = router;
