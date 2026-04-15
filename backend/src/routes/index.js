@@ -19,7 +19,29 @@ const {
     sensibleOperationLimiter,
 } = require('../middlewares/rateLimiting');
 
-const { loginSchema, changePasswordSchema } = require('../validations/authValidation');
+const {
+    loginSchema,
+    changePasswordSchema,
+    registerSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
+    affiliationStatusSchema,
+    approveAffiliationSchema,
+    rejectAffiliationSchema,
+    transferAffiliationSchema,
+    requestTransferSchema,
+    requestDisaffiliationSchema,
+    requestReactivationSchema,
+    updateProfileSchema,
+    createAdminSchema,
+    updateAdminStatusSchema,
+    saveEvaluationSchema,
+    startConversationSchema,
+    sendMessageSchema,
+    createBroadcastSchema,
+    approveBroadcastSchema,
+    executeConsoleCommandSchema
+} = require('../validations/schemas');
 const validate = require('../middlewares/validate');
 
 const { runHealthCheck } = require('../utils/healthCheck');
@@ -33,8 +55,8 @@ router.get('/health', async (req, res) => {
     }
 });
 
-router.post('/auth/login', authLimiter, validate(loginSchema), authController.login);
-router.post('/auth/change-password', authenticateToken, changePasswordLimiter, validate(changePasswordSchema), authController.changePassword);
+router.post('/auth/login', authLimiter, authController.login);
+router.post('/auth/change-password', authenticateToken, changePasswordLimiter, authController.changePassword);
 router.post('/auth/forgot-password', passwordResetLimiter, authController.forgotPassword);
 router.post('/auth/reset-password', passwordResetLimiter, authController.resetPassword);
 
@@ -116,16 +138,16 @@ router.get('/affiliations/:id/chat', authenticateTokenOptional, affiliationContr
 router.post('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.sendChatMessage);
 
 const chatController = require('../controllers/chatController');
-router.post('/chat/start', authenticateToken, chatController.startConversation);
+router.post('/chat/start', authenticateToken, sensibleOperationLimiter, chatController.startConversation);
 router.get('/chat/conversations', authenticateToken, chatController.listConversations);
 router.get('/chat/:conversationId/messages', authenticateToken, chatController.getMessages);
-router.post('/chat/:conversationId/messages', authenticateToken, chatController.sendMessage);
+router.post('/chat/:conversationId/messages', authenticateToken, sensibleOperationLimiter, chatController.sendMessage);
 router.get('/chat/admins', authenticateToken, chatController.getAvailableAdmins);
 
 const notificationController = require('../controllers/notificationController');
-router.post('/notifications/broadcast', authenticateToken, notificationController.createBroadcast);
-router.delete('/notifications/:id', authenticateToken, notificationController.deleteBroadcast);
-router.post('/notifications/:id/approve', authenticateToken, notificationController.approveBroadcast); // Apenas Super Admin (validado no controller)
+router.post('/notifications/broadcast', authenticateToken, adminOperationLimiter, notificationController.createBroadcast);
+router.delete('/notifications/:id', authenticateToken, adminOperationLimiter, notificationController.deleteBroadcast);
+router.post('/notifications/:id/approve', authenticateToken, adminOperationLimiter, notificationController.approveBroadcast); // Apenas Super Admin (validado no controller)
 router.get('/notifications/pending', authenticateToken, notificationController.listPendingBroadcasts);
 router.get('/notifications/my', authenticateToken, notificationController.listMyNotifications);
 
