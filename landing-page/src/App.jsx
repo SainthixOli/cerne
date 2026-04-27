@@ -15,7 +15,6 @@ import loginImg from './assets/login.png';
 import avaliacaoImg from './assets/avaliaçao_desempenho_pessoal.png';
 import modoCleanImg from './assets/modo_border_acessibilidade.png';
 import modoNeonImg from './assets/modo_neon_acessibilidade.png';
-import presentationVideo from './assets/video_presentation_updated.mp4';
 
 
 
@@ -432,18 +431,15 @@ function App() {
         <section className="py-20 border-t border-white/5">
           <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
-            {/* VÍDEO DE APRESENTAÇÃO */}
+            {/* FOTO DO DESENVOLVEDOR */}
             <div className="relative group flex justify-center">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-[2.5rem] blur opacity-30 group-hover:opacity-70 transition duration-500 w-full max-w-[340px] mx-auto"></div>
-              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-slate-900 bg-slate-900 aspect-[9/16] max-w-[340px] w-full mx-auto">
-                <video
-                  className="w-full h-full object-cover"
-                  controls
-                  src={presentationVideo}
-                  poster={loginImg}
-                >
-                  Seu navegador não suporta a visualização deste vídeo.
-                </video>
+              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-slate-900 bg-slate-900 aspect-square max-w-[340px] w-full mx-auto group">
+                <img
+                  className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                  src="https://github.com/SainthixOli.png"
+                  alt="Oliver Arthur - Desenvolvedor"
+                />
               </div>
             </div>
 
@@ -467,7 +463,7 @@ function App() {
                   Este projeto é a materialização dos meus estudos em arquitetura de software, segurança e desenvolvimento fullstack.
                 </p>
                 <p>
-                  Fique à vontade para ver o vídeo ao lado onde explico um pouco mais sobre a visão deste projeto.
+                  Fique à vontade para explorar meu trabalho no GitHub (<span className="text-blue-400">@SainthixOli</span>) e entender melhor a visão por trás deste projeto.
                 </p>
 
                 <div className="mt-8 pt-8 border-t border-white/5">
