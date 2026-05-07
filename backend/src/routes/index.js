@@ -8,6 +8,10 @@ const reportsController = require('../controllers/reportsController');
 const { upload, validateAndSaveUpload, saveUploadToDisk, SIZE_LIMITS } = require('../middlewares/upload');
 const { authenticateToken, authenticateTokenOptional } = require('../middlewares/auth');
 const { checkResourceOwnership, checkDocumentOwnership } = require('../middlewares/resourceOwnership');
+// 🏢 NOVO: Importar middlewares de tenant
+const { tenantMiddleware } = require('../middlewares/tenantMiddleware');
+const { ensureTenantIsolation, validateResourceTenant } = require('../middlewares/tenantValidation');
+const { auditTenantAction } = require('../middlewares/tenantSecurity');
 const {
     globalLimiter,
     authLimiter,
@@ -70,44 +74,49 @@ router.post('/upload',
     affiliationController.uploadSignedForm
 );
 
-router.get('/affiliations', authenticateToken, affiliationController.getAllAffiliations);
-router.get('/affiliations/:userId/history', authenticateToken, checkResourceOwnership('userId'), affiliationController.getAffiliationHistory);
-router.post('/affiliations/:id/approve', authenticateToken, sensibleOperationLimiter, affiliationController.approveAffiliation);
-router.post('/affiliations/:id/reject', authenticateToken, sensibleOperationLimiter, affiliationController.rejectAffiliation);
-router.post('/affiliations/:id/assume', authenticateToken, adminOperationLimiter, affiliationController.assumeAffiliation);
-router.post('/affiliations/:id/transfer', authenticateToken, sensibleOperationLimiter, affiliationController.transferAffiliation);
-router.post('/affiliations/:id/request-transfer', authenticateToken, adminOperationLimiter, affiliationController.requestTransfer);
-router.post('/affiliations/:id/deny-transfer', authenticateToken, sensibleOperationLimiter, affiliationController.denyTransferRequest);
-router.post('/affiliations/status', publicLimiter, affiliationController.checkStatus); // Public
-router.get('/affiliations/certificate', authenticateToken, affiliationController.getCertificate);
+router.get('/affiliations', authenticateToken, tenantMiddleware, ensureTenantIsolation, affiliationController.getAllAffiliations);
+router.get('/affiliations/:userId/history', authenticateToken, tenantMiddleware, checkResourceOwnership('userId'), affiliationController.getAffiliationHistory);
+router.post('/affiliations/:id/approve', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), sensibleOperationLimiter, affiliationController.approveAffiliation);
+router.post('/affiliations/:id/reject', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), sensibleOperationLimiter, affiliationController.rejectAffiliation);
+router.post('/affiliations/:id/assume', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), adminOperationLimiter, affiliationController.assumeAffiliation);
+router.post('/affiliations/:id/transfer', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), sensibleOperationLimiter, affiliationController.transferAffiliation);
+router.post('/affiliations/:id/request-transfer', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), adminOperationLimiter, affiliationController.requestTransfer);
+router.post('/affiliations/:id/deny-transfer', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), sensibleOperationLimiter, affiliationController.denyTransferRequest);
+router.post('/affiliations/status', publicLimiter, affiliationController.checkStatus); // Public - sem tenant
+router.get('/affiliations/certificate', authenticateToken, tenantMiddleware, ensureTenantIsolation, affiliationController.getCertificate);
 
 // Desfiliação / Reativação
-router.post('/affiliations/request-disaffiliation', authenticateToken, affiliationController.requestDisaffiliation);
-router.post('/affiliations/request-reactivation', authenticateToken, affiliationController.requestReactivation);
-router.post('/affiliations/:id/approve-disaffiliation', authenticateToken, affiliationController.approveDisaffiliation);
-router.post('/affiliations/:id/approve-reactivation', authenticateToken, affiliationController.approveReactivation);
+router.post('/affiliations/request-disaffiliation', authenticateToken, tenantMiddleware, affiliationController.requestDisaffiliation);
+router.post('/affiliations/request-reactivation', authenticateToken, tenantMiddleware, affiliationController.requestReactivation);
+router.post('/affiliations/:id/approve-disaffiliation', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), affiliationController.approveDisaffiliation);
+router.post('/affiliations/:id/approve-reactivation', authenticateToken, tenantMiddleware, validateResourceTenant('filiacoes', 'id'), affiliationController.approveReactivation);
 
-router.get('/documents/my', authenticateToken, documentController.getMyDocuments);
+router.get('/documents/my', authenticateToken, tenantMiddleware, ensureTenantIsolation, documentController.getMyDocuments);
 router.post('/documents', 
-    authenticateToken, 
+    authenticateToken,
+    tenantMiddleware,
+    ensureTenantIsolation,
     upload.single('document'), 
     validateAndSaveUpload('document', SIZE_LIMITS.DOCUMENT),
     saveUploadToDisk(),
     documentController.uploadDocument
 );
 router.post('/documents/template', 
-    authenticateToken, 
+    authenticateToken,
+    tenantMiddleware,
+    ensureTenantIsolation,
     upload.single('document'), 
     validateAndSaveUpload('document', SIZE_LIMITS.TEMPLATE),
     saveUploadToDisk(),
     documentController.uploadTemplate
 );
-router.get('/documents/:filename', authenticateToken, checkDocumentOwnership, documentController.serveDocument);
+router.get('/documents/:filename', authenticateToken, tenantMiddleware, checkDocumentOwnership, documentController.serveDocument);
 
-router.get('/profile', authenticateToken, checkResourceOwnership('id'), profileController.getProfile);
-router.put('/profile', authenticateToken, checkResourceOwnership('id'), profileController.updateProfile);
+router.get('/profile', authenticateToken, tenantMiddleware, checkResourceOwnership('id'), profileController.getProfile);
+router.put('/profile', authenticateToken, tenantMiddleware, checkResourceOwnership('id'), profileController.updateProfile);
 router.post('/profile/photo', 
-    authenticateToken, 
+    authenticateToken,
+    tenantMiddleware,
     checkResourceOwnership('id'),
     upload.single('photo'), 
     validateAndSaveUpload('photo', SIZE_LIMITS.PHOTO),
@@ -115,41 +124,41 @@ router.post('/profile/photo',
     profileController.uploadPhoto
 );
 
-router.get('/reports', authenticateToken, reportsController.getReports);
+router.get('/reports', authenticateToken, tenantMiddleware, ensureTenantIsolation, reportsController.getReports);
 
 const adminController = require('../controllers/adminController');
 
-router.get('/admin/audit', authenticateToken, adminController.getAuditLogs);
-router.get('/admin/users', authenticateToken, adminController.listAdmins);
-router.post('/admin/users', authenticateToken, adminController.createAdmin);
-router.put('/admin/users/:adminId/status', authenticateToken, adminController.updateAdminStatus);
+router.get('/admin/audit', authenticateToken, tenantMiddleware, ensureTenantIsolation, adminController.getAuditLogs);
+router.get('/admin/users', authenticateToken, tenantMiddleware, ensureTenantIsolation, adminController.listAdmins);
+router.post('/admin/users', authenticateToken, tenantMiddleware, adminController.createAdmin);
+router.put('/admin/users/:adminId/status', authenticateToken, tenantMiddleware, validateResourceTenant('profiles', 'adminId'), adminController.updateAdminStatus);
 
 const systemController = require('../controllers/systemController');
-router.get('/system/stats', authenticateToken, systemController.getSystemStats);
-router.post('/system/console', authenticateToken, systemController.executeConsoleCommand);
+router.get('/system/stats', authenticateToken, tenantMiddleware, ensureTenantIsolation, systemController.getSystemStats);
+router.post('/system/console', authenticateToken, tenantMiddleware, adminController.checkAdmin, systemController.executeConsoleCommand);
 
 // Avaliação e Desempenho do Admin
-router.get('/admin/performance', authenticateToken, adminController.getAdminPerformance);
-router.post('/admin/evaluation', authenticateToken, adminController.saveEvaluation);
-router.get('/admin/evaluation/:adminId', authenticateToken, adminController.getEvaluations);
+router.get('/admin/performance', authenticateToken, tenantMiddleware, ensureTenantIsolation, adminController.getAdminPerformance);
+router.post('/admin/evaluation', authenticateToken, tenantMiddleware, adminController.saveEvaluation);
+router.get('/admin/evaluation/:adminId', authenticateToken, tenantMiddleware, adminController.getEvaluations);
 
 // Chat de Filiação
 router.get('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.getChatMessages);
 router.post('/affiliations/:id/chat', authenticateTokenOptional, affiliationController.sendChatMessage);
 
 const chatController = require('../controllers/chatController');
-router.post('/chat/start', authenticateToken, sensibleOperationLimiter, chatController.startConversation);
-router.get('/chat/conversations', authenticateToken, chatController.listConversations);
-router.get('/chat/:conversationId/messages', authenticateToken, chatController.getMessages);
-router.post('/chat/:conversationId/messages', authenticateToken, sensibleOperationLimiter, chatController.sendMessage);
-router.get('/chat/admins', authenticateToken, chatController.getAvailableAdmins);
+router.post('/chat/start', authenticateToken, tenantMiddleware, sensibleOperationLimiter, chatController.startConversation);
+router.get('/chat/conversations', authenticateToken, tenantMiddleware, ensureTenantIsolation, chatController.listConversations);
+router.get('/chat/:conversationId/messages', authenticateToken, tenantMiddleware, validateResourceTenant('conversations', 'conversationId'), chatController.getMessages);
+router.post('/chat/:conversationId/messages', authenticateToken, tenantMiddleware, validateResourceTenant('conversations', 'conversationId'), sensibleOperationLimiter, chatController.sendMessage);
+router.get('/chat/admins', authenticateToken, tenantMiddleware, ensureTenantIsolation, chatController.getAvailableAdmins);
 
 const notificationController = require('../controllers/notificationController');
-router.post('/notifications/broadcast', authenticateToken, adminOperationLimiter, notificationController.createBroadcast);
-router.delete('/notifications/:id', authenticateToken, adminOperationLimiter, notificationController.deleteBroadcast);
-router.post('/notifications/:id/approve', authenticateToken, adminOperationLimiter, notificationController.approveBroadcast); // Apenas Super Admin (validado no controller)
-router.get('/notifications/pending', authenticateToken, notificationController.listPendingBroadcasts);
-router.get('/notifications/my', authenticateToken, notificationController.listMyNotifications);
+router.post('/notifications/broadcast', authenticateToken, tenantMiddleware, adminOperationLimiter, notificationController.createBroadcast);
+router.delete('/notifications/:id', authenticateToken, tenantMiddleware, validateResourceTenant('notifications', 'id'), adminOperationLimiter, notificationController.deleteBroadcast);
+router.post('/notifications/:id/approve', authenticateToken, tenantMiddleware, validateResourceTenant('notifications', 'id'), adminOperationLimiter, notificationController.approveBroadcast);
+router.get('/notifications/pending', authenticateToken, tenantMiddleware, ensureTenantIsolation, notificationController.listPendingBroadcasts);
+router.get('/notifications/my', authenticateToken, tenantMiddleware, ensureTenantIsolation, notificationController.listMyNotifications);
 
 const settingsRoutes = require('./settingsRoutes');
 router.use('/settings', settingsRoutes);
