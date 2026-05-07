@@ -86,11 +86,12 @@ exports.changePassword = async (req, res) => {
         const { newPassword } = req.body;
         // SECURITY FIX: Use ID from token, not body
         const userId = req.user.id;
+        const tenantId = req.user.tenantId;  // ✅ NOVO: tenantId do JWT
         const ip = req.ip;
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await User.updatePassword(userId, hashedPassword);
+        await User.updatePassword(userId, hashedPassword, tenantId);  // ✅ NOVO: passar tenantId
 
         // Log mudança de senha bem-sucedida
         AuditLogger.passwordChange(userId, ip, true, 'success');
@@ -117,7 +118,15 @@ exports.forgotPassword = async (req, res) => {
         const resetToken = uuidv4();
         const expires = new Date(Date.now() + 3600000); // 1 hora
 
-        await User.setResetToken(user.id, resetToken, expires);
+        // ✅ NOVO: Buscar tenantId do usuário
+        const db = await getDb();
+        const tenantRecord = await db.get(
+            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
+            [user.id]
+        );
+        const tenantId = tenantRecord?.tenant_id || 1;  // Default: tenant 1
+
+        await User.setResetToken(user.id, resetToken, expires, tenantId);  // ✅ NOVO: passar tenantId
 
         // Enviar Email
         const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback se não houver email
@@ -140,9 +149,17 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ error: 'Token inválido ou expirado.' });
         }
 
+        // ✅ NOVO: Buscar tenantId do usuário
+        const db = await getDb();
+        const tenantRecord = await db.get(
+            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
+            [user.id]
+        );
+        const tenantId = tenantRecord?.tenant_id || 1;  // Default: tenant 1
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await User.clearResetTokenAndSetPassword(user.id, hashedPassword);
+        await User.clearResetTokenAndSetPassword(user.id, hashedPassword, tenantId);  // ✅ NOVO: passar tenantId
 
         res.json({ message: 'Senha redefinida com sucesso! Agora você pode fazer login.' });
     } catch (error) {

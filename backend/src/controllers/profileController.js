@@ -4,9 +4,10 @@ const User = require('../models/User');
 exports.getProfile = async (req, res) => {
     try {
         const userId = req.user.id;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         console.log('ProfileController: userId from token:', userId); // Keep existing log
 
-        const profile = await User.findByIdWithFiliation(userId);
+        const profile = await User.findByIdWithFiliation(userId, tenantId);  // ✅ NOVO: passar tenantId
         console.log('ProfileController: profile found:', profile); // Keep existing log
 
         if (!profile) {
@@ -26,13 +27,14 @@ exports.updateProfile = async (req, res) => {
     try {
         const db = await getDb();
         const userId = req.user.id;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const { nome_completo, telefone, email, matricula_funcional } = req.body;
 
         await db.run(`
       UPDATE profiles 
       SET nome_completo = ?, telefone = ?, email = ?, matricula_funcional = ?
-      WHERE id = ?
-    `, [nome_completo, telefone, email, matricula_funcional, userId]);
+      WHERE id = ? AND tenant_id = ?
+    `, [nome_completo, telefone, email, matricula_funcional, userId, tenantId]);  // ✅ NOVO: filtro tenant_id
 
         // Audit if performed by Admin/Super Admin on themselves or others (if logic allowed)
         if (req.user.role === 'admin' || req.user.role === 'super_admin') {
@@ -52,6 +54,7 @@ exports.uploadPhoto = async (req, res) => {
 
         const db = await getDb();
         const userId = req.user.id;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const photoUrl = req.file.path; // Em app real, enviar para S3/Cloudinary e obter URL
 
         // Assuming we have a photo_url column. If not, we might need to add it or use a generic 'documents' table linked to profile?
@@ -65,7 +68,7 @@ exports.uploadPhoto = async (req, res) => {
         // Wait, I can't change schema easily without migration script or manual SQL.
         // I already added reset_token. I can add photo_url.
 
-        await db.run('UPDATE profiles SET photo_url = ? WHERE id = ?', [photoUrl, userId]);
+        await db.run('UPDATE profiles SET photo_url = ? WHERE id = ? AND tenant_id = ?', [photoUrl, userId, tenantId]);  // ✅ NOVO: filtro tenant_id
 
         res.json({ message: 'Photo uploaded', photoUrl });
     } catch (error) {
