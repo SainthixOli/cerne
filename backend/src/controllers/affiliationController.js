@@ -174,12 +174,14 @@ exports.approveAffiliation = async (req, res) => {
     const { id } = req.params;
     const { observacoes } = req.body;
     const adminId = req.user.id;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         await approveAffiliationService({
             affiliationId: id,
             adminId,
-            observacoes
+            observacoes,
+            tenantId  // ✅ NOVO: passar tenantId
         });
 
         res.status(200).json({ message: 'Affiliation approved.' });
@@ -196,12 +198,14 @@ exports.rejectAffiliation = async (req, res) => {
     const { id } = req.params;
     const { observacoes } = req.body;
     const adminId = req.user.id;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         await rejectAffiliationService({
             affiliationId: id,
             adminId,
-            observacoes
+            observacoes,
+            tenantId  // ✅ NOVO: passar tenantId
         });
 
         res.status(200).json({ message: 'Affiliation rejected.' });
@@ -318,8 +322,9 @@ exports.checkStatus = async (req, res) => {
 
 exports.getAffiliationHistory = async (req, res) => {
     const { userId } = req.params;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
     try {
-        const history = await getAffiliationHistoryService(userId);
+        const history = await getAffiliationHistoryService(userId, tenantId);  // ✅ NOVO: passar tenantId
         res.json(history);
     } catch (error) {
         if (error instanceof QueryServiceError) {
@@ -355,7 +360,8 @@ exports.getChatMessages = async (req, res) => {
         const messages = await getChatMessagesService({
             affiliationId: id,
             cpfHeader,
-            reqUser: req.user
+            reqUser: req.user,
+            tenantId: req.user?.tenantId  // ✅ NOVO: passar tenantId se autenticado
         });
         res.json(messages);
     } catch (error) {
@@ -376,7 +382,8 @@ exports.sendChatMessage = async (req, res) => {
             affiliationId: id,
             message,
             cpfHeader,
-            reqUser: req.user
+            reqUser: req.user,
+            tenantId: req.user?.tenantId  // ✅ NOVO: passar tenantId se autenticado
         });
 
         res.json({ message: 'Message sent' });

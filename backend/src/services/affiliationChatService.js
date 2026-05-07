@@ -18,8 +18,37 @@ function hasAccess({ cpfHeader, reqUser, filiacao }) {
     return { isPublicAccess, isAuthAccess };
 }
 
-async function getChatMessages({ affiliationId, cpfHeader, reqUser }) {
-    const filiacao = await affiliationRepository.getAffiliationWithOwnerAndStatus(affiliationId);
+// 🏢 Discover tenantId based on authentication or public access
+async function resolveTenantId(cpfHeader, reqUser) {
+    if (reqUser) {
+        return reqUser.tenantId;  // Authenticated: use from JWT
+    }
+    if (cpfHeader) {
+        // Public access: discover tenant from CPF
+        const cleanCpf = cpfHeader.replace(/\D/g, '');
+        const user = await affiliationRepository.findUserByCpfNormalized(cleanCpf);
+        if (!user) {
+            throw new ChatServiceError('Usuário não encontrado', 404);
+        }
+        const { getDb } = require('../config/database');
+        const db = await getDb();
+        const tenantRecord = await db.get(
+            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
+            [user.id]
+        );
+        return tenantRecord?.tenant_id || 1;  // Default: tenant 1
+    }
+    throw new ChatServiceError('Nenhum tenant identificado', 401);
+}
+
+// 🏢 Tenant-aware: Requires tenantId for data isolation
+async function getChatMessages({ affiliationId, cpfHeader, reqUser, tenantId }) {
+    // If tenantId not passed, resolve it
+    if (!tenantId) {
+        tenantId = await resolveTenantId(cpfHeader, reqUser);
+    }
+
+    const filiacao = await affiliationRepository.getAffiliationWithOwnerAndStatus(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
     if (!filiacao) {
         throw new ChatServiceError('Filiation not found', 404);
     }
@@ -30,18 +59,24 @@ async function getChatMessages({ affiliationId, cpfHeader, reqUser }) {
     }
 
     if (filiacao.status === 'rejeitado') {
-        await affiliationRepository.deleteOldRejectedChatMessages(affiliationId);
+        await affiliationRepository.deleteOldRejectedChatMessages(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
     }
 
-    return affiliationRepository.getChatMessagesByAffiliationId(affiliationId);
+    return affiliationRepository.getChatMessagesByAffiliationId(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
 }
 
-async function sendChatMessage({ affiliationId, message, cpfHeader, reqUser }) {
+// 🏢 Tenant-aware: Requires tenantId for data isolation
+async function sendChatMessage({ affiliationId, message, cpfHeader, reqUser, tenantId }) {
     if (hasProfanity(message)) {
         throw new ChatServiceError('Mensagem inadequada. Por favor, atente-se às regras do chat.', 400);
     }
 
-    const filiacao = await affiliationRepository.getAffiliationWithOwnerAndStatus(affiliationId);
+    // If tenantId not passed, resolve it
+    if (!tenantId) {
+        tenantId = await resolveTenantId(cpfHeader, reqUser);
+    }
+
+    const filiacao = await affiliationRepository.getAffiliationWithOwnerAndStatus(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
     if (!filiacao) {
         throw new ChatServiceError('Filiation not found', 404);
     }
@@ -56,7 +91,7 @@ async function sendChatMessage({ affiliationId, message, cpfHeader, reqUser }) {
         throw new ChatServiceError('Access denied', 403);
     }
 
-    await affiliationRepository.addAffiliationChatMessage(affiliationId, senderId, message);
+    await affiliationRepository.addAffiliationChatMessage(affiliationId, senderId, message, tenantId);  // ✅ NOVO: passar tenantId
 }
 
 module.exports = {

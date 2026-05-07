@@ -10,18 +10,19 @@ class ServiceError extends Error {
     }
 }
 
-async function approveAffiliation({ affiliationId, adminId, observacoes }) {
-    const adminExists = await affiliationRepository.getAdminById(adminId);
+// 🏢 Tenant-aware: Requires tenantId for data isolation
+async function approveAffiliation({ affiliationId, adminId, observacoes, tenantId }) {
+    const adminExists = await affiliationRepository.getAdminById(adminId, tenantId);  // ✅ NOVO: passar tenantId
     if (!adminExists) {
         throw new ServiceError('Sessão inválida ou expirada. Por favor, faça login novamente.', 401);
     }
 
-    const filiacao = await affiliationRepository.getAffiliationById(affiliationId);
+    const filiacao = await affiliationRepository.getAffiliationById(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
     if (!filiacao) {
         throw new ServiceError('Affiliation not found', 404);
     }
 
-    const user = await affiliationRepository.getUserById(filiacao.user_id);
+    const user = await affiliationRepository.getUserById(filiacao.user_id, tenantId);  // ✅ NOVO: passar tenantId
     if (!user) {
         throw new ServiceError('User associated with this affiliation not found.', 404);
     }
@@ -29,9 +30,9 @@ async function approveAffiliation({ affiliationId, adminId, observacoes }) {
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    await affiliationRepository.activateUserWithPassword(filiacao.user_id, hashedPassword);
-    await affiliationRepository.markAffiliationApproved(affiliationId, adminId, observacoes);
-    await affiliationRepository.clearAffiliationChat(affiliationId);
+    await affiliationRepository.activateUserWithPassword(filiacao.user_id, hashedPassword, tenantId);  // ✅ NOVO: passar tenantId
+    await affiliationRepository.markAffiliationApproved(affiliationId, adminId, observacoes, tenantId);  // ✅ NOVO: passar tenantId
+    await affiliationRepository.clearAffiliationChat(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
 
     // Non-blocking side effects
     auditService.logAction(adminId, 'APPROVE_AFFILIATION', affiliationId, {
@@ -48,20 +49,22 @@ async function approveAffiliation({ affiliationId, adminId, observacoes }) {
     });
 }
 
-async function rejectAffiliation({ affiliationId, adminId, observacoes }) {
-    const filiacao = await affiliationRepository.getAffiliationById(affiliationId);
+// 🏢 Tenant-aware: Requires tenantId for data isolation
+async function rejectAffiliation({ affiliationId, adminId, observacoes, tenantId }) {
+    const filiacao = await affiliationRepository.getAffiliationById(affiliationId, tenantId);  // ✅ NOVO: passar tenantId
     if (!filiacao) {
         throw new ServiceError('Affiliation not found', 404);
     }
 
-    const user = await affiliationRepository.getUserById(filiacao.user_id);
+    const user = await affiliationRepository.getUserById(filiacao.user_id, tenantId);  // ✅ NOVO: passar tenantId
 
-    await affiliationRepository.markAffiliationRejected(affiliationId, adminId, observacoes);
-    await affiliationRepository.setUserPendingDocs(filiacao.user_id);
+    await affiliationRepository.markAffiliationRejected(affiliationId, adminId, observacoes, tenantId);  // ✅ NOVO: passar tenantId
+    await affiliationRepository.setUserPendingDocs(filiacao.user_id, tenantId);  // ✅ NOVO: passar tenantId
     await affiliationRepository.addAffiliationChatMessage(
         affiliationId,
         adminId,
-        'Sua solicitação foi atualizada para "Rejeitado". Olá, estou à disposição para ajudar a corrigir as pendências.'
+        'Sua solicitação foi atualizada para "Rejeitado". Olá, estou à disposição para ajudar a corrigir as pendências.',
+        tenantId  // ✅ NOVO: passar tenantId
     );
 
     await auditService.logAction(adminId, 'REJECT_AFFILIATION', affiliationId, {
