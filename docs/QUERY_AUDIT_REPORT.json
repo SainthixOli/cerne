@@ -1,0 +1,666 @@
+{
+  "timestamp": "2026-05-07T16:58:14.757Z",
+  "summary": {
+    "total_queries_analyzed": 47,
+    "queries_needing_tenant_id": 78,
+    "percentage": "166.0"
+  },
+  "by_criticality": {
+    "ALTA": 50,
+    "MÉDIA": 25,
+    "CRÍTICA": 3
+  },
+  "by_table": {
+    "system_settings": 3,
+    "audit_logs": 3,
+    "profiles": 13,
+    "filiacoes": 27,
+    "filiation_chat": 5,
+    "UNKNOWN": 6,
+    "documentos": 5,
+    "notifications": 4,
+    "conversations": 5,
+    "messages": 5,
+    "admin_evaluations": 2
+  },
+  "by_file": {
+    "services/pdfService.js": 1,
+    "services/auditService.js": 2,
+    "repositories/affiliationRepository.js": 14,
+    "models/User.js": 6,
+    "controllers/systemController.js": 4,
+    "controllers/settingsController.js": 2,
+    "controllers/reportsController.js": 9,
+    "controllers/notificationController.js": 4,
+    "controllers/documentController.js": 4,
+    "controllers/chatController.js": 11,
+    "controllers/affiliationController.js": 14,
+    "controllers/adminController.js": 7
+  },
+  "detailed_results": [
+    {
+      "file": "services/pdfService.js",
+      "line": 14,
+      "operation": "SELECT",
+      "table": "system_settings",
+      "criticality": "ALTA",
+      "preview": "const setting = await db.get(\"SELECT value FROM system_settings WHERE key = 'aff"
+    },
+    {
+      "file": "services/auditService.js",
+      "line": 7,
+      "operation": "INSERT",
+      "table": "audit_logs",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO audit_logs (admin_id, action_type, target_id, details) VALUES (?, ?"
+    },
+    {
+      "file": "services/auditService.js",
+      "line": 20,
+      "operation": "UNKNOWN",
+      "table": "audit_logs",
+      "criticality": "MÉDIA",
+      "preview": "FROM audit_logs a"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 5,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "return db.get('SELECT id FROM profiles WHERE id = ?', [adminId]);"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 10,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "return db.get('SELECT id, user_id FROM filiacoes WHERE id = ?', [affiliationId])"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 15,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "return db.get('SELECT * FROM profiles WHERE id = ?', [userId]);"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 49,
+      "operation": "DELETE",
+      "table": "filiation_chat",
+      "criticality": "CRÍTICA",
+      "preview": "return db.run('DELETE FROM filiation_chat WHERE filiacao_id = ?', [affiliationId"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 55,
+      "operation": "INSERT",
+      "table": "filiation_chat",
+      "criticality": "ALTA",
+      "preview": "'INSERT INTO filiation_chat (filiacao_id, sender_id, message) VALUES (?, ?, ?)',"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 63,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "'SELECT id, responsavel_admin_id, protocolo, transfer_status FROM filiacoes WHER"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 88,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "return db.get('SELECT id, nome_completo, email FROM profiles WHERE id = ?', [adm"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 103,
+      "operation": "UNKNOWN",
+      "table": "profiles",
+      "criticality": "MÉDIA",
+      "preview": "FROM profiles"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 115,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes f"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 126,
+      "operation": "SELECT",
+      "table": "filiation_chat",
+      "criticality": "ALTA",
+      "preview": "return db.get('SELECT COUNT(*) as count FROM filiation_chat WHERE filiacao_id = "
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 133,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes f"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 145,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes f"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 156,
+      "operation": "UNKNOWN",
+      "table": "filiation_chat",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiation_chat c"
+    },
+    {
+      "file": "repositories/affiliationRepository.js",
+      "line": 167,
+      "operation": "DELETE",
+      "table": "filiation_chat",
+      "criticality": "CRÍTICA",
+      "preview": "\"DELETE FROM filiation_chat WHERE filiacao_id = ? AND created_at < date('now', '"
+    },
+    {
+      "file": "models/User.js",
+      "line": 5,
+      "operation": "UNKNOWN",
+      "table": "UNKNOWN",
+      "criticality": "MÉDIA",
+      "preview": "return knex('profiles').where({ cpf }).first();"
+    },
+    {
+      "file": "models/User.js",
+      "line": 9,
+      "operation": "UNKNOWN",
+      "table": "UNKNOWN",
+      "criticality": "MÉDIA",
+      "preview": "return knex('profiles').where({ id }).first();"
+    },
+    {
+      "file": "models/User.js",
+      "line": 21,
+      "operation": "UPDATE",
+      "table": "UNKNOWN",
+      "criticality": "ALTA",
+      "preview": "return knex('profiles').where({ id }).update(data);"
+    },
+    {
+      "file": "models/User.js",
+      "line": 25,
+      "operation": "UNKNOWN",
+      "table": "UNKNOWN",
+      "criticality": "MÉDIA",
+      "preview": "return knex('profiles')"
+    },
+    {
+      "file": "models/User.js",
+      "line": 34,
+      "operation": "UNKNOWN",
+      "table": "UNKNOWN",
+      "criticality": "MÉDIA",
+      "preview": "return knex('profiles')"
+    },
+    {
+      "file": "models/User.js",
+      "line": 43,
+      "operation": "UNKNOWN",
+      "table": "UNKNOWN",
+      "criticality": "MÉDIA",
+      "preview": "return knex('profiles')"
+    },
+    {
+      "file": "controllers/systemController.js",
+      "line": 51,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const userCount = await db.get('SELECT COUNT(*) as count FROM profiles');"
+    },
+    {
+      "file": "controllers/systemController.js",
+      "line": 52,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const affiliationCount = await db.get('SELECT COUNT(*) as count FROM filiacoes')"
+    },
+    {
+      "file": "controllers/systemController.js",
+      "line": 53,
+      "operation": "SELECT",
+      "table": "documentos",
+      "criticality": "ALTA",
+      "preview": "const documentCount = await db.get('SELECT COUNT(*) as count FROM documentos');"
+    },
+    {
+      "file": "controllers/systemController.js",
+      "line": 105,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const logs = await db.all(`SELECT data_solicitacao, user_id, status FROM filiaco"
+    },
+    {
+      "file": "controllers/settingsController.js",
+      "line": 6,
+      "operation": "SELECT",
+      "table": "system_settings",
+      "criticality": "ALTA",
+      "preview": "const settings = await db.all('SELECT * FROM system_settings');"
+    },
+    {
+      "file": "controllers/settingsController.js",
+      "line": 32,
+      "operation": "UPDATE",
+      "table": "system_settings",
+      "criticality": "ALTA",
+      "preview": "'INSERT INTO system_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIME"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 8,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const total = await db.get('SELECT COUNT(*) as count FROM filiacoes');"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 9,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const pending = await db.get(\"SELECT COUNT(*) as count FROM filiacoes WHERE stat"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 10,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const approved = await db.get(\"SELECT COUNT(*) as count FROM filiacoes WHERE sta"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 11,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const rejected = await db.get(\"SELECT COUNT(*) as count FROM filiacoes WHERE sta"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 12,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const todayCount = await db.get(\"SELECT COUNT(*) as count FROM filiacoes WHERE d"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 18,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 27,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 36,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes"
+    },
+    {
+      "file": "controllers/reportsController.js",
+      "line": 49,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes"
+    },
+    {
+      "file": "controllers/notificationController.js",
+      "line": 19,
+      "operation": "INSERT",
+      "table": "notifications",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO notifications (id, title, message, target_group, status, created_by"
+    },
+    {
+      "file": "controllers/notificationController.js",
+      "line": 43,
+      "operation": "SELECT",
+      "table": "notifications",
+      "criticality": "ALTA",
+      "preview": "SELECT * FROM notifications"
+    },
+    {
+      "file": "controllers/notificationController.js",
+      "line": 67,
+      "operation": "UNKNOWN",
+      "table": "notifications",
+      "criticality": "MÉDIA",
+      "preview": "FROM notifications n"
+    },
+    {
+      "file": "controllers/notificationController.js",
+      "line": 100,
+      "operation": "DELETE",
+      "table": "notifications",
+      "criticality": "CRÍTICA",
+      "preview": "await db.run('DELETE FROM notifications WHERE id = ?', [id]);"
+    },
+    {
+      "file": "controllers/documentController.js",
+      "line": 26,
+      "operation": "SELECT",
+      "table": "documentos",
+      "criticality": "ALTA",
+      "preview": "'SELECT user_id FROM documentos WHERE LOWER(url_arquivo) LIKE LOWER(?) LIMIT 1',"
+    },
+    {
+      "file": "controllers/documentController.js",
+      "line": 57,
+      "operation": "UNKNOWN",
+      "table": "documentos",
+      "criticality": "MÉDIA",
+      "preview": "FROM documentos d"
+    },
+    {
+      "file": "controllers/documentController.js",
+      "line": 80,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER "
+    },
+    {
+      "file": "controllers/documentController.js",
+      "line": 84,
+      "operation": "INSERT",
+      "table": "documentos",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALU"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 30,
+      "operation": "SELECT",
+      "table": "conversations",
+      "criticality": "ALTA",
+      "preview": "`SELECT * FROM conversations WHERE admin_id = ? AND user_id = ?`,"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 37,
+      "operation": "INSERT",
+      "table": "conversations",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO conversations (id, admin_id, user_id) VALUES (?, ?, ?)`,"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 64,
+      "operation": "SELECT",
+      "table": "messages",
+      "criticality": "ALTA",
+      "preview": "(SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at D"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 66,
+      "operation": "UNKNOWN",
+      "table": "conversations",
+      "criticality": "MÉDIA",
+      "preview": "FROM conversations c"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 78,
+      "operation": "SELECT",
+      "table": "messages",
+      "criticality": "ALTA",
+      "preview": "(SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at D"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 79,
+      "operation": "UNKNOWN",
+      "table": "conversations",
+      "criticality": "MÉDIA",
+      "preview": "FROM conversations c"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 89,
+      "operation": "SELECT",
+      "table": "messages",
+      "criticality": "ALTA",
+      "preview": "(SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at D"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 90,
+      "operation": "UNKNOWN",
+      "table": "conversations",
+      "criticality": "MÉDIA",
+      "preview": "FROM conversations c"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 116,
+      "operation": "UNKNOWN",
+      "table": "messages",
+      "criticality": "MÉDIA",
+      "preview": "FROM messages m"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 145,
+      "operation": "INSERT",
+      "table": "messages",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?,"
+    },
+    {
+      "file": "controllers/chatController.js",
+      "line": 161,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const admins = await db.all(\"SELECT id, nome_completo, role FROM profiles WHERE "
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 23,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "'SELECT * FROM profiles WHERE cpf = ? OR email = ?',"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 50,
+      "operation": "INSERT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO profiles("
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 76,
+      "operation": "INSERT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO filiacoes (user_id, status, protocolo, status_atendimento) VALUES ("
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 102,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const profile = await db.get('SELECT id FROM profiles WHERE cpf = ?', [cpf]);"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 109,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER "
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 117,
+      "operation": "INSERT",
+      "table": "documentos",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALU"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 153,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "(SELECT COUNT(*) FROM filiacoes WHERE user_id = p.id) as total_requests"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 154,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes f"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 157,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "WHERE f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id) -- Obter apena"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 336,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const user = await db.get('SELECT * FROM profiles WHERE id = ?', [userId]);"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 399,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const lastAffiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? "
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 425,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', ["
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 442,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const affiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? ORDE"
+    },
+    {
+      "file": "controllers/affiliationController.js",
+      "line": 469,
+      "operation": "SELECT",
+      "table": "filiacoes",
+      "criticality": "ALTA",
+      "preview": "const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', ["
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 21,
+      "operation": "UNKNOWN",
+      "table": "audit_logs",
+      "criticality": "MÉDIA",
+      "preview": "FROM audit_logs a"
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 43,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const existing = await db.get('SELECT id FROM profiles WHERE cpf = ?', [cpf]);"
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 52,
+      "operation": "INSERT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "`INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status"
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 71,
+      "operation": "SELECT",
+      "table": "profiles",
+      "criticality": "ALTA",
+      "preview": "const admins = await db.all(\"SELECT id, nome_completo, cpf, email, role, status_"
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 91,
+      "operation": "UNKNOWN",
+      "table": "filiacoes",
+      "criticality": "MÉDIA",
+      "preview": "FROM filiacoes"
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 112,
+      "operation": "INSERT",
+      "table": "admin_evaluations",
+      "criticality": "ALTA",
+      "preview": "INSERT INTO admin_evaluations ("
+    },
+    {
+      "file": "controllers/adminController.js",
+      "line": 158,
+      "operation": "UNKNOWN",
+      "table": "admin_evaluations",
+      "criticality": "MÉDIA",
+      "preview": "FROM admin_evaluations e"
+    }
+  ]
+}
