@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const emailService = require('../services/emailService');
 const User = require('../models/User');
 const AuditLogger = require('../config/auditLogger');
+const { getDb } = require('../config/database');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 if (!SECRET_KEY) {
@@ -43,8 +44,21 @@ exports.login = async (req, res) => {
         // Login bem-sucedido - registrar
         AuditLogger.loginAttempt(cpf, ip, userAgent, true, 'success');
 
+        // 🏢 NOVO: Buscar tenantId do usuário
+        const db = await getDb();
+        const tenantRecord = await db.get(
+            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
+            [user.id]
+        );
+        const tenantId = tenantRecord?.tenant_id || 1; // Default: tenant 1
+
         const token = jwt.sign(
-            { id: user.id, role: user.role, name: user.nome_completo },
+            { 
+                id: user.id, 
+                role: user.role, 
+                name: user.nome_completo,
+                tenantId: tenantId  // ✅ NOVO: incluir tenantId no JWT
+            },
             SECRET_KEY,
             { expiresIn: '1d' }
         );
@@ -55,6 +69,7 @@ exports.login = async (req, res) => {
                 id: user.id,
                 name: user.nome_completo,
                 role: user.role,
+                tenantId: tenantId,  // ✅ NOVO: retornar tenantId na resposta
                 changePasswordRequired: !!user.change_password_required
             }
         });
