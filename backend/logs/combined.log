@@ -28,3 +28,5 @@
 {"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-05-18T19:26:40.287Z"}
 {"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-05-18T19:28:52.016Z"}
 {"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-05-18T19:28:52.026Z"}
+{"level":"info","message":"[System] Running startup health check...","service":"cerne-backend","timestamp":"2026-05-18T19:31:04.222Z"}
+{"level":"info","message":"[System] Database connection verified.","service":"cerne-backend","timestamp":"2026-05-18T19:31:04.234Z"}
