@@ -33,3 +33,14 @@ exports.authenticateTokenOptional = (req, res, next) => {
         next();
     });
 };
+
+// ✅ NOVO: Middleware para verificar se usuário é admin
+exports.checkAdmin = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Não autenticado' });
+    }
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Acesso negado: requer privilégios de admin' });
+    }
+    next();
+};

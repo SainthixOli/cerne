@@ -6,8 +6,8 @@ services:
     ports:
       - "3333:3333"
     environment:
-      - NODE_ENV=production
-      - JWT_SECRET=change_this_secret_in_prod
+      - NODE_ENV=development
+      - JWT_SECRET=esta_senha_agora_e_muito_mais_longa_e_segura_123
       - DB_NAME=database.sqlite
       # If using Postgres:
       # - DB_HOST=db
@@ -24,6 +24,17 @@ services:
       - "8080:80"
     depends_on:
       - backend
+  # ... seus outros serviços (backend, frontend)
+
+  attacker:
+    image: kalilinux/kali-rolling
+    container_name: cerne-kali
+    tty: true
+    stdin_open: true
+    networks:
+      - default # Garante que ele está na mesma rede que o back e o front
+    volumes:
+      - ./kali_scripts:/root/scripts # Uma pasta no seu Mac para salvar seus scripts de ataque    
 
 #  db: # Postgres (disabled for now as req is to keep SQLite, but ready for switch)
 #    image: postgres:15

@@ -6,7 +6,7 @@ const documentController = require('../controllers/documentController');
 const profileController = require('../controllers/profileController');
 const reportsController = require('../controllers/reportsController');
 const { upload, validateAndSaveUpload, saveUploadToDisk, SIZE_LIMITS } = require('../middlewares/upload');
-const { authenticateToken, authenticateTokenOptional } = require('../middlewares/auth');
+const { authenticateToken, authenticateTokenOptional, checkAdmin } = require('../middlewares/auth');  // ✅ NOVO: importar checkAdmin
 const { checkResourceOwnership, checkDocumentOwnership } = require('../middlewares/resourceOwnership');
 // 🏢 NOVO: Importar middlewares de tenant
 const { tenantMiddleware } = require('../middlewares/tenantMiddleware');
@@ -135,7 +135,7 @@ router.put('/admin/users/:adminId/status', authenticateToken, tenantMiddleware, 
 
 const systemController = require('../controllers/systemController');
 router.get('/system/stats', authenticateToken, tenantMiddleware, ensureTenantIsolation, systemController.getSystemStats);
-router.post('/system/console', authenticateToken, tenantMiddleware, adminController.checkAdmin, systemController.executeConsoleCommand);
+router.post('/system/console', authenticateToken, tenantMiddleware, checkAdmin, systemController.executeConsoleCommand);  // ✅ NOVO: usar checkAdmin middleware
 
 // Avaliação e Desempenho do Admin
 router.get('/admin/performance', authenticateToken, tenantMiddleware, ensureTenantIsolation, adminController.getAdminPerformance);

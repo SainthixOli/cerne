@@ -16,12 +16,13 @@ exports.register = async (req, res) => {
     try {
         const data = req.body;
         const db = await getDb();
+        const tenantId = 1;  // ✅ NOVO: Default tenant para endpoints públicos
 
         // 1. Verificar se o perfil existe por CPF OU Email
         // Isso permite vincular "Frank Ocean" (CPF errado) a "Frank Ocean" (CPF correto) se o email for o mesmo.
         const existingProfile = await db.get(
-            'SELECT * FROM profiles WHERE cpf = ? OR email = ?',
-            [data.cpf, data.email]
+            'SELECT * FROM profiles WHERE cpf = ? OR email = ? AND tenant_id = ?',
+            [data.cpf, data.email, tenantId]
         );
 
         let profileId;
@@ -35,13 +36,13 @@ exports.register = async (req, res) => {
                     rg = ?, orgao_emissor = ?, nacionalidade = ?, estado_civil = ?,
                     cep = ?, endereco = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?,
                     status_conta = 'pendente_docs' 
-                WHERE id = ?`,
+                WHERE id = ? AND tenant_id = ?`,
                 [
                     data.nome, data.cpf, data.telefone || '', data.matricula || '',
                     data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
                     data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
                     data.bairro || '', data.cidade || '', data.uf || '',
-                    profileId
+                    profileId, tenantId
                 ]
             );
         } else {
@@ -51,13 +52,13 @@ exports.register = async (req, res) => {
                     id, nome_completo, cpf, email, telefone, matricula_funcional, 
                     rg, orgao_emissor, nacionalidade, estado_civil,
                     cep, endereco, numero, complemento, bairro, cidade, uf,
-                    role, status_conta
-                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'professor', 'pendente_docs')`,
+                    role, status_conta, tenant_id
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'professor', 'pendente_docs', ?)`,
                 [
                     profileId, data.nome, data.cpf, data.email, data.telefone || '', data.matricula || '',
                     data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
                     data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
-                    data.bairro || '', data.cidade || '', data.uf || ''
+                    data.bairro || '', data.cidade || '', data.uf || '', tenantId
                 ]
             );
         }
@@ -73,8 +74,8 @@ exports.register = async (req, res) => {
         const protocol = '#' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
         await db.run(
-            `INSERT INTO filiacoes (user_id, status, protocolo, status_atendimento) VALUES (?, 'em_processamento', ?, 'aberto')`,
-            [profileId, protocol]
+            `INSERT INTO filiacoes (user_id, status, protocolo, status_atendimento, tenant_id) VALUES (?, 'em_processamento', ?, 'aberto', ?)`,
+            [profileId, protocol, tenantId]
         );
 
         // Gerar PDF
@@ -97,16 +98,17 @@ exports.uploadSignedForm = async (req, res) => {
 
         const db = await getDb();
         const cpf = req.body.cpf; // Precisamos identificar o usuário
+        const tenantId = 1;  // ✅ NOVO: Default tenant para endpoints públicos
 
         // Encontrar usuário por CPF
-        const profile = await db.get('SELECT id FROM profiles WHERE cpf = ?', [cpf]);
+        const profile = await db.get('SELECT id FROM profiles WHERE cpf = ? AND tenant_id = ?', [cpf, tenantId]);
 
         if (!profile) {
             return res.status(404).json({ error: 'User not found. Please register first.' });
         }
 
         // Encontrar última filiação
-        const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [profile.id]);
+        const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [profile.id, tenantId]);
 
         if (!filiacao) {
             return res.status(404).json({ error: 'Affiliation request not found.' });
@@ -114,12 +116,12 @@ exports.uploadSignedForm = async (req, res) => {
 
         // Inserir Documento
         await db.run(
-            `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento) VALUES (?, ?, ?, 'ficha_assinada')`,
-            [profile.id, filiacao.id, req.file.path]
+            `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento, tenant_id) VALUES (?, ?, ?, 'ficha_assinada', ?)`,
+            [profile.id, filiacao.id, req.file.path, tenantId]
         );
 
         // Atualizar Status do Perfil
-        await db.run('UPDATE profiles SET status_conta = ? WHERE id = ?', ['em_analise', profile.id]);
+        await db.run('UPDATE profiles SET status_conta = ? WHERE id = ? AND tenant_id = ?', ['em_analise', profile.id, tenantId]);
 
         res.status(200).json({ message: 'File uploaded successfully', filename: req.file.filename });
     } catch (error) {
@@ -131,6 +133,7 @@ exports.uploadSignedForm = async (req, res) => {
 exports.getAllAffiliations = async (req, res) => {
     try {
         const db = await getDb();
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         // Queremos listar USUÁRIOS, mostrando seu status de filiação mais recente, mas também sabendo se têm histórico.
         // Ou listamos Filiações?
         // Usuário quer: "Frank Ocean (+2)". Isso implica que listamos Usuários (ou a solicitação mais recente de cada um).
@@ -150,13 +153,13 @@ exports.getAllAffiliations = async (req, res) => {
                 f.status_atendimento,
                 f.transfer_status,
                 d.url_arquivo,
-                (SELECT COUNT(*) FROM filiacoes WHERE user_id = p.id) as total_requests
+                (SELECT COUNT(*) FROM filiacoes WHERE user_id = p.id AND tenant_id = ?) as total_requests
             FROM filiacoes f
-            JOIN profiles p ON f.user_id = p.id
-            LEFT JOIN documentos d ON f.id = d.filiacao_id AND d.tipo_documento = 'ficha_assinada'
-            WHERE f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id) -- Obter apenas a solicitação mais recente por usuário
+            JOIN profiles p ON f.user_id = p.id AND p.tenant_id = ?
+            LEFT JOIN documentos d ON f.id = d.filiacao_id AND d.tipo_documento = 'ficha_assinada' AND d.tenant_id = ?
+            WHERE f.tenant_id = ? AND f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id AND tenant_id = ?)
             ORDER BY f.data_solicitacao DESC
-        `);
+        `, [tenantId, tenantId, tenantId, tenantId, tenantId]);
 
         // Também podemos querer buscar o histórico COMPLETO para a visualização de detalhes.
         // Por enquanto, retornamos o estado "Mais Recente" para a lista, e o frontend pode solicitar detalhes.
@@ -221,11 +224,13 @@ exports.rejectAffiliation = async (req, res) => {
 exports.assumeAffiliation = async (req, res) => {
     const { id } = req.params;
     const adminId = req.user.id;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         const result = await assumeAffiliationService({
             affiliationId: id,
             adminId,
+            tenantId,  // ✅ NOVO: passar tenantId
             adminName: req.user.nome
         });
 
@@ -247,9 +252,10 @@ exports.assumeAffiliation = async (req, res) => {
 exports.requestTransfer = async (req, res) => {
     const { id } = req.params;
     const adminId = req.user.id; // The requestor
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
-        await requestTransferService({ affiliationId: id, adminId });
+        await requestTransferService({ affiliationId: id, adminId, tenantId });  // ✅ NOVO: passar tenantId
 
         res.json({ message: 'Solicitação de transferência enviada ao Super Admin.' });
     } catch (error) {
@@ -264,12 +270,14 @@ exports.denyTransferRequest = async (req, res) => {
     const { id } = req.params;
     const requesterId = req.user.id;
     const requesterRole = req.user.role;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         await denyTransferRequestService({
             affiliationId: id,
             requesterId,
-            requesterRole
+            requesterRole,
+            tenantId  // ✅ NOVO: passar tenantId
         });
 
         res.json({ message: 'Solicitação de transferência negada.' });
@@ -286,13 +294,15 @@ exports.transferAffiliation = async (req, res) => {
     const { targetAdminId } = req.body;
     const requesterId = req.user.id;
     const requesterRole = req.user.role;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         const result = await transferAffiliationService({
             affiliationId: id,
             targetAdminId,
             requesterId,
-            requesterRole
+            requesterRole,
+            tenantId  // ✅ NOVO: passar tenantId
         });
 
         res.json({ message: `Atendimento transferido para ${result.targetAdminName}.` });
@@ -338,7 +348,8 @@ exports.getCertificate = async (req, res) => {
     try {
         const db = await getDb();
         const userId = req.user.id;
-        const user = await db.get('SELECT * FROM profiles WHERE id = ?', [userId]);
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
+        const user = await db.get('SELECT * FROM profiles WHERE id = ? AND tenant_id = ?', [userId, tenantId]);
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -400,15 +411,16 @@ exports.sendChatMessage = async (req, res) => {
 exports.requestDisaffiliation = async (req, res) => {
     try {
         const userId = req.user.id;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
         const db = await getDb();
         // Buscar afiliação ativa
-        const lastAffiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? ORDER BY id DESC LIMIT 1', [userId]);
+        const lastAffiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY id DESC LIMIT 1', [userId, tenantId]);
 
         if (!lastAffiliation) return res.status(404).json({ error: 'Afiliação não encontrada' });
 
-        await db.run('UPDATE filiacoes SET status = ?, status_atendimento = ? WHERE id = ?',
-            ['solicitando_desfiliacao', 'em_andamento', lastAffiliation.id]);
+        await db.run('UPDATE filiacoes SET status = ?, status_atendimento = ? WHERE id = ? AND tenant_id = ?',
+            ['solicitando_desfiliacao', 'em_andamento', lastAffiliation.id, tenantId]);
 
         await auditService.logAction(userId, 'REQUEST_DISAFFILIATION', lastAffiliation.id, { reason: 'Solicitado pelo usuário' });
 
@@ -421,17 +433,18 @@ exports.requestDisaffiliation = async (req, res) => {
 exports.approveDisaffiliation = async (req, res) => {
     try {
         const { id } = req.params;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const db = await getDb();
 
         await db.run(`
             UPDATE filiacoes 
             SET status = 'desfiliado', status_atendimento = 'concluido' 
-            WHERE id = ?
-        `, [id]);
+            WHERE id = ? AND tenant_id = ?
+        `, [id, tenantId]);
 
-        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
+        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ? AND tenant_id = ?', [id, tenantId]);
         if (affiliation) {
-            await db.run("UPDATE profiles SET status_conta = 'inativo' WHERE id = ?", [affiliation.user_id]);
+            await db.run("UPDATE profiles SET status_conta = 'inativo' WHERE id = ? AND tenant_id = ?", [affiliation.user_id, tenantId]);
         }
 
         await auditService.logAction(req.user.id, 'APPROVE_DISAFFILIATION', id, {});
@@ -444,16 +457,17 @@ exports.approveDisaffiliation = async (req, res) => {
 exports.requestReactivation = async (req, res) => {
     try {
         const userId = req.user.id;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const db = await getDb();
 
-        const affiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? ORDER BY id DESC LIMIT 1', [userId]);
+        const affiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY id DESC LIMIT 1', [userId, tenantId]);
         if (!affiliation) return res.status(404).json({ error: 'Registro não encontrado' });
 
         await db.run(`
             UPDATE filiacoes 
             SET status = 'solicitando_reativacao', status_atendimento = 'em_andamento' 
-            WHERE id = ?
-        `, [affiliation.id]);
+            WHERE id = ? AND tenant_id = ?
+        `, [affiliation.id, tenantId]);
 
         await auditService.logAction(userId, 'REQUEST_REACTIVATION', affiliation.id, {});
         res.json({ message: 'Solicitação de reativação enviada.' });
@@ -465,17 +479,18 @@ exports.requestReactivation = async (req, res) => {
 exports.approveReactivation = async (req, res) => {
     try {
         const { id } = req.params;
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const db = await getDb();
 
         await db.run(`
             UPDATE filiacoes 
             SET status = 'concluido', status_atendimento = 'concluido' 
-            WHERE id = ?
-        `, [id]);
+            WHERE id = ? AND tenant_id = ?
+        `, [id, tenantId]);
 
-        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ?', [id]);
+        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ? AND tenant_id = ?', [id, tenantId]);
         if (affiliation) {
-            await db.run("UPDATE profiles SET status_conta = 'ativo' WHERE id = ?", [affiliation.user_id]);
+            await db.run("UPDATE profiles SET status_conta = 'ativo' WHERE id = ? AND tenant_id = ?", [affiliation.user_id, tenantId]);
         }
 
         await auditService.logAction(req.user.id, 'APPROVE_REACTIVATION', id, {});
