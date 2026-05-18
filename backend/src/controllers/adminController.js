@@ -5,25 +5,24 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.getAuditLogs = async (req, res) => {
     try {
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const db = await getDb();
         let logs;
 
         if (req.user.role === 'super_admin') {
-            // Super Admin: Vê tudo
-            logs = await auditService.getLogs(); // Retorna tudo
+            // Super Admin: Vê tudo (do seu tenant)
+            logs = await auditService.getLogs(tenantId); // Retorna tudo do tenant
         } else {
             // Regular Admin: Vê suas ações E ações onde ele foi o alvo (ex: Transferência)
-            // Precisamos filtrar. O auditService.getLogs padrão não filtra.
-            // Vamos fazer query direta aqui ou melhorar o service.
             // Query direta é mais rápido para agora.
             logs = await db.all(`
                 SELECT a.*, p.nome_completo as admin_name 
                 FROM audit_logs a
-                LEFT JOIN profiles p ON a.admin_id = p.id
-                WHERE a.admin_id = ? 
-                OR a.details LIKE ?
+                LEFT JOIN profiles p ON a.admin_id = p.id AND p.tenant_id = ?
+                WHERE a.tenant_id = ? AND (a.admin_id = ? 
+                OR a.details LIKE ?)
                 ORDER BY a.created_at DESC
-            `, [req.user.id, `%"to":"${req.user.id}"%`]);
+            `, [tenantId, tenantId, req.user.id, `%"to":"${req.user.id}"%`]);
         }
         res.json(logs);
     } catch (error) {
@@ -37,10 +36,11 @@ exports.createAdmin = async (req, res) => {
             return res.status(403).json({ error: 'Acesso negado. Apenas Super Admin.' });
         }
 
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const { nome, cpf, email, password } = req.body;
         const db = await getDb();
 
-        const existing = await db.get('SELECT id FROM profiles WHERE cpf = ?', [cpf]);
+        const existing = await db.get('SELECT id FROM profiles WHERE cpf = ? AND tenant_id = ?', [cpf, tenantId]);
         if (existing) {
             return res.status(400).json({ error: 'CPF já cadastrado.' });
         }
@@ -49,12 +49,12 @@ exports.createAdmin = async (req, res) => {
         const id = uuidv4();
 
         await db.run(
-            `INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status_conta)
-             VALUES(?, ?, ?, ?, ?, 'admin', 'ativo')`,
-            [id, nome, cpf, email, hashedPassword]
+            `INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status_conta, tenant_id)
+             VALUES(?, ?, ?, ?, ?, 'admin', 'ativo', ?)`,
+            [id, nome, cpf, email, hashedPassword, tenantId]
         );
 
-        await auditService.logAction(req.user.id, 'CREATE_ADMIN', id, { nome, cpf });
+        await auditService.logAction(req.user.id, 'CREATE_ADMIN', id, { nome, cpf }, tenantId);
 
         res.status(201).json({ message: 'Novo Admin criado com sucesso.' });
     } catch (error) {
@@ -67,8 +67,9 @@ exports.listAdmins = async (req, res) => {
         if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Acesso negado.' });
         }
+        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
         const db = await getDb();
-        const admins = await db.all("SELECT id, nome_completo, cpf, email, role, status_conta FROM profiles WHERE role IN ('admin', 'super_admin')");
+        const admins = await db.all("SELECT id, nome_completo, cpf, email, role, status_conta FROM profiles WHERE role IN ('admin', 'super_admin') AND tenant_id = ?", [tenantId]);
         res.json(admins);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -77,6 +78,7 @@ exports.listAdmins = async (req, res) => {
 
 exports.getAdminPerformance = async (req, res) => {
     const { adminId, month } = req.query; // formato de mês 'AAAA-MM'
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
     try {
         if (req.user.role !== 'super_admin') {
             return res.status(403).json({ error: 'Acesso negado.' });
@@ -91,7 +93,8 @@ exports.getAdminPerformance = async (req, res) => {
             FROM filiacoes 
             WHERE aprovado_por_admin_id = ? 
             AND strftime('%Y-%m', data_aprovacao) = ?
-        `, [adminId, month]);
+            AND tenant_id = ?
+        `, [adminId, month, tenantId]);
 
         res.json(stats || { approved: 0, rejected: 0 });
     } catch (error) {
@@ -101,6 +104,7 @@ exports.getAdminPerformance = async (req, res) => {
 
 exports.saveEvaluation = async (req, res) => {
     const { adminId, month, score, feedback } = req.body;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
     try {
         if (req.user.role !== 'super_admin') {
             return res.status(403).json({ error: 'Acesso negado.' });
@@ -112,10 +116,10 @@ exports.saveEvaluation = async (req, res) => {
             INSERT INTO admin_evaluations (
                 admin_id, evaluator_id, month_ref, score, feedback,
                 criteria_productivity, criteria_quality, criteria_proactivity, criteria_punctuality,
-                visible_to_collaborator
+                visible_to_collaborator, tenant_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(admin_id, month_ref) DO UPDATE SET
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(admin_id, month_ref, tenant_id) DO UPDATE SET
             score = excluded.score,
             feedback = excluded.feedback,
             evaluator_id = excluded.evaluator_id,
@@ -130,11 +134,12 @@ exports.saveEvaluation = async (req, res) => {
             req.body.criteria_quality || 0,
             req.body.criteria_proactivity || 0,
             req.body.criteria_punctuality || 0,
-            req.body.visible ? 1 : 0
+            req.body.visible ? 1 : 0,
+            tenantId
         ]);
 
         // Auditoria
-        await auditService.logAction(evaluatorId, 'EVALUATE_ADMIN', adminId, { month, score });
+        await auditService.logAction(evaluatorId, 'EVALUATE_ADMIN', adminId, { month, score }, tenantId);
 
         res.json({ message: 'Avaliação salva com sucesso.' });
     } catch (error) {
@@ -144,6 +149,7 @@ exports.saveEvaluation = async (req, res) => {
 
 exports.getEvaluations = async (req, res) => {
     const { adminId } = req.params;
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
     console.log(`[AdminController] getEvaluations. Requester: ${req.user.id} (${req.user.role}), Target: ${adminId}`);
     try {
         if (req.user.role !== 'super_admin' && req.user.id !== adminId) {
@@ -156,8 +162,8 @@ exports.getEvaluations = async (req, res) => {
         let query = `
             SELECT e.*, p.nome_completo as evaluator_name
             FROM admin_evaluations e
-            LEFT JOIN profiles p ON e.evaluator_id = p.id
-            WHERE e.admin_id = ?
+            LEFT JOIN profiles p ON e.evaluator_id = p.id AND p.tenant_id = ?
+            WHERE e.admin_id = ? AND e.tenant_id = ?
         `;
 
         // If not super_admin, only show visible evaluations
@@ -167,7 +173,7 @@ exports.getEvaluations = async (req, res) => {
 
         query += ` ORDER BY e.month_ref DESC`;
 
-        const evaluations = await db.all(query, [adminId]);
+        const evaluations = await db.all(query, [tenantId, adminId, tenantId]);
 
         res.json(evaluations);
     } catch (error) {
@@ -178,6 +184,7 @@ exports.getEvaluations = async (req, res) => {
 exports.updateAdminStatus = async (req, res) => {
     const { adminId } = req.params;
     const { status } = req.body; // 'ativo' or 'inativo'
+    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
         if (req.user.role !== 'super_admin') {
@@ -189,9 +196,9 @@ exports.updateAdminStatus = async (req, res) => {
         }
 
         const db = await getDb();
-        await db.run('UPDATE profiles SET status_conta = ? WHERE id = ?', [status, adminId]);
+        await db.run('UPDATE profiles SET status_conta = ? WHERE id = ? AND tenant_id = ?', [status, adminId, tenantId]);
 
-        await auditService.logAction(req.user.id, 'UPDATE_ADMIN_STATUS', adminId, { status });
+        await auditService.logAction(req.user.id, 'UPDATE_ADMIN_STATUS', adminId, { status }, tenantId);
 
         res.json({ message: `Status atualizado para ${status}.` });
     } catch (error) {
