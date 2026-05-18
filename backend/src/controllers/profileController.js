@@ -38,7 +38,7 @@ exports.updateProfile = async (req, res) => {
 
         // Audit if performed by Admin/Super Admin on themselves or others (if logic allowed)
         if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-            await auditService.logAction(userId, 'UPDATE_PROFILE', userId, { changes: req.body });
+            await auditService.logAction(userId, 'UPDATE_PROFILE', userId, { changes: req.body }, tenantId);
         }
 
         res.json({ message: 'Perfil atualizado com sucesso' });

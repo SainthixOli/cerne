@@ -101,8 +101,9 @@ exports.executeConsoleCommand = async (req, res) => {
         }
 
         if (command === 'logs') {
+            const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
             const db = await getDb();
-            const logs = await db.all(`SELECT data_solicitacao, user_id, status FROM filiacoes ORDER BY data_solicitacao DESC LIMIT 5`);
+            const logs = await db.all(`SELECT data_solicitacao, user_id, status FROM filiacoes WHERE tenant_id = ? ORDER BY data_solicitacao DESC LIMIT 5`, [tenantId]);
             const output = logs.map(l => `[${l.data_solicitacao}] User: ${l.user_id} Status: ${l.status}`).join('\n') || 'No recent logs.';
             return res.json({ output });
         }
