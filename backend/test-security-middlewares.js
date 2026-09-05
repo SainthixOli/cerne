@@ -4,6 +4,7 @@
  */
 
 const path = require('path');
+const crypto = require('crypto');
 
 console.log('\n=== 🔬 TESTE DE MIDDLEWARES DE SEGURANÇA ===\n');
 
@@ -140,24 +141,14 @@ try {
 console.log('📋 TESTE 5: Environment Validator');
 
 try {
-    // Salvar valores antigos
-    const oldEnv = {
-        JWT_SECRET: process.env.JWT_SECRET,
-        NODE_ENV: process.env.NODE_ENV
-    };
-    
-    // Teste: JWT_SECRET com 32 chars deve passar
-    process.env.JWT_SECRET = 'a'.repeat(32);
-    process.env.NODE_ENV = 'development';
-    
     const { EnvironmentValidator } = require('./src/config/envValidator');
-    
-    // Se chegou aqui sem erro, passou
-    console.log('   ✅ PASSOU: Validator aceitou JWT_SECRET com 32+ caracteres\n');
-    
-    // Restaurar ambiente
-    process.env.JWT_SECRET = oldEnv.JWT_SECRET;
-    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    const environment = {
+        JWT_SECRET: crypto.randomBytes(32).toString('hex'),
+        NODE_ENV: 'test'
+    };
+
+    new EnvironmentValidator(environment).validate();
+    console.log('   ✅ PASSOU: Validator aceitou segredo forte gerado em runtime\n');
     
 } catch (error) {
     if (error.message.includes('JWT_SECRET')) {

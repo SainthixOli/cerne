@@ -5,10 +5,8 @@ exports.getProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        console.log('ProfileController: userId from token:', userId); // Keep existing log
 
         const profile = await User.findByIdWithFiliation(userId, tenantId);  // ✅ NOVO: passar tenantId
-        console.log('ProfileController: profile found:', profile); // Keep existing log
 
         if (!profile) {
             return res.status(404).json({ error: 'Perfil não encontrado' });

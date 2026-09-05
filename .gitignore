@@ -1,14 +1,37 @@
 node_modules/
-.env
 .DS_Store
 dist/
 build/
 coverage/
 
+# Environment files (examples remain versioned)
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
 
-# Security & Local Data
-backend/uploads/
+# Operational databases and local database sidecars
 *.sqlite
+*.sqlite3
+*.sqlite-*
 *.db
-backend/db/*.sqlite
-backend/db/*.db
+*.db-*
+
+# Runtime logs and user uploads
+*.log
+logs/
+**/logs/
+uploads/
+**/uploads/
+
+# Local private keys and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore

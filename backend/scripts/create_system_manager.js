@@ -2,13 +2,15 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const { requireScriptEnv } = require('./scriptEnv');
 
 const dbPath = path.resolve(__dirname, '../db/database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 const createSystemManager = async () => {
-    const cpf = '888.888.888-88';
-    const password = 'sysadmin123';
+    const cpf = requireScriptEnv('CERNE_SYSTEM_MANAGER_CPF');
+    const password = requireScriptEnv('CERNE_SYSTEM_MANAGER_PASSWORD', { minLength: 12, secret: true });
+    const email = requireScriptEnv('CERNE_SYSTEM_MANAGER_EMAIL');
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = uuidv4();
 
@@ -28,8 +30,8 @@ const createSystemManager = async () => {
                 console.log('Creating System Manager...');
                 db.run(
                     `INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status_conta)
-                     VALUES(?, 'System Manager', ?, 'sys@sinpro.com', ?, 'system_manager', 'ativo')`,
-                    [id, cpf, hashedPassword],
+                     VALUES(?, 'System Manager', ?, ?, ?, 'system_manager', 'ativo')`,
+                    [id, cpf, email, hashedPassword],
                     (err) => {
                         if (err) console.error(err);
                         else console.log('System Manager created.');

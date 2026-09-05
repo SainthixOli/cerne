@@ -14,7 +14,11 @@ const { getDb } = require('../config/database');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 
-const SECRET_KEY = process.env.JWT_SECRET || 'test-secret';
+const SECRET_KEY = process.env.JWT_SECRET;
+
+if (!SECRET_KEY) {
+    throw new Error('JWT_SECRET must be configured by the test environment');
+}
 
 describe('FASE 4: Multi-Tenant Integration Tests', () => {
     let db;

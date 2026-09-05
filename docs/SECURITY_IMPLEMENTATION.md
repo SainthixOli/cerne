@@ -21,14 +21,17 @@ Este documento descreve a implementação completa de segurança para o backend 
 
 ```javascript
 // backend/.env
-JWT_SECRET=5108acd622033209bdec78fdcfb119ca3f929d22d516036beda28195271f2747
+JWT_SECRET=<GERAR_UM_VALOR_ALEATORIO_UNICO_FORA_DO_REPOSITORIO>
 // 64 caracteres hex = 32 bytes = 256 bits (NIST recomenda mínimo 128 bits)
 ```
 
 **Validação ao iniciar:** `envValidator.js` verifica:
-- Comprimento ≥ 32 caracteres
-- Formato: apenas caracteres hexadecimais
-- Geração: `crypto.randomBytes(32).toString('hex')`
+- presença obrigatória do segredo
+- comprimento mínimo de 32 caracteres
+- rejeição de placeholders, padrões conhecidos e baixa entropia
+- geração recomendada: `crypto.randomBytes(32).toString('hex')`
+
+O valor acima é apenas um marcador documental e é deliberadamente rejeitado no startup.
 
 ### 1.2 Security Headers (Helmet.js)
 

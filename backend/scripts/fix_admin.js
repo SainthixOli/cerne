@@ -2,13 +2,15 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const { requireScriptEnv } = require('./scriptEnv');
 
 const dbPath = path.resolve(__dirname, '../db/database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 const fixAdmin = async () => {
-    const cpf = '000.000.000-00';
-    const password = 'admin123';
+    const cpf = requireScriptEnv('CERNE_ADMIN_CPF');
+    const password = requireScriptEnv('CERNE_ADMIN_PASSWORD', { minLength: 12, secret: true });
+    const email = requireScriptEnv('CERNE_ADMIN_EMAIL');
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = uuidv4();
 
@@ -28,8 +30,8 @@ const fixAdmin = async () => {
                 console.log('Admin user not found. Creating new admin...');
                 db.run(
                     `INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status_conta)
-                     VALUES(?, 'Administrador Padrão', ?, 'admin@sinpro.com', ?, 'admin', 'ativo')`,
-                    [id, cpf, hashedPassword],
+                     VALUES(?, 'Administrador', ?, ?, ?, 'admin', 'ativo')`,
+                    [id, cpf, email, hashedPassword],
                     (err) => {
                         if (err) console.error('Error creating admin:', err);
                         else console.log('Admin user created successfully.');

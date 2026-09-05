@@ -1,7 +1,8 @@
 require('dotenv').config();
 
 // SECURITY: Validar environment ao startup
-require('./config/envValidator');
+const { validateEnvironment } = require('./config/envValidator');
+validateEnvironment();
 
 const app = require('./app');
 

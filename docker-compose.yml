@@ -7,12 +7,12 @@ services:
       - "3333:3333"
     environment:
       - NODE_ENV=development
-      - JWT_SECRET=esta_senha_agora_e_muito_mais_longa_e_segura_123
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be provided through the environment}
       - DB_NAME=database.sqlite
       # If using Postgres:
       # - DB_HOST=db
-      # - DB_USER=postgres
-      # - DB_PASSWORD=postgres
+      # - DB_USER=${DB_USER:?DB_USER must be provided through the environment}
+      # - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
     volumes:
       - ./backend/db:/app/db # Persist SQLite DB
       - ./backend/logs:/app/logs
@@ -34,13 +34,13 @@ services:
     networks:
       - default # Garante que ele está na mesma rede que o back e o front
     volumes:
-      - ./kali_scripts:/root/scripts # Uma pasta no seu Mac para salvar seus scripts de ataque    
+      - ./kali_scripts:/root/scripts # Uma pasta no seu Mac para salvar seus scripts de ataque
 
 #  db: # Postgres (disabled for now as req is to keep SQLite, but ready for switch)
 #    image: postgres:15
 #    environment:
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_USER: ${DB_USER:?DB_USER must be provided through the environment}
+#      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
 #      POSTGRES_DB: cerne_db
 #    ports:
 #      - "5432:5432"

@@ -2,13 +2,15 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const { requireScriptEnv } = require('./scriptEnv');
 
 const dbPath = path.resolve(__dirname, '../db/database.sqlite');
 const db = new sqlite3.Database(dbPath);
 
 const createSuperAdmin = async () => {
-    const cpf = '999.999.999-99';
-    const password = 'superadmin123';
+    const cpf = requireScriptEnv('CERNE_SUPER_ADMIN_CPF');
+    const password = requireScriptEnv('CERNE_SUPER_ADMIN_PASSWORD', { minLength: 12, secret: true });
+    const email = requireScriptEnv('CERNE_SUPER_ADMIN_EMAIL');
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = uuidv4();
 
@@ -28,8 +30,8 @@ const createSuperAdmin = async () => {
                 console.log('Creating Super Admin...');
                 db.run(
                     `INSERT INTO profiles(id, nome_completo, cpf, email, password_hash, role, status_conta)
-                     VALUES(?, 'Super Admin Supremo', ?, 'super@sinpro.com', ?, 'super_admin', 'ativo')`,
-                    [id, cpf, hashedPassword],
+                     VALUES(?, 'Super Admin', ?, ?, ?, 'super_admin', 'ativo')`,
+                    [id, cpf, email, hashedPassword],
                     (err) => {
                         if (err) console.error(err);
                         else console.log('Super Admin created.');

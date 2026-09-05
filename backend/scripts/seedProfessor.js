@@ -1,23 +1,24 @@
 const { getDb } = require('../src/config/database');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const { requireScriptEnv } = require('./scriptEnv');
 
 async function seedProfessor() {
     try {
         const db = await getDb();
-        const password = '123';
+        const password = requireScriptEnv('CERNE_PROFESSOR_PASSWORD', { minLength: 12, secret: true });
+        const cpf = requireScriptEnv('CERNE_PROFESSOR_CPF');
+        const email = requireScriptEnv('CERNE_PROFESSOR_EMAIL');
         const hashedPassword = await bcrypt.hash(password, 10);
         const id = uuidv4();
 
         await db.run(
             `INSERT INTO profiles (id, nome_completo, cpf, email, role, status_conta, password_hash)
-       VALUES (?, 'Professor Teste', '111.111.111-11', 'prof@teste.com', 'professor', 'ativo', ?)`,
-            [id, hashedPassword]
+       VALUES (?, 'Professor Teste', ?, ?, 'professor', 'ativo', ?)`,
+            [id, cpf, email, hashedPassword]
         );
 
         console.log('Professor user created successfully!');
-        console.log('CPF: 111.111.111-11');
-        console.log('Password: 123');
     } catch (error) {
         if (error.message.includes('UNIQUE constraint failed')) {
             console.log('Professor user already exists.');

@@ -1,4 +1,6 @@
-process.env.JWT_SECRET = 'test_secret_key_123';
+const crypto = require('crypto');
+
+process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
 process.env.NODE_ENV = 'test';
 const knex = require('../src/config/connection');
 const { closeDb } = require('../src/config/database');

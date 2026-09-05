@@ -1,2 +1,0 @@
-{"alertId":"ALERT_1778777680421_3z55upyuh","description":"Tentativa de SQL Injection detectada - parâmetro: FiBv","level":"error","message":"CRITICAL_SECURITY_ALERT","needsImmediateAttention":true,"service":"cerne-backend","timestamp":"2026-05-14T16:54:40.422Z","type":"SQL_INJECTION"}
-{"blockImmediately":true,"ip":"::ffff:172.18.0.4","level":"error","message":"SQL_INJECTION_ATTEMPT","parameter":"FiBv","service":"cerne-backend","severity":"critical","timestamp":"2026-05-14T16:54:40.423Z"}

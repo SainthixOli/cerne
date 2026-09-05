@@ -8,6 +8,11 @@
 
 set -e
 
+if [ -z "${JWT_SECRET:-}" ]; then
+    echo "JWT_SECRET must be set before running this script" >&2
+    exit 1
+fi
+
 API_URL="http://localhost:3333"
 TENANT1_ADMIN_ID="admin-tenant-1"
 TENANT2_ADMIN_ID="admin-tenant-2"
@@ -30,7 +35,7 @@ generate_token() {
         role: '$role',
         name: 'Test User',
         tenantId: $tenant_id
-    }, process.env.JWT_SECRET || 'test-secret');
+    }, process.env.JWT_SECRET);
     console.log(token);
     "
 }
@@ -60,8 +65,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 TENANT1_TOKEN=$(generate_token "$TENANT1_ADMIN_ID" "admin" 1)
 TENANT2_TOKEN=$(generate_token "$TENANT2_ADMIN_ID" "admin" 2)
 
-echo "✅ Tenant 1 Token: ${TENANT1_TOKEN:0:30}..."
-echo "✅ Tenant 2 Token: ${TENANT2_TOKEN:0:30}..."
+echo "✅ Test tokens generated (values intentionally hidden)"
 echo ""
 
 # ═════════════════════════════════════════════════════════════════════
