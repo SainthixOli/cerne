@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Download, Eye, UploadCloud, X, File } from 'lucide-react';
 import api from '../../api';
+import { openProtectedFile } from '../../services/privateFiles';
+import { useAuth } from '../../auth/useAuth';
 
 const MemberDocuments = () => {
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadFile, setUploadFile] = useState(null);
+    const { user } = useAuth();
 
     const fetchDocuments = async () => {
         try {
@@ -28,27 +31,27 @@ const MemberDocuments = () => {
         if (!uploadFile) return;
 
         const data = new FormData();
-        data.append('file', uploadFile);
+        data.append('document', uploadFile);
 
         try {
             await api.post('/documents', data);
             setIsUploading(false);
             setUploadFile(null);
             fetchDocuments();
-        } catch (error) {
+        } catch {
             alert('Erro ao enviar documento');
         }
     };
 
-    const handleOpen = (url) => {
-        if (url) {
-            const filename = url.split('/').pop().split('\\').pop();
-            window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
+    const handleOpen = async (id) => {
+        try {
+            await openProtectedFile(`/documents/${id}`);
+        } catch {
+            alert('Não foi possível abrir o documento');
         }
     };
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const isInactive = user?.status_conta === 'inativo'; // Simple check from storage
+    const isInactive = user?.status === 'inativo';
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -67,7 +70,7 @@ const MemberDocuments = () => {
                             <span className="font-medium text-gray-700 dark:text-gray-200">Novo Documento</span>
                         </button>
                         <button
-                            onClick={() => window.open('http://localhost:3000/api/affiliations/certificate', '_blank')}
+                            onClick={() => openProtectedFile('/affiliations/certificate').catch(() => alert('Não foi possível abrir a carteirinha'))}
                             className="btn-primary flex items-center px-6 py-2.5"
                         >
                             <Download size={18} className="mr-2" />
@@ -100,7 +103,7 @@ const MemberDocuments = () => {
                                         <FileText size={32} className="text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <span className="text-gray-900 dark:text-white font-medium text-lg mb-1">{uploadFile ? uploadFile.name : 'Clique para selecionar'}</span>
-                                    <span className="text-gray-500 dark:text-gray-400 text-sm">PDF, JPG ou PNG (Max 5MB)</span>
+                                    <span className="text-gray-500 dark:text-gray-400 text-sm">PDF, JPG ou PNG (Máx. 10 MB)</span>
                                 </label>
                             </div>
 
@@ -161,14 +164,14 @@ const MemberDocuments = () => {
                                 </div>
                                 <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => handleOpen(doc.url_arquivo)}
+                                        onClick={() => handleOpen(doc.id)}
                                         className="p-2.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
                                         title="Visualizar"
                                     >
                                         <Eye size={20} />
                                     </button>
                                     <button
-                                        onClick={() => handleOpen(doc.url_arquivo)}
+                                        onClick={() => handleOpen(doc.id)}
                                         className="p-2.5 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition"
                                         title="Baixar"
                                     >

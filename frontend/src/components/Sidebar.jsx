@@ -3,14 +3,15 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { User, FileText, Settings, LogOut, Home, MessageSquare } from 'lucide-react';
 
 import { brand } from '../config/brand';
+import { useAuth } from '../auth/useAuth';
 
 const Sidebar = () => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
     };
 
     const navItems = [

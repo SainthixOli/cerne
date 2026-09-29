@@ -1,19 +1,17 @@
 const logger = require('../config/logger');
+const { sendError } = require('../utils/apiResponse');
 
-const errorHandler = (err, req, res, next) => {
-    logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-    logger.error(err.stack);
-
-    const status = err.status || 500;
-    const message = err.message || 'Erro interno no servidor';
-
-    // Hide stack trace in production
-    const response = {
-        error: message,
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    };
-
-    res.status(status).json(response);
+const errorHandler = (err, req, res, _next) => {
+    const status = Number(err.statusCode || err.status) || 500;
+    logger.error('Request failed', {
+        status,
+        method: req.method,
+        path: req.originalUrl,
+        ip: req.ip,
+        error: err
+    });
+    const publicMessage = status < 500 && err.expose ? err.message : undefined;
+    return sendError(res, status, publicMessage, status >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR');
 };
 
 module.exports = errorHandler;

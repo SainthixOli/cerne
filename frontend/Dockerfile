@@ -1,10 +1,14 @@
 # Build Stage
-FROM node:18-alpine as build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG VITE_TENANT_SLUG
+ARG VITE_API_URL=/api
+ENV VITE_TENANT_SLUG=$VITE_TENANT_SLUG
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Production Stage

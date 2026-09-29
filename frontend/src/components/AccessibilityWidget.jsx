@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Accessibility, Type, Sun, Moon, Volume2, Eye, X, ZoomIn, ZoomOut } from 'lucide-react';
 
+const itemsToRem = (percent) => 16 * (percent / 100);
+const savedNumber = (key, fallback) => {
+    const value = Number.parseInt(localStorage.getItem(key), 10);
+    return Number.isFinite(value) ? value : fallback;
+};
+
 const AccessibilityWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [fontSize, setFontSize] = useState(100);
-    const [contrastMode, setContrastMode] = useState('normal'); // 'normal', 'neon', 'clean'
-    const [clickToReadMode, setClickToReadMode] = useState(false);
+    const [fontSize, setFontSize] = useState(() => savedNumber('access_fontSize', 100));
+    const [contrastMode, setContrastMode] = useState(() => localStorage.getItem('access_contrastMode') || 'normal');
+    const [clickToReadMode, setClickToReadMode] = useState(() => localStorage.getItem('access_clickToRead') === 'true');
 
     // Setup TTS
     useEffect(() => {
@@ -13,19 +19,6 @@ const AccessibilityWidget = () => {
         return () => {
             window.speechSynthesis.cancel();
         };
-    }, []);
-
-    // Load preferences
-    useEffect(() => {
-        const savedFontSize = localStorage.getItem('access_fontSize');
-        const savedContrast = localStorage.getItem('access_contrastMode'); // Changed key
-        const savedClickToRead = localStorage.getItem('access_clickToRead');
-
-        if (savedFontSize) setFontSize(parseInt(savedFontSize));
-        if (savedContrast) {
-            setContrastMode(savedContrast);
-        }
-        if (savedClickToRead === 'true') setClickToReadMode(true);
     }, []);
 
     // Apply preferences
@@ -50,6 +43,7 @@ const AccessibilityWidget = () => {
 
     // Click to Read Logic
     useEffect(() => {
+        localStorage.setItem('access_clickToRead', String(clickToReadMode));
         if (!clickToReadMode) {
             document.body.style.cursor = 'default';
             window.speechSynthesis.cancel(); // Stop any ongoing speech when mode is off
@@ -110,11 +104,6 @@ const AccessibilityWidget = () => {
             window.speechSynthesis.cancel(); // Stop speech on cleanup
         };
     }, [clickToReadMode, contrastMode]);
-
-    // Helper to convert % to px (assuming base 16px)
-    const itemsToRem = (percent) => {
-        return (16 * (percent / 100));
-    };
 
     const handleReset = () => {
         setFontSize(100);

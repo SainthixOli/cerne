@@ -1,51 +1,92 @@
-version: '3.8'
-
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME must be provided through the environment}
+      POSTGRES_USER: cerne_migrator
+      POSTGRES_PASSWORD: ${DB_MIGRATION_PASSWORD:?DB_MIGRATION_PASSWORD must be provided through the environment}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
+      DB_GLOBAL_PASSWORD: ${DB_GLOBAL_PASSWORD:?DB_GLOBAL_PASSWORD must be provided through the environment}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/docker/postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+
+  migrate:
+    build: ./backend
+    command: npm run db:migrate
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:?DB_NAME must be provided through the environment}
+      - DB_USER=cerne_migrator
+      - DB_PASSWORD=${DB_MIGRATION_PASSWORD:?DB_MIGRATION_PASSWORD must be provided through the environment}
+    depends_on:
+      db:
+        condition: service_healthy
+
   backend:
     build: ./backend
     ports:
-      - "3333:3333"
+      - "3333:3000"
     environment:
       - NODE_ENV=development
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be provided through the environment}
-      - DB_NAME=database.sqlite
-      # If using Postgres:
-      # - DB_HOST=db
-      # - DB_USER=${DB_USER:?DB_USER must be provided through the environment}
-      # - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
+      - LEGACY_BEARER_TOKEN_RESPONSE=false
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:?DB_NAME must be provided through the environment}
+      - DB_USER=cerne_app
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
+      - DB_GLOBAL_USER=cerne_global
+      - DB_GLOBAL_PASSWORD=${DB_GLOBAL_PASSWORD:?DB_GLOBAL_PASSWORD must be provided through the environment}
+      - OBJECT_STORAGE_DRIVER=supabase
+      - OBJECT_STORAGE_BUCKET=${OBJECT_STORAGE_BUCKET:?OBJECT_STORAGE_BUCKET must be provided through the environment}
+      - SUPABASE_URL=${SUPABASE_URL:?SUPABASE_URL must be provided through the environment}
+      - SUPABASE_KEY=${SUPABASE_KEY:?SUPABASE_KEY must be provided through the environment}
+      - OUTBOX_ENCRYPTION_KEY=${OUTBOX_ENCRYPTION_KEY:?OUTBOX_ENCRYPTION_KEY must be provided through the environment}
+      - OUTBOX_WORKER_ENABLED=true
+      - FRONTEND_PUBLIC_URL=${FRONTEND_PUBLIC_URL:?FRONTEND_PUBLIC_URL must be provided through the environment}
+      - SMTP_HOST=${SMTP_HOST:?SMTP_HOST must be provided through the environment}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:?SMTP_FROM must be provided through the environment}
     volumes:
-      - ./backend/db:/app/db # Persist SQLite DB
       - ./backend/logs:/app/logs
-      - ./backend/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_TENANT_SLUG: ${VITE_TENANT_SLUG:?VITE_TENANT_SLUG must be configured}
+        VITE_API_URL: /api
     ports:
       - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
     depends_on:
-      - backend
-  # ... seus outros serviços (backend, frontend)
-
-  attacker:
-    image: kalilinux/kali-rolling
-    container_name: cerne-kali
-    tty: true
-    stdin_open: true
-    networks:
-      - default # Garante que ele está na mesma rede que o back e o front
-    volumes:
-      - ./kali_scripts:/root/scripts # Uma pasta no seu Mac para salvar seus scripts de ataque
-
-#  db: # Postgres (disabled for now as req is to keep SQLite, but ready for switch)
-#    image: postgres:15
-#    environment:
-#      POSTGRES_USER: ${DB_USER:?DB_USER must be provided through the environment}
-#      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be provided through the environment}
-#      POSTGRES_DB: cerne_db
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - pgdata:/var/lib/postgresql/data
-
+      backend:
+        condition: service_healthy
 volumes:
   pgdata:

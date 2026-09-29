@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../hooks/useTheme';
 import { Moon, Sun, Lock, Bell, Shield, Key, AlertCircle } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../auth/useAuth';
 
 const MemberSettings = () => {
     const { theme, toggleTheme } = useTheme();
+    const { user } = useAuth();
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
 
@@ -14,21 +16,20 @@ const MemberSettings = () => {
             toast.error('As senhas não coincidem');
             return;
         }
-        if (passwords.newPassword.length < 6) {
-            toast.error('A senha deve ter pelo menos 6 caracteres');
+        if (passwords.newPassword.length < 12) {
+            toast.error('Use pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo');
             return;
         }
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
             await api.post('/auth/change-password', {
-                userId: user.id,
-                newPassword: passwords.newPassword
+                newPassword: passwords.newPassword,
+                confirmPassword: passwords.confirmPassword
             });
             toast.success('Senha alterada com sucesso!');
             setIsChangingPassword(false);
             setPasswords({ newPassword: '', confirmPassword: '' });
-        } catch (error) {
+        } catch {
             toast.error('Erro ao alterar senha');
         }
     };
@@ -45,7 +46,7 @@ const MemberSettings = () => {
             // Opcional: Redirecionar para home para ver o status atualizado?
             window.location.href = '/member';
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Erro ao processar.');
+            toast.error(error.message || 'Erro ao processar.');
         }
     };
 
@@ -156,7 +157,7 @@ const MemberSettings = () => {
                 </section>
                 {/* Zona de Perigo */}
                 {/* Zona de Perigo - Only if Active */}
-                {JSON.parse(localStorage.getItem('user') || '{}').status_conta !== 'inativo' && (
+                {user?.status !== 'inativo' && (
                     <section className="glass-panel p-8 relative overflow-hidden border border-red-100 dark:border-red-900/30">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
 

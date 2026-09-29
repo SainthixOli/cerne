@@ -7,8 +7,14 @@ const jwt = require('jsonwebtoken');
 describe('Profile Endpoints', () => {
     let token;
     let userId = 'user-uuid-123';
+    let tenantId;
 
     beforeEach(async () => {
+        await knex('profiles').where({ id: userId }).del();
+        await knex('tenants').where({ slug: 'profile-test' }).del();
+        [{ id: tenantId }] = await knex('tenants')
+            .insert({ name: 'Profile Test', slug: 'profile-test', status: 'ATIVO' })
+            .returning('id');
         // Create user
         const hashedPassword = await bcrypt.hash('password123', 10);
         await knex('profiles').insert({
@@ -18,12 +24,13 @@ describe('Profile Endpoints', () => {
             email: 'profile@example.com',
             password_hash: hashedPassword,
             status_conta: 'ativo',
-            role: 'professor'
+            role: 'professor',
+            tenant_id: tenantId
         });
 
         // Generate token
         token = jwt.sign(
-            { id: userId, role: 'professor', name: 'Profile User' },
+            { id: userId, role: 'professor', name: 'Profile User', tenantId },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -31,6 +38,7 @@ describe('Profile Endpoints', () => {
 
     afterAll(async () => {
         await knex('profiles').where({ id: userId }).del();
+        await knex('tenants').where({ slug: 'profile-test' }).del();
     });
 
     it('should access protected profile route with token', async () => {
@@ -54,6 +62,6 @@ describe('Profile Endpoints', () => {
             .get('/api/profile')
             .set('Authorization', 'Bearer invalidtoken');
 
-        expect(res.statusCode).toBe(403); // Middleware usually returns 403 for invalid verify
+        expect(res.statusCode).toBe(401); // JWT inválido não autentica o usuário
     });
 });

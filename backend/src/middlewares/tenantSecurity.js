@@ -4,6 +4,7 @@
  */
 
 const logger = require('../config/logger');
+const auditRepository = require('../repositories/auditRepository');
 
 /**
  * Auditoria de ações sensíveis por tenant
@@ -12,9 +13,6 @@ const logger = require('../config/logger');
 const auditTenantAction = (actionType, descriptionFn) => {
     return async (req, res, next) => {
         try {
-            const { getDb } = require('../config/database');
-            const db = await getDb();
-
             // Calcular description se for função
             let description = descriptionFn;
             if (typeof descriptionFn === 'function') {
@@ -54,24 +52,15 @@ const auditTenantAction = (actionType, descriptionFn) => {
 async function logTenantAction(req, res, auditData) {
     try {
         if (res.statusCode < 400) { // Apenas ações bem-sucedidas
-            const { getDb } = require('../config/database');
-            const db = await getDb();
-
-            const query = `
-                INSERT INTO audit_logs 
-                (tenant_id, admin_id, action_type, target_id, details, ip_address, user_agent)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            await db.run(query, [
-                req.tenantId,
-                req.userId,
-                auditData.actionType,
-                req.params.id || null,
-                auditData.description,
-                auditData.ip_address,
-                auditData.user_agent
-            ]);
+            await auditRepository.create({
+                tenant_id: req.tenantId,
+                admin_id: req.userId,
+                action_type: auditData.actionType,
+                target_id: req.params.id || null,
+                details: auditData.description,
+                ip_address: auditData.ip_address,
+                user_agent: auditData.user_agent
+            });
 
             logger.info('Action logged for audit', {
                 tenantId: req.tenantId,

@@ -7,6 +7,7 @@
  */
 
 const logger = require('../config/logger');
+const tenantRepository = require('../repositories/tenantRepository');
 
 /**
  * Validação genérica: Verifica se um recurso pertence ao tenant
@@ -22,9 +23,6 @@ const logger = require('../config/logger');
 const validateResourceTenant = (tableName, paramName, dbTenantIdColumn = 'tenant_id') => {
     return async (req, res, next) => {
         try {
-            const { getDb } = require('../config/database');
-            const db = await getDb();
-
             const resourceId = req.params[paramName];
             const userTenantId = req.tenantId;
 
@@ -36,8 +34,8 @@ const validateResourceTenant = (tableName, paramName, dbTenantIdColumn = 'tenant
             }
 
             // Buscar recurso com filtro tenant
-            const query = `SELECT ${dbTenantIdColumn} as tenant_id FROM ${tableName} WHERE id = ? LIMIT 1`;
-            const resource = await db.get(query, [resourceId]);
+            if (dbTenantIdColumn !== 'tenant_id') throw new TypeError('Coluna de tenant inválida');
+            const resource = await tenantRepository.findResourceTenant(tableName, resourceId);
 
             if (!resource) {
                 logger.warn('Resource not found', {
@@ -123,9 +121,6 @@ const ensureTenantIsolation = (req, res, next) => {
 const validateResourcesOwnership = (tableName, idsParam = 'ids') => {
     return async (req, res, next) => {
         try {
-            const { getDb } = require('../config/database');
-            const db = await getDb();
-
             const ids = req.body[idsParam] || req.query[idsParam];
             const userTenantId = req.tenantId;
 
@@ -137,20 +132,13 @@ const validateResourcesOwnership = (tableName, idsParam = 'ids') => {
             }
 
             // Verificar que TODOS os recursos pertencem ao tenant
-            const placeholders = ids.map(() => '?').join(',');
-            const query = `
-                SELECT COUNT(*) as total FROM ${tableName} 
-                WHERE id IN (${placeholders}) 
-                AND tenant_id = ?
-            `;
-            
-            const result = await db.get(query, [...ids, userTenantId]);
+            const total = await tenantRepository.countResourcesInTenant(tableName, ids, userTenantId);
 
-            if (result.total !== ids.length) {
+            if (total !== ids.length) {
                 logger.warn('Bulk operation: some resources do not belong to tenant', {
                     table: tableName,
                     requestedCount: ids.length,
-                    foundCount: result.total,
+                    foundCount: total,
                     userTenantId
                 });
                 

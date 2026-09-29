@@ -108,12 +108,33 @@ class EnvironmentValidator {
             this.errors.push('PORT deve ser um número entre 1 e 65535.');
         }
 
-        if (NODE_ENV === 'production') {
-            if (!this.environment.DB_HOST) {
-                this.errors.push('DB_HOST não definida em produção.');
+        if (this.environment.LEGACY_BEARER_TOKEN_RESPONSE &&
+            !['true', 'false'].includes(this.environment.LEGACY_BEARER_TOKEN_RESPONSE)) {
+            this.errors.push('LEGACY_BEARER_TOKEN_RESPONSE deve ser true ou false.');
+        }
+
+        const databaseUrl = NODE_ENV === 'test'
+            ? (this.environment.DATABASE_URL_TEST || this.environment.DATABASE_URL)
+            : this.environment.DATABASE_URL;
+        const databaseName = NODE_ENV === 'test'
+            ? (this.environment.DB_NAME_TEST || this.environment.DB_NAME)
+            : this.environment.DB_NAME;
+
+        if (!databaseUrl) {
+            for (const [name, value] of [
+                ['DB_HOST', this.environment.DB_HOST],
+                [NODE_ENV === 'test' ? 'DB_NAME_TEST ou DB_NAME' : 'DB_NAME', databaseName],
+                ['DB_USER', this.environment.DB_USER],
+                ['DB_PASSWORD', this.environment.DB_PASSWORD]
+            ]) {
+                if (!value) this.errors.push(`${name} deve ser definido para PostgreSQL.`);
             }
-            if (!this.environment.SMTP_HOST) {
-                this.warnings.push('SMTP não configurado; emails não serão enviados.');
+        }
+
+        if (NODE_ENV === 'production') {
+            for (const name of ['SUPABASE_URL', 'SUPABASE_KEY', 'OBJECT_STORAGE_BUCKET',
+                'OUTBOX_ENCRYPTION_KEY', 'FRONTEND_PUBLIC_URL', 'SMTP_HOST', 'SMTP_FROM']) {
+                if (!this.environment[name]) this.errors.push(`${name} deve ser definido em produção.`);
             }
         }
     }
@@ -124,6 +145,7 @@ class EnvironmentValidator {
 
         this.validateRequiredSecret('JWT_SECRET');
         this.validateOptionalSecret('ENCRYPTION_KEY');
+        this.validateOptionalSecret('OUTBOX_ENCRYPTION_KEY');
         this.validateRuntimeConfiguration();
 
         if (this.errors.length > 0) {

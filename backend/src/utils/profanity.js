@@ -78,10 +78,7 @@ exports.hasProfanity = (text) => {
         // 'cu' pega 'curto', 'curso', 'cubo'. Isso é UM PROBLEMA com .includes().
 
         if (normalizedWord.length <= 3) {
-            // Para palavras curtas, usar regex para garantir que é uma palavra isolada
-            // ou está no início/fim ou cercada de espaços/pontuação
-            const regex = new RegExp(`\\b${normalizedWord}\\b`, 'i');
-            return regex.test(normalizedInput);
+            return normalizedInput.split(/[^a-z0-9]+/).includes(normalizedWord);
         } else {
             // Para palavras maiores, pode ser parte, mas cuidado com falsos positivos comuns.
             // "computador" tem "puta".
@@ -104,8 +101,7 @@ exports.hasProfanity = (text) => {
             const dangerousShortWords = ['cu', 'pis', 'pau', 'puta', 'puto', 'bisha', 'gay'];
 
             if (dangerousShortWords.includes(normalizedWord)) {
-                const regex = new RegExp(`\\b${normalizedWord}\\b`, 'i');
-                return regex.test(normalizedInput);
+                return normalizedInput.split(/[^a-z0-9]+/).includes(normalizedWord);
             }
 
             return normalizedInput.includes(normalizedWord);

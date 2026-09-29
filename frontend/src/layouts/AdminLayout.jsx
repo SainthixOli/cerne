@@ -1,47 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import NotificationBell from '../components/NotificationBell';
 import AdminSidebar from '../components/AdminSidebar';
-import ProceduralLoader from '../components/ProceduralLoader';
-import api from '../api';
 
-const AdminLayout = () => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem('token');
-    let user = {};
-    try {
-        user = JSON.parse(localStorage.getItem('user') || '{}');
-    } catch (e) {
-        console.error("Corrupted user data in localStorage, clearing.");
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-    }
-    const [isAuthenticated, setIsAuthenticated] = useState(null); // null = loading
+const MotionSection = motion.section;
 
-    useEffect(() => {
-        const verifyAuth = async () => {
-            if (!token || !user.role || (user.role !== 'admin' && user.role !== 'super_admin')) {
-                setIsAuthenticated(false);
-                return;
-            }
-
-            try {
-                // Optional: Verify token with backend
-                // await api.get('/auth/me'); 
-                setIsAuthenticated(true);
-            } catch (error) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setIsAuthenticated(false);
-            }
-        };
-        verifyAuth();
-    }, [token, navigate]);
-
-    if (isAuthenticated === null) return <div className="flex h-screen items-center justify-center"><ProceduralLoader /></div>;
-    if (isAuthenticated === false) return <Navigate to="/login" replace />;
-
+export default function AdminLayout() {
+    const location = useLocation();
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             <AdminSidebar />
@@ -53,7 +18,7 @@ const AdminLayout = () => {
                     <NotificationBell />
                 </header>
                 <main className="flex-grow overflow-y-auto p-8 relative">
-                    <motion.div
+                    <MotionSection
                         key={location.pathname}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -62,11 +27,9 @@ const AdminLayout = () => {
                         className="h-full"
                     >
                         <Outlet />
-                    </motion.div>
+                    </MotionSection>
                 </main>
             </div>
         </div>
     );
-};
-
-export default AdminLayout;
+}

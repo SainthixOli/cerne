@@ -7,6 +7,7 @@
 
 const jwt = require('jsonwebtoken');
 const logger = require('../config/logger');
+const { runTenantRequest } = require('./tenantDatabaseContext');
 
 /**
  * Extrai tenant_id do JWT e injeta em req.user e req.tenantId
@@ -15,7 +16,7 @@ const logger = require('../config/logger');
  * Exemplo:
  *   router.get('/affiliations', authenticate, tenantMiddleware, affiliationController.getAll);
  */
-const tenantMiddleware = (req, res, next) => {
+const tenantMiddleware = async (req, res, next) => {
     try {
         // Validar que req.user existe (foi criado pelo authenticate middleware)
         if (!req.user || !req.user.id) {
@@ -49,7 +50,7 @@ const tenantMiddleware = (req, res, next) => {
             role: req.userRole
         });
 
-        next();
+        return runTenantRequest(tenantId, req, res, next);
     } catch (error) {
         logger.error('Error in tenantMiddleware', { error: error.message });
         return res.status(500).json({ error: 'Internal server error' });

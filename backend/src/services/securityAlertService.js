@@ -4,7 +4,7 @@
  */
 
 const logger = require('../config/logger');
-const AuditLogger = require('../config/auditLogger');
+const securityAlertRepository = require('../repositories/securityAlertRepository');
 
 class SecurityAlertService {
     /**
@@ -43,7 +43,7 @@ class SecurityAlertService {
     /**
      * Detecta e cria alerta de brute force de login
      */
-    static detectBruteForceLogin(ip, cpf, success = false) {
+    static detectBruteForceLogin(ip, cpf, success = false, tenantId = null) {
         if (success) {
             // Limpa cache ao login bem-sucedido
             this.clearAttemptCache(`login_${ip}`);
@@ -66,6 +66,7 @@ class SecurityAlertService {
                 severity: this.SEVERITY.HIGH,
                 description: `${attempts.length} tentativas de login falhadas do IP ${ip}`,
                 sourceIp: ip,
+                tenantId,
                 details: {
                     cpf: cpf ? `${cpf.substring(0, 3)}***${cpf.substring(8)}` : 'unknown',
                     attemptCount: attempts.length,
@@ -81,7 +82,7 @@ class SecurityAlertService {
     /**
      * Detecta tentativas de reset de senha em massa
      */
-    static detectPasswordResetAbuse(ip, cpf) {
+    static detectPasswordResetAbuse(ip, cpf, tenantId = null) {
         const key = `reset_${ip}`;
         const now = Date.now();
         const timeWindow = 15 * 60 * 1000; // 15 minutos
@@ -98,6 +99,7 @@ class SecurityAlertService {
                 severity: this.SEVERITY.MEDIUM,
                 description: `${attempts.length} tentativas de reset de senha do IP ${ip}`,
                 sourceIp: ip,
+                tenantId,
                 details: {
                     cpf: cpf ? `${cpf.substring(0, 3)}***${cpf.substring(8)}` : 'unknown',
                     attemptCount: attempts.length,
@@ -112,13 +114,14 @@ class SecurityAlertService {
     /**
      * Detecta tentativas de XSS
      */
-    static detectXSSAttempt(ip, userId, payload) {
+    static detectXSSAttempt(ip, userId, payload, tenantId = null) {
         return this.createAlert({
             type: this.ALERT_TYPES.XSS_ATTEMPT,
             severity: this.SEVERITY.HIGH,
             description: `Tentativa de XSS detectada do IP ${ip}`,
             sourceIp: ip,
             userId: userId,
+            tenantId,
             details: {
                 payloadLength: payload.length,
                 payloadPreview: payload.substring(0, 100),
@@ -131,7 +134,7 @@ class SecurityAlertService {
     /**
      * Detecta padrão de SQL Injection
      */
-    static detectSQLInjection(ip, userId, parameter, value) {
+    static detectSQLInjection(ip, userId, parameter, value, tenantId = null) {
         const sqlPatterns = [
             /(\sunion\s|\sOR\s|--|;)/gi,
             /('|")\s*(OR|AND)\s*('|")/gi,
@@ -148,6 +151,7 @@ class SecurityAlertService {
                 description: `Tentativa de SQL Injection detectada - parâmetro: ${parameter}`,
                 sourceIp: ip,
                 userId: userId,
+                tenantId,
                 details: {
                     parameter: parameter,
                     valuePreview: value.substring(0, 50),
@@ -164,7 +168,7 @@ class SecurityAlertService {
     /**
      * Detecta acessos não autorizados em massa
      */
-    static detectUnauthorizedAccessSpike(ip) {
+    static detectUnauthorizedAccessSpike(ip, tenantId = null) {
         const key = `unauthorized_${ip}`;
         const now = Date.now();
         const timeWindow = 10 * 60 * 1000; // 10 minutos
@@ -181,6 +185,7 @@ class SecurityAlertService {
                 severity: this.SEVERITY.HIGH,
                 description: `${attempts.length} acessos não autorizados (401/403) do IP ${ip}`,
                 sourceIp: ip,
+                tenantId,
                 details: {
                     attemptCount: attempts.length,
                     timeWindow: '10 minutos',
@@ -271,7 +276,7 @@ class SecurityAlertService {
     /**
      * Detecta padrão de token inválido repetido
      */
-    static detectTokenAbuse(ip, tokenError) {
+    static detectTokenAbuse(ip, tokenError, tenantId = null) {
         const key = `token_${ip}`;
         const now = Date.now();
         const timeWindow = 5 * 60 * 1000;
@@ -288,6 +293,7 @@ class SecurityAlertService {
                 severity: this.SEVERITY.MEDIUM,
                 description: `Padrão repetido de token inválido/expirado do IP ${ip}`,
                 sourceIp: ip,
+                tenantId,
                 details: {
                     attemptCount: attempts.length,
                     errorType: tokenError,
@@ -315,14 +321,15 @@ class SecurityAlertService {
             timestamp: new Date().toISOString(),
             status: 'active',
             notified: false,
-            notifiedAdmins: []
+            notifiedAdmins: [],
+            tenantId: alertData.tenantId || null
         };
 
         // Log do alerta
         logger.warn('SECURITY_ALERT', alert);
 
         // Salvar alerta no banco
-        this.storeAlert(alert);
+        if (alert.tenantId) this.storeAlert(alert);
 
         // Notificar admin técnico
         this.notifyTechnicalAdmin(alert);
@@ -335,9 +342,8 @@ class SecurityAlertService {
      */
     static async storeAlert(alert) {
         try {
-            // TODO: Implementar salvamento em DB
-            // await knex('security_alerts').insert(alert);
-            logger.info('Alert stored', { alertId: alert.id });
+            const databaseId = await securityAlertRepository.create(alert);
+            logger.info('Alert stored', { alertId: databaseId });
         } catch (error) {
             logger.error('Error storing alert', { error: error.message });
         }
@@ -372,14 +378,9 @@ class SecurityAlertService {
     /**
      * Lista alertas ativas
      */
-    static getActiveAlerts(filters = {}) {
-        // TODO: Implementar filtro em DB
-        return {
-            alerts: [],
-            total: 0,
-            filters: filters,
-            generatedAt: new Date().toISOString()
-        };
+    static async getActiveAlerts(filters = {}) {
+        const result = await securityAlertRepository.list(filters);
+        return { ...result, filters, generatedAt: new Date().toISOString() };
     }
 
     /**
@@ -410,19 +411,15 @@ class SecurityAlertService {
     /**
      * Estatísticas de segurança
      */
-    static getSecurityStats() {
-        return {
-            totalAlerts: this.attemptCache.size,
-            activeThreats: Array.from(this.attemptCache.keys()),
-            lastCleanup: new Date().toISOString(),
-            memoryUsage: JSON.stringify(this.attemptCache).length
-        };
+    static async getSecurityStats(tenantId) {
+        return securityAlertRepository.stats(tenantId);
     }
 }
 
 // Limpar cache antigo a cada 15 minutos
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
     SecurityAlertService.cleanupOldCache();
 }, 15 * 60 * 1000);
+cleanupTimer.unref();
 
 module.exports = SecurityAlertService;

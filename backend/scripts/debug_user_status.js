@@ -1,34 +1,24 @@
-const { getDb } = require('../src/config/database');
+const knex = require('../src/config/connection');
 const { requireScriptEnv } = require('./scriptEnv');
+const { tenantFromEnvironment } = require('./userProvisioning');
 
-async function checkUserStatus() {
+async function main() {
     try {
-        const db = await getDb();
+        const tenantId = await tenantFromEnvironment();
         const userId = requireScriptEnv('CERNE_DEBUG_USER_ID');
-        const user = await db.get(
-            'SELECT id, status_conta FROM profiles WHERE id = ?',
-            [userId]
-        );
-
-        if (!user) {
-            console.log('User not found.');
-            return;
-        }
-
+        const user = await knex('profiles').select('id', 'status_conta')
+            .where({ id: userId, tenant_id: tenantId }).first();
+        if (!user) return console.log('User not found.');
+        const [{ count }] = await knex('filiacoes').where({ user_id: user.id, tenant_id: tenantId })
+            .count('* as count');
         console.log('User found; account status:', user.status_conta);
-
-        const rows = await db.all(`
-            SELECT id, status, data_solicitacao
-            FROM filiacoes
-            WHERE user_id = ?
-            ORDER BY data_solicitacao DESC
-        `, [user.id]);
-
-        console.log('Affiliation request count:', rows.length);
+        console.log('Affiliation request count:', Number(count));
     } catch (error) {
-        console.error('Error:', error.message);
+        console.error(error.message);
         process.exitCode = 1;
+    } finally {
+        await knex.destroy();
     }
 }
 
-checkUserStatus();
+main();

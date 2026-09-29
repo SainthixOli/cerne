@@ -1,34 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api';
 import { toast } from 'react-hot-toast';
 import { Send, User, Shield } from 'lucide-react';
+import { useAuth } from '../auth/useAuth';
 
-const ChatComponent = ({ filiacaoId, cpf = null }) => {
+const ChatComponent = ({ filiacaoId }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef(null);
+    const { user: currentUser } = useAuth();
 
-    const loadMessages = () => {
-        const headers = cpf ? { 'x-cpf': cpf } : {};
-        console.log(`[ChatComponent] Fetching messages for Filiacao: ${filiacaoId} | CPF: ${cpf ? cpf : 'Auth'}`);
-        api.get(`/affiliations/${filiacaoId}/chat`, { headers, silent: true })
+    const loadMessages = useCallback(() => {
+        api.get(`/affiliations/${filiacaoId}/chat`, { silent: true })
             .then(res => {
                 setMessages(res.data);
                 setLoading(false);
             })
             .catch(err => {
                 console.error(err);
-                if (!cpf) toast.error('Erro ao carregar chat'); // Apenas alertar se não estiver consultando silenciosamente
+                toast.error('Erro ao carregar chat');
                 setLoading(false);
             });
-    };
+    }, [filiacaoId]);
 
     useEffect(() => {
         loadMessages();
         const interval = setInterval(loadMessages, 3000); // Consultar a cada 3s para sensação de rapidez
         return () => clearInterval(interval);
-    }, [filiacaoId, cpf]);
+    }, [loadMessages]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,10 +39,8 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
         if (!newMessage.trim()) return;
 
         try {
-            const headers = cpf ? { 'x-cpf': cpf } : {};
-            await api.post(`/affiliations/${filiacaoId}/chat`, { message: newMessage }, { headers, silent: true });
+            await api.post(`/affiliations/${filiacaoId}/chat`, { message: newMessage }, { silent: true });
             setNewMessage('');
-            loadMessages();
             loadMessages();
         } catch (error) {
             console.error(error);
@@ -83,40 +81,9 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
                     </div>
                 )}
 
-                {messages.map((msg, index) => {
+                {messages.map((msg) => {
                     const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'super_admin';
-
-                    // "Me" logic: 
-                    // Se forneci um CPF (visualização pública), "Eu" é o Usuário (papel do remetente != admin).
-                    // Se não forneci CPF (visualização admin ou usuário logado), confiamos no contexto.
-                    // Heurística: Se a prop cpf for passada, o visualizador é USUÁRIO.
-                    // Se não for passada, assumimos que o visualizador é Usuário Logado OU Admin.
-                    // Vamos usar o localStorage para verificar o papel se o cpf for nulo.
-
-                    let isMe = false;
-                    if (cpf) {
-                        // Acesso Público: Eu sou o Usuário (não-admin)
-                        // Mensagens de Admin (esquerda) vs Minhas (direita)
-                        isMe = !isAdmin;
-                    } else {
-                        // Acesso Interno (Admin Dashboard ou Logged User)
-                        // Para resolver o conflito de "Auto-Teste" (Admin = Usuário), baseamos no Papel.
-                        // Se estou no Painel Admin, "Eu" sou a Instituição (Admins).
-                        // Mensagens de Usuário -> Esquerda.
-                        // Mensagens de Admin -> Direita.
-
-                        // Verificamos o papel do visualizador atual
-                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                        const isViewerAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
-
-                        if (isViewerAdmin) {
-                            // Se sou Admin vendo isso, mensagens de Admin ficam na direita.
-                            isMe = isAdmin;
-                        } else {
-                            // Se sou User logado vendo histórico, mensagens minhas (User) na direita.
-                            isMe = !isAdmin;
-                        }
-                    }
+                    const isMe = currentUser?.id === msg.sender_id;
 
                     return (
                         <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
@@ -147,7 +114,7 @@ const ChatComponent = ({ filiacaoId, cpf = null }) => {
             </div>
 
             {/* Input Area - Disabled if Inactive */}
-            {JSON.parse(localStorage.getItem('user') || '{}').status_conta === 'inativo' ? (
+            {currentUser?.status === 'inativo' ? (
                 <div className="p-4 bg-red-500/10 border-t border-red-500/20 backdrop-blur-md text-center">
                     <p className="text-red-300 text-sm font-medium">Sua conta está desativada. O chat está disponível apenas para leitura.</p>
                 </div>

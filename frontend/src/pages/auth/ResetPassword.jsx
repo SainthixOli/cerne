@@ -24,8 +24,8 @@ const ResetPassword = () => {
             setError('As senhas não coincidem.');
             return;
         }
-        if (passwords.newPassword.length < 6) {
-            setError('A senha deve ter pelo menos 6 caracteres.');
+        if (passwords.newPassword.length < 12) {
+            setError('A senha deve ter pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo.');
             return;
         }
 
@@ -35,7 +35,8 @@ const ResetPassword = () => {
         try {
             await api.post('/auth/reset-password', {
                 token,
-                newPassword: passwords.newPassword
+                newPassword: passwords.newPassword,
+                confirmPassword: passwords.confirmPassword
             });
 
             setSuccess(true);
@@ -44,7 +45,7 @@ const ResetPassword = () => {
             }, 3000);
 
         } catch (err) {
-            setError(err.response?.data?.error || 'Erro ao redefinir senha. O link pode ter expirado.');
+            setError(err.message || 'Erro ao redefinir senha. O link pode ter expirado.');
         } finally {
             setLoading(false);
         }

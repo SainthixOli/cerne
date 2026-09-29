@@ -7,7 +7,7 @@ module.exports = [
             security: securityPlugin
         },
         languageOptions: {
-            ecmaVersion: 2021,
+            ecmaVersion: 2022,
             sourceType: "commonjs"
         },
         rules: {

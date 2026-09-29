@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -11,9 +11,6 @@ COPY . .
 # Remover shell history para segurança
 RUN rm -f ~/.bash_history ~/.sh_history
 
-# Migration script to run on start? Or use a wrapper.
-# For now, simplest is direct start. User can run migrations via 'docker exec'.
-
-EXPOSE 3333
+EXPOSE 3000
 
 CMD ["npm", "start"]

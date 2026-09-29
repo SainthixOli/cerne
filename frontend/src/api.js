@@ -1,34 +1,40 @@
 import axios from 'axios';
 import { loadingService } from './services/loadingService';
+import { environment } from './config/environment';
+import { normalizeApiError } from './services/apiErrors';
+import { notifyForbidden, notifyUnauthorized } from './services/sessionEvents';
 
 const api = axios.create({
-    baseURL: 'http://localhost:3000/api',
+    baseURL: environment.apiUrl,
+    withCredentials: true,
+    timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {
-    // Only show loading if not silent
     if (!config.silent) {
+        config.tracksGlobalLoading = true;
         loadingService.start();
     }
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (environment.tenantSlug) config.headers['X-Tenant-Slug'] = environment.tenantSlug;
     return config;
 }, (error) => {
-    loadingService.stop();
-    return Promise.reject(error);
+    if (error.config?.tracksGlobalLoading) loadingService.stop();
+    return Promise.reject(normalizeApiError(error));
 });
 
 api.interceptors.response.use(
     (response) => {
-        // Only stop if it started (simplification: stop is safe to call even if not started usually, but safe to just call it)
-        loadingService.stop();
+        if (response.config.tracksGlobalLoading) loadingService.stop();
         return response;
     },
     (error) => {
-        loadingService.stop();
-        return Promise.reject(error);
+        if (error.config?.tracksGlobalLoading) loadingService.stop();
+        const normalized = normalizeApiError(error);
+        if (!error.config?.skipAuthHandling) {
+            if (normalized.status === 401) notifyUnauthorized();
+            if (normalized.status === 403) notifyForbidden(normalized);
+        }
+        return Promise.reject(normalized);
     }
 );
 

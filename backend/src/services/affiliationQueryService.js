@@ -7,30 +7,18 @@ class QueryServiceError extends Error {
     }
 }
 
-// 🌐 Tenant-agnostic: Used for public status check (no authentication required)
-// Discovers tenant from user's CPF, then uses it for queries
-async function checkStatusByCpf(cpf) {
+// The public route resolves and validates tenant before looking up the CPF.
+async function checkStatusByCpf(cpf, tenantId) {
     const cleanCpf = cpf.replace(/\D/g, '');
-    const user = await affiliationRepository.findUserByCpfNormalized(cleanCpf);
+    const user = await affiliationRepository.findUserByCpfNormalized(cleanCpf, tenantId);
     if (!user) {
         throw new QueryServiceError('CPF não encontrado.', 404);
     }
-
-    // 🏢 For public endpoint: discover tenant from user, default to tenant 1
-    const { getDb } = require('../config/database');
-    const db = await getDb();
-    const tenantRecord = await db.get(
-        'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
-        [user.id]
-    );
-    const tenantId = tenantRecord?.tenant_id || 1;
 
     const filiacao = await affiliationRepository.getLatestAffiliationByUserId(user.id, tenantId);
     if (!filiacao) {
         throw new QueryServiceError('Nenhuma solicitação encontrada.', 404);
     }
-
-    const messageCount = await affiliationRepository.countChatMessagesByAffiliationId(filiacao.id, tenantId);
 
     return {
         id: filiacao.id,
@@ -38,7 +26,6 @@ async function checkStatusByCpf(cpf) {
         status: filiacao.status,
         observacoes: filiacao.observacoes_admin,
         status_conta: user.status_conta,
-        message_count: messageCount?.count || 0,
         protocolo: filiacao.protocolo || 'Pendente',
         responsavel: filiacao.responsavel_nome || null,
         status_atendimento: filiacao.status_atendimento

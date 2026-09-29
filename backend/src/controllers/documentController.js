@@ -1,121 +1,85 @@
-const { getDb } = require('../config/database');
-const path = require('path');
-const fs = require('fs');
+const storage = require('../services/localStorage');
+const auditService = require('../services/auditService');
+const documentRepository = require('../repositories/documentRepository');
 
-exports.serveDocument = async (req, res) => {
-    const { filename } = req.params;
-    const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-
-    // Segurança: Prevenir travessia de diretório
-    const safeFilename = path.basename(filename);
-    const filePath = path.join(__dirname, '../../uploads', safeFilename);
+exports.serveDocument = async (req, res, next) => {
+    const id = Number(req.params.documentId);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(404).json({ error: 'Documento não encontrado' });
 
     try {
-        // Verificar se o arquivo existe
-        if (!fs.existsSync(filePath)) {
+        const document = await documentRepository.findForAccess(id, req.tenantId);
+        if (!document) return res.status(404).json({ error: 'Documento não encontrado' });
+
+        const owner = document.user_id === req.user.id;
+        const adminForAffiliation = req.user.role === 'admin' && document.authorized_affiliation_id != null &&
+            (document.responsavel_admin_id == null || document.responsavel_admin_id === req.user.id);
+        const tenantSuperAdmin = req.user.role === 'super_admin';
+        if (!owner && !adminForAffiliation && !tenantSuperAdmin) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
+
+        let object;
+        try {
+            object = await storage.read(document.url_arquivo);
+        } catch (_) {
             return res.status(404).json({ error: 'Documento não encontrado' });
         }
-
-        const db = await getDb();
-
-        // SECURITY FIX: Verificação de propriedade robusta
-        const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
-        
-        if (!isAdmin) {
-            // Usuários comuns: Verificação rigorosa de propriedade
-            const document = await db.get(
-                'SELECT user_id FROM documentos WHERE LOWER(url_arquivo) LIKE LOWER(?) AND tenant_id = ? LIMIT 1',
-                [`%${safeFilename}`, tenantId]
-            );
-
-            if (!document) {
-                return res.status(404).json({ error: 'Documento não encontrado' });
-            }
-
-            // Verificação explícita de propriedade
-            if (document.user_id !== req.user.id) {
-                return res.status(403).json({ 
-                    error: 'Acesso negado: este documento não é seu',
-                    code: 'FORBIDDEN_DOCUMENT_ACCESS'
-                });
-            }
-        }
-
-        res.sendFile(filePath);
+        const extension = object.mimeType === 'application/pdf' ? '.pdf' :
+            object.mimeType === 'image/png' ? '.png' : '.jpg';
+        res.set('Cache-Control', 'private, no-store');
+        res.type(object.mimeType);
+        res.set('Content-Disposition', `attachment; filename="documento${extension}"`);
+        return res.send(object.buffer);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao buscar documento' });
+        return next(error);
     }
 };
 
-exports.getMyDocuments = async (req, res) => {
+exports.getMyDocuments = async (req, res, next) => {
     try {
-        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
-        const userId = req.user.id;
-
-        const documents = await db.all(`
-      SELECT d.id, d.tipo_documento, d.url_arquivo, d.data_upload
-      FROM documentos d
-      JOIN filiacoes f ON d.filiacao_id = f.id AND f.tenant_id = ?
-      WHERE f.user_id = ? AND d.tenant_id = ?
-    `, [tenantId, userId, tenantId]);
-
-        res.json(documents);
+        const documents = await documentRepository.listForUser(req.user.id, req.tenantId);
+        return res.json(documents);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao buscar documentos' });
+        return next(error);
     }
 };
-
-const auditService = require('../services/auditService');
 
 exports.uploadDocument = async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Arquivo obrigatório' });
+    let persisted = false;
     try {
-        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
-        const userId = req.user.id;
-        const filePath = req.file.path;
-
-        // Encontrar ID da filiação (opcional, mas bom vincular se existir)
-        const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [userId, tenantId]);
-        const filiacaoId = filiacao ? filiacao.id : null;
-
-        await db.run(
-            `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento, tenant_id) VALUES (?, ?, ?, 'outro', ?)`,
-            [userId, filiacaoId, filePath, tenantId]
-        );
-
-        // Audit Log
+        const affiliation = await documentRepository.latestAffiliationForUser(req.user.id, req.tenantId);
+        const documentId = await documentRepository.create({
+            userId: req.user.id,
+            affiliationId: affiliation?.id || null,
+            storageKey: req.file.storageKey,
+            type: 'outro',
+            tenantId: req.tenantId
+        });
+        persisted = true;
         if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-            await auditService.logAction(userId, 'UPLOAD_DOCUMENT', filiacaoId || userId, { filename: req.file.filename, type: 'outro' }, tenantId);
+            await auditService.logAction(req.user.id, 'UPLOAD_DOCUMENT', affiliation?.id || req.user.id,
+                { documentId, type: 'outro' }, req.tenantId);
         }
-
-        res.json({ message: 'Document uploaded', filename: req.file.filename });
+        return res.json({ message: 'Document uploaded', id: documentId });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error uploading document' });
+        if (!persisted) await storage.remove(req.file.storageKey).catch(() => {});
+        return res.status(500).json({ error: 'Erro ao salvar documento' });
     }
 };
+
 exports.uploadTemplate = async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Arquivo obrigatório' });
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
-
-        // Em uma aplicação real, poderíamos armazenar este caminho em uma tabela de 'configurações'
-        // Por enquanto, assumimos que está salvo em uploads/ com um nome específico ou apenas usamos o arquivo fornecido
-
-        res.json({
-            message: 'Template uploaded successfully',
-            filename: req.file.filename,
-            originalName: req.file.originalname
+        const documentId = await documentRepository.create({
+            userId: req.user.id,
+            storageKey: req.file.storageKey,
+            type: 'template',
+            tenantId: req.tenantId
         });
-
+        return res.json({ message: 'Template uploaded successfully', id: documentId });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to upload template' });
+        await storage.remove(req.file.storageKey).catch(() => {});
+        return res.status(500).json({ error: 'Erro ao salvar template' });
     }
 };

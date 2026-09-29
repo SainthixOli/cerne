@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { toast } from 'react-hot-toast';
@@ -51,15 +51,9 @@ const AdminCollaboratorDetail = () => {
         fetchAdmin();
     }, [id, navigate]);
 
-    useEffect(() => {
-        if (admin && month) {
-            loadPerformance();
-        }
-    }, [admin, month]);
-
-    const loadPerformance = () => {
+    const loadPerformance = useCallback(() => {
         setStatsLoading(true);
-        api.get(`/admin/performance?adminId=${id}&month=${month}`)
+        api.get('/admin/performance', { params: { adminId: id, month } })
             .then(res => {
                 setStats(res.data);
                 setStatsLoading(false);
@@ -68,7 +62,13 @@ const AdminCollaboratorDetail = () => {
                 console.error(err);
                 setStatsLoading(false);
             });
-    };
+    }, [id, month]);
+
+    useEffect(() => {
+        if (admin && month) {
+            loadPerformance();
+        }
+    }, [admin, month, loadPerformance]);
 
     const handleEvaluationSubmit = async (e) => {
         e.preventDefault();
@@ -93,7 +93,7 @@ const AdminCollaboratorDetail = () => {
                 visible: evaluation.visible // Send visibility flag
             });
             toast.success('Avaliação salva com sucesso!');
-        } catch (error) {
+        } catch {
             toast.error('Erro ao salvar avaliação.');
         }
     };

@@ -18,7 +18,7 @@ const checkResourceOwnership = (resourceParamName = 'id') => {
             const userRole = req.user.role;
 
             // Admins sempre podem acessar qualquer recurso
-            if (userRole === 'admin' || userRole === 'super_admin' || userRole === 'system_manager') {
+            if (userRole === 'admin' || userRole === 'super_admin') {
                 return next();
             }
 
@@ -38,30 +38,6 @@ const checkResourceOwnership = (resourceParamName = 'id') => {
     };
 };
 
-/**
- * Middleware específico para verificar propriedade de documento
- * Valida se o documento pertence ao usuário autenticado
- */
-const checkDocumentOwnership = (req, res, next) => {
-    // Este middleware será usado em conjunto com documentController
-    // para garantir que apenas o proprietário ou admin acesse documentos
-    
-    const { filename } = req.params;
-    const userRole = req.user.role;
-    
-    // Admins sempre podem acessar
-    if (userRole === 'admin' || userRole === 'super_admin') {
-        return next();
-    }
-    
-    // Usuários comuns: validação feita no controller com verificação do BD
-    // Marcamos no request que precisa validação
-    req.requireDocumentOwnershipCheck = true;
-    
-    next();
-};
-
 module.exports = {
-    checkResourceOwnership,
-    checkDocumentOwnership
+    checkResourceOwnership
 };

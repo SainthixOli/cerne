@@ -1,19 +1,22 @@
 const knex = require('../config/connection');
 const logger = require('../config/logger');
 
-async function runHealthCheck() {
-    logger.info('[System] Running startup health check...');
-
+async function checkReadiness() {
     try {
-        // 1. Check DB Connection
         await knex.raw('SELECT 1');
-        logger.info('[System] Database connection verified.');
-
-        return true;
+        return { ready: true };
     } catch (error) {
-        logger.error('[System] Health check FAILED:', error);
-        return false;
+        logger.error('[System] Readiness check failed', { code: error.code });
+        return { ready: false, code: 'DATABASE_UNAVAILABLE' };
     }
 }
 
-module.exports = { runHealthCheck };
+async function runHealthCheck() {
+    logger.info('[System] Running startup readiness check');
+    const result = await checkReadiness();
+    if (!result.ready) throw new Error('Falha ao conectar ao PostgreSQL');
+    logger.info('[System] Database connection verified');
+    return true;
+}
+
+module.exports = { checkReadiness, runHealthCheck };

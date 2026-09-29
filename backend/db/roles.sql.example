@@ -1,0 +1,14 @@
+-- Execute as the database owner, passing secrets through psql variables:
+-- psql ... -v app_password='...' -v global_password='...' -f db/roles.sql.example
+CREATE ROLE cerne_app LOGIN PASSWORD :'app_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+CREATE ROLE cerne_global LOGIN PASSWORD :'global_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+
+GRANT CONNECT ON DATABASE :DBNAME TO cerne_app, cerne_global;
+GRANT USAGE ON SCHEMA public TO cerne_app, cerne_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO cerne_app, cerne_global;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO cerne_app, cerne_global;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO cerne_app, cerne_global;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO cerne_app, cerne_global;

@@ -3,16 +3,16 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, FileText, Settings, LogOut, BarChart, Activity, File, CheckCircle, MessageSquare, User } from 'lucide-react';
 
 import { brand } from '../config/brand';
+import { useAuth } from '../auth/useAuth';
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user'));
+    const { user, logout } = useAuth();
     const isSuperAdmin = user?.role === 'super_admin';
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
     };
 
     const navItems = [

@@ -4,6 +4,7 @@
  */
 
 const rateLimit = require('express-rate-limit');
+const { sendError } = require('../utils/apiResponse');
 
 // ==========================================
 // CONFIGURAÇÕES GLOBAIS
@@ -11,6 +12,7 @@ const rateLimit = require('express-rate-limit');
 
 const DEFAULT_WINDOW = 15 * 60 * 1000;  // 15 minutos
 const ONE_HOUR = 60 * 60 * 1000;        // 1 hora
+const limitHandler = (code, message) => (req, res) => sendError(res, 429, message, code);
 
 // ==========================================
 // RATE LIMITERS POR CATEGORIA
@@ -22,11 +24,10 @@ const ONE_HOUR = 60 * 60 * 1000;        // 1 hora
  */
 const globalLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
-    max: 100,
-    message: { error: 'Too many requests, please try again later.' },
+    max: process.env.NODE_ENV === 'test' ? 10000 : 100,
+    handler: limitHandler('GLOBAL_RATE_LIMIT', 'Muitas requisições. Tente novamente mais tarde.'),
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => req.user?.role === 'super_admin',  // Admins são excluídos
 });
 
 /**
@@ -36,10 +37,7 @@ const globalLimiter = rateLimit({
 const authLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
     max: 5,
-    message: { 
-        error: 'Too many login attempts. Please try again in 15 minutes.',
-        code: 'AUTH_RATE_LIMIT'
-    },
+    handler: limitHandler('AUTH_RATE_LIMIT', 'Muitas tentativas de login. Tente novamente em 15 minutos.'),
     skipSuccessfulRequests: true,  // Reinicia contador após sucesso
     skipFailedRequests: false,     // Conta tentativas falhadas
 });
@@ -51,10 +49,7 @@ const authLimiter = rateLimit({
 const passwordResetLimiter = rateLimit({
     windowMs: ONE_HOUR,
     max: 3,
-    message: { 
-        error: 'Too many password reset attempts. Please try again in an hour.',
-        code: 'PASSWORD_RESET_LIMIT'
-    },
+    handler: limitHandler('PASSWORD_RESET_LIMIT', 'Muitas tentativas de redefinição. Tente novamente em uma hora.'),
     skipSuccessfulRequests: true,
 });
 
@@ -65,25 +60,18 @@ const passwordResetLimiter = rateLimit({
 const changePasswordLimiter = rateLimit({
     windowMs: ONE_HOUR,
     max: 5,
-    message: { 
-        error: 'Too many password changes. Please try again in an hour.',
-        code: 'PASSWORD_CHANGE_LIMIT'
-    },
+    handler: limitHandler('PASSWORD_CHANGE_LIMIT', 'Muitas alterações de senha. Tente novamente em uma hora.'),
 });
 
 /**
  * Limiter para Admin Operations: RIGOROSO
  * 20 operações por 15 minutos
- * Reduz para apenas admins (filtragem adicional no controlador)
+ * Contabiliza apenas admins; autorização é responsabilidade do requireRole nas rotas.
  */
 const adminOperationLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
     max: 20,
-    message: { 
-        error: 'Too many admin operations. Please try again later.',
-        code: 'ADMIN_RATE_LIMIT'
-    },
-    skip: (req) => req.user?.role !== 'admin' && req.user?.role !== 'super_admin',
+    handler: limitHandler('ADMIN_RATE_LIMIT', 'Muitas operações administrativas. Tente novamente mais tarde.'),
 });
 
 /**
@@ -93,10 +81,7 @@ const adminOperationLimiter = rateLimit({
 const uploadLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
     max: 10,
-    message: { 
-        error: 'Too many uploads. Please try again later.',
-        code: 'UPLOAD_RATE_LIMIT'
-    },
+    handler: limitHandler('UPLOAD_RATE_LIMIT', 'Muitos uploads. Tente novamente mais tarde.'),
 });
 
 /**
@@ -106,10 +91,7 @@ const uploadLimiter = rateLimit({
 const publicLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
     max: 50,
-    message: { 
-        error: 'Too many requests. Please try again later.',
-        code: 'PUBLIC_RATE_LIMIT'
-    },
+    handler: limitHandler('PUBLIC_RATE_LIMIT', 'Muitas requisições. Tente novamente mais tarde.'),
 });
 
 /**
@@ -119,11 +101,7 @@ const publicLimiter = rateLimit({
 const sensibleOperationLimiter = rateLimit({
     windowMs: DEFAULT_WINDOW,
     max: 5,
-    message: { 
-        error: 'Too many sensitive operations. Please try again later.',
-        code: 'SENSITIVE_OPERATION_LIMIT'
-    },
-    skip: (req) => req.user?.role !== 'admin' && req.user?.role !== 'super_admin',
+    handler: limitHandler('SENSITIVE_OPERATION_LIMIT', 'Muitas operações sensíveis. Tente novamente mais tarde.'),
 });
 
 module.exports = {

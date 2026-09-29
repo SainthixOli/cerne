@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
-import api from '../../api';
 import Loading from '../../components/Loading';
 import { maskCPF } from '../../utils/masks';
 import ThemeToggle from '../../components/ThemeToggle';
 
 import { brand } from '../../config/brand';
+import { useAuth } from '../../auth/useAuth';
+import { homeForRole } from '../../auth/roleRoutes';
 
 const Login = () => {
     // ... (state hooks remain same)
@@ -15,6 +16,7 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleChange = (e) => {
         let { name, value } = e.target;
@@ -27,26 +29,16 @@ const Login = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await api.post('/auth/login', credentials);
-            const { token, user } = response.data;
-
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(user));
+            const user = await login(credentials);
 
             if (user.changePasswordRequired) {
                 navigate('/change-password');
                 return;
             }
 
-            if (user.role === 'admin' || user.role === 'super_admin') {
-                navigate('/admin');
-            } else if (user.role === 'system_manager') {
-                navigate('/system');
-            } else {
-                navigate('/member');
-            }
+            navigate(homeForRole(user.role), { replace: true });
         } catch (err) {
-            setError(err.response?.data?.error || 'Erro ao fazer login');
+            setError(err.message || 'Erro ao fazer login');
         } finally {
             setLoading(false);
         }

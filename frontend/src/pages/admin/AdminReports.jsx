@@ -7,7 +7,6 @@ import {
 import { FileText, Users, Clock, AlertCircle, Download, Loader } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../api';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 

@@ -5,6 +5,8 @@
 
 const SecurityAlertService = require('../services/securityAlertService');
 const logger = require('../config/logger');
+const securityAlertRepository = require('../repositories/securityAlertRepository');
+const auditRepository = require('../repositories/auditRepository');
 
 class SecurityAlertsController {
     /**
@@ -23,11 +25,11 @@ class SecurityAlertsController {
 
             const { severity, type, limit = 50, offset = 0 } = req.query;
 
-            const filters = {};
+            const filters = { tenantId: req.tenantId, limit: Number(limit), offset: Number(offset) };
             if (severity) filters.severity = severity;
             if (type) filters.type = type;
 
-            const alerts = SecurityAlertService.getActiveAlerts(filters);
+            const alerts = await SecurityAlertService.getActiveAlerts(filters);
 
             logger.info('Security alerts retrieved', {
                 userId: req.user.id,
@@ -65,8 +67,7 @@ class SecurityAlertsController {
 
             const { alertId } = req.params;
 
-            // TODO: Recuperar alerta do banco
-            const alert = null; // await knex('security_alerts').where({ id: alertId }).first();
+            const alert = await securityAlertRepository.findById(alertId, req.tenantId);
 
             if (!alert) {
                 return res.status(404).json({
@@ -103,13 +104,9 @@ class SecurityAlertsController {
             const { alertId } = req.params;
             const { notes } = req.body;
 
-            // TODO: Atualizar alerta no banco
-            // await knex('security_alerts').where({ id: alertId }).update({
-            //     acknowledged: true,
-            //     acknowledged_by: req.user.id,
-            //     acknowledged_at: new Date(),
-            //     admin_notes: notes
-            // });
+            const updated = await securityAlertRepository.acknowledge(
+                alertId, req.tenantId, req.user.id, notes);
+            if (updated !== 1) return res.status(404).json({ error: 'Alerta não encontrado' });
 
             logger.info('Alert acknowledged', {
                 userId: req.user.id,
@@ -137,32 +134,21 @@ class SecurityAlertsController {
                 return res.status(403).json({ error: 'Acesso negado' });
             }
 
-            const stats = SecurityAlertService.getSecurityStats();
+            const stats = await SecurityAlertService.getSecurityStats(req.tenantId);
+
+            const threatsByType = Object.fromEntries(stats.byType.map((row) => [row.alert_type, Number(row.count)]));
+            const threatsBySeverity = Object.fromEntries(stats.bySeverity.map((row) => [row.severity, Number(row.count)]));
 
             const dashboard = {
                 summary: {
-                    totalAlerts: stats.totalAlerts,
-                    activeThreats: stats.activeThreats.length,
+                    totalAlerts: stats.summary.total,
+                    activeThreats: stats.summary.active,
                     lastUpdate: new Date().toISOString()
                 },
-                threatsByType: {
-                    [SecurityAlertService.ALERT_TYPES.BRUTE_FORCE_LOGIN]: 0,
-                    [SecurityAlertService.ALERT_TYPES.XSS_ATTEMPT]: 0,
-                    [SecurityAlertService.ALERT_TYPES.SQL_INJECTION]: 0,
-                    [SecurityAlertService.ALERT_TYPES.UNAUTHORIZED_ACCESS]: 0,
-                    [SecurityAlertService.ALERT_TYPES.TOKEN_ABUSE]: 0,
-                    [SecurityAlertService.ALERT_TYPES.RATE_LIMIT_EXCEEDED]: 0,
-                    other: 0
-                },
-                threatsBySeverity: {
-                    critical: 0,
-                    high: 0,
-                    medium: 0,
-                    low: 0
-                },
+                threatsByType,
+                threatsBySeverity,
                 topThreatenedIPs: [],
-                recentAlerts: [],
-                // TODO: Agregar dados do banco
+                recentAlerts: stats.recent,
                 securityScore: calculateSecurityScore()
             };
 
@@ -193,6 +179,7 @@ class SecurityAlertsController {
 
             const timeRange = req.query.timeRange || '24h'; // 1h, 24h, 7d, 30d
 
+            const persisted = await SecurityAlertService.getSecurityStats(req.tenantId);
             const stats = {
                 timeRange: timeRange,
                 loginAttempts: {
@@ -219,8 +206,8 @@ class SecurityAlertsController {
                 },
                 topThreatenedAccounts: [],
                 topAttackingIPs: [],
-                generatedAt: new Date().toISOString()
-                // TODO: Popular com dados do banco
+                generatedAt: new Date().toISOString(),
+                persisted: persisted.summary
             };
 
             logger.info('Security stats retrieved', {
@@ -259,8 +246,15 @@ class SecurityAlertsController {
                 offset = 0
             } = req.query;
 
-            // TODO: Query no banco de audit logs com filtros
-            const auditLogs = [];
+            let auditLogs = await auditRepository.list(req.tenantId);
+            if (eventType) auditLogs = auditLogs.filter((entry) => entry.action_type === eventType);
+            if (userId) auditLogs = auditLogs.filter((entry) => entry.admin_id === userId);
+            if (ip) auditLogs = auditLogs.filter((entry) => entry.ip_address === ip);
+            if (startDate) auditLogs = auditLogs.filter((entry) => new Date(entry.created_at) >= new Date(startDate));
+            if (endDate) auditLogs = auditLogs.filter((entry) => new Date(entry.created_at) <= new Date(endDate));
+            if (severity) auditLogs = auditLogs.filter((entry) => entry.details?.includes?.(severity));
+            const total = auditLogs.length;
+            auditLogs = auditLogs.slice(Number(offset), Number(offset) + Number(limit));
 
             logger.info('Audit log retrieved', {
                 userId: req.user.id,
@@ -273,7 +267,7 @@ class SecurityAlertsController {
                 pagination: {
                     limit: parseInt(limit),
                     offset: parseInt(offset),
-                    total: auditLogs.length
+                    total
                 }
             });
         } catch (error) {

@@ -1,20 +1,23 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 import { FaShieldAlt, FaRocket, FaUserShield, FaChartLine, FaComments, FaBolt, FaLock, FaDatabase, FaGithub, FaUniversalAccess } from 'react-icons/fa';
 import logo from './assets/logo.svg';
 
 // Importação de Demonstrativos e Assets
-import dashboardImg from './assets/dashboard_admin_pro.png';
-import auditoriaImg from './assets/auditoria_superadmin.png';
-import chatImg from './assets/chat_superadmin_adm.png';
-import filiadoImg from './assets/filiado_dashboard.png';
-import gerenciadorImg from './assets/gerenciador_filiados_superadmin.png';
-import techadminImg from './assets/techadmin_dashboard.png';
-import loginImg from './assets/login.png';
-import avaliacaoImg from './assets/avaliaçao_desempenho_pessoal.png';
-import modoCleanImg from './assets/modo_border_acessibilidade.png';
-import modoNeonImg from './assets/modo_neon_acessibilidade.png';
+import dashboardImg from './assets/dashboard_admin_pro.webp';
+import auditoriaImg from './assets/auditoria_superadmin.webp';
+import chatImg from './assets/chat_superadmin_adm.webp';
+import filiadoImg from './assets/filiado_dashboard.webp';
+import gerenciadorImg from './assets/gerenciador_filiados_superadmin.webp';
+import techadminImg from './assets/techadmin_dashboard.webp';
+import loginImg from './assets/login.webp';
+import avaliacaoImg from './assets/avaliaçao_desempenho_pessoal.webp';
+import modoCleanImg from './assets/modo_border_acessibilidade.webp';
+import modoNeonImg from './assets/modo_neon_acessibilidade.webp';
+
+// Mantém a referência explícita para o ESLint; os elementos abaixo usam motion.* em JSX.
+const Motion = motion;
 
 
 
@@ -173,7 +176,7 @@ function App() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-[2rem] opacity-20 blur-2xl"></div>
-              <img src={loginImg} alt="Tela de Login" className="relative rounded-[1.5rem] border border-white/10 shadow-2xl rotate-[-2deg] hover:rotate-0 transition duration-500" />
+              <img src={loginImg} alt="Tela de Login" loading="lazy" decoding="async" className="relative rounded-[1.5rem] border border-white/10 shadow-2xl rotate-[-2deg] hover:rotate-0 transition duration-500" />
             </div>
             <div className="order-1 md:order-2">
               <div className="inline-block px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-mono mb-6">context_origin.md</div>
@@ -280,7 +283,7 @@ function App() {
             </div>
             <div className="relative">
               <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-[2rem]"></div>
-              <img src={filiadoImg} alt="Dashboard do Filiado" className="relative rounded-2xl border border-white/10 shadow-2xl" />
+              <img src={filiadoImg} alt="Dashboard do Filiado" loading="lazy" decoding="async" className="relative rounded-2xl border border-white/10 shadow-2xl" />
             </div>
           </div>
         </section>
@@ -292,7 +295,7 @@ function App() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative group">
               <div className="absolute -inset-4 bg-blue-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
-              <img src={gerenciadorImg} alt="Gestão de Filiados" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
+              <img src={gerenciadorImg} alt="Gestão de Filiados" loading="lazy" decoding="async" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
             </div>
             <div className="order-1 md:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono mb-6">
@@ -344,7 +347,7 @@ function App() {
             </div>
             <div className="order-2 relative group">
               <div className="absolute -inset-4 bg-pink-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
-              <img src={chatImg} alt="Chat Seguro" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:rotate-1" />
+              <img src={chatImg} alt="Chat Seguro" loading="lazy" decoding="async" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:rotate-1" />
             </div>
           </div>
 
@@ -352,7 +355,7 @@ function App() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="order-2 md:order-1 relative group">
               <div className="absolute -inset-4 bg-orange-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
-              <img src={auditoriaImg} alt="Logs de Auditoria" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
+              <img src={auditoriaImg} alt="Logs de Auditoria" loading="lazy" decoding="async" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
             </div>
             <div className="order-1 md:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-mono mb-6">
@@ -405,7 +408,7 @@ function App() {
             </div>
             <div className="order-2 relative group">
               <div className="absolute -inset-4 bg-cyan-600/20 blur-3xl rounded-[2rem] opacity-50 group-hover:opacity-75 transition duration-500"></div>
-              <img src={techadminImg} alt="Tech Admin Dashboard" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
+              <img src={techadminImg} alt="Tech Admin Dashboard" loading="lazy" decoding="async" className="relative rounded-2xl border border-white/10 shadow-2xl transition duration-500 group-hover:scale-[1.01]" />
             </div>
           </div>
 
@@ -439,6 +442,8 @@ function App() {
                   className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                   src="https://github.com/SainthixOli.png"
                   alt="Oliver Arthur - Desenvolvedor"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>
@@ -524,7 +529,7 @@ function App() {
               >
                 {/* Imagem em tamanho maior sem aspect-ratio forçado para desktop */}
                 <div className="relative w-full md:h-[500px] h-[300px]">
-                  <img src={item.img} alt={item.title} className="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition duration-700" />
+                  <img src={item.img} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition duration-700" />
                 </div>
 
                 <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent">
@@ -672,7 +677,7 @@ function BentoCard({ title, desc, icon, image, className = "" }) {
   return (
     <div className={`glass-card relative overflow-hidden rounded-3xl border border-white/10 group ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/90 z-10"></div>
-      <img src={image} alt={title} className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-40" />
+      <img src={image} alt={title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-40" />
 
       <div className="relative z-20 p-8 h-full flex flex-col justify-end">
         <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-xl text-white mb-4 border border-white/20">
@@ -686,4 +691,3 @@ function BentoCard({ title, desc, icon, image, className = "" }) {
 }
 
 export default App;
-

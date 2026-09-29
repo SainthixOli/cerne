@@ -11,33 +11,28 @@ const AdminEvaluation = () => {
     const [loadingStats, setLoadingStats] = useState(false);
 
     useEffect(() => {
-        loadAdmins();
+        api.get('/admin/users')
+            .then(res => setAdmins(res.data.filter(user => user.role === 'admin')))
+            .catch(() => toast.error('Erro ao carregar administradores.'));
     }, []);
 
     useEffect(() => {
-        if (selectedAdmin && month) {
-            loadPerformance();
-        }
-    }, [selectedAdmin, month]);
+        if (!selectedAdmin || !month) return;
 
-    const loadAdmins = () => {
-        api.get('/admin/users')
-            .then(res => setAdmins(res.data.filter(u => u.role === 'admin'))) // Only evaluate Admins, not Super Admins
-            .catch(err => console.error(err));
-    };
-
-    const loadPerformance = () => {
-        setLoadingStats(true);
-        api.get(`/admin/performance?adminId=${selectedAdmin}&month=${month}`)
+        let active = true;
+        api.get('/admin/performance', { params: { adminId: selectedAdmin, month } })
             .then(res => {
-                setStats(res.data);
-                setLoadingStats(false);
+                if (active) setStats(res.data);
             })
-            .catch(err => {
-                console.error(err);
-                setLoadingStats(false);
+            .catch(() => toast.error('Erro ao carregar o desempenho.'))
+            .finally(() => {
+                if (active) setLoadingStats(false);
             });
-    };
+
+        return () => {
+            active = false;
+        };
+    }, [selectedAdmin, month]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,7 +44,7 @@ const AdminEvaluation = () => {
                 feedback: evaluation.feedback
             });
             toast.success('Avaliação salva com sucesso!');
-        } catch (error) {
+        } catch {
             toast.error('Erro ao salvar avaliação.');
         }
     };
@@ -64,7 +59,10 @@ const AdminEvaluation = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Selecione o Administrador</label>
                     <select
                         className="w-full p-2 border rounded"
-                        onChange={(e) => setSelectedAdmin(e.target.value)}
+                        onChange={(e) => {
+                            setLoadingStats(true);
+                            setSelectedAdmin(e.target.value);
+                        }}
                         value={selectedAdmin || ''}
                     >
                         <option value="">Selecione...</option>
@@ -79,7 +77,10 @@ const AdminEvaluation = () => {
                         type="month"
                         className="w-full p-2 border rounded"
                         value={month}
-                        onChange={(e) => setMonth(e.target.value)}
+                        onChange={(e) => {
+                            setLoadingStats(true);
+                            setMonth(e.target.value);
+                        }}
                     />
                 </div>
             </div>

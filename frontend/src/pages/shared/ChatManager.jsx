@@ -1,138 +1,75 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../../api';
-import { Send, User, Clock, Trash2 } from 'lucide-react';
+import { Send, User, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../auth/useAuth';
+import { useChatData } from '../../hooks/useChatData';
 
 const ChatManager = ({ role }) => {
-    const [conversations, setConversations] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
-    const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [viewMode, setViewMode] = useState('personal'); // 'personal' or 'all'
     const location = useLocation();
 
-    // Get real user role from storage, not just route context
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const userRole = currentUser.role || role; // Fallback to prop if missing
+    const { user: currentUser } = useAuth();
+    const userRole = currentUser?.role || role;
+    const {
+        conversations,
+        messages,
+        refetchConversations,
+        startConversation,
+        sendMessage
+    } = useChatData(viewMode, selectedChat?.id);
 
-    // Audio ref for notifications
-    const notificationSound = useRef(null);
-
-    useEffect(() => {
-        notificationSound.current = new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cQBMNJjoDbET4QOgle43PMhq8zgqszoq1yskdsGTvPHaryz+5EcRcDlEhMgrGO8xv//7kt/lDcUQ7hE0cibIAbp5pBEAv8AAP/7kQAA//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cQBMNJjoDbET4QOgle43PMhq8zgqszoq1yskdsGTvPHaryz+5EcRcDlEhMgrGO8xv//7kt/lDcUQ7hE0cibIAbp5pBEAv8AAP/7kQAA//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cQBMNJjoDbET4QOgle43PMhq8zgqszoq1yskdsGTvPHaryz+5EcRcDlEhMgrGO8xv//7kt/lDcUQ7hE0cibIAbp5pBEAv8AAP/7kQAA");
-        notificationSound.current.volume = 0.5;
-    }, []);
-
-    // Initial Load & Handle Redirect
-    useEffect(() => {
-        const init = async () => {
-            console.log('ChatManager Init. State:', location.state);
-            // Always fetch list first
-            await fetchConversations(true);
-
-            // Check for redirect state
-            if (location.state?.startChatWith) {
-                console.log('Found startChatWith:', location.state.startChatWith);
-                const { startChatWith } = location.state;
-                handleStartChat(startChatWith);
-
-                // Optional: Clear state to prevent re-triggering if simply refreshing? 
-                // React Router state persists on refresh, but we might want to be careful.
-                // For now, idempotent handleStartChat is fine.
-            }
-        };
-        init();
-    }, [location, viewMode]); // Added location dependency
-
-    const handleStartChat = async (userId) => {
+    const handleStartChat = useCallback(async (userId) => {
         try {
             // Force personal mode when starting a chat
             if (viewMode === 'all') setViewMode('personal');
 
             // Updated to be silent as requested
-            const res = await api.post('/chat/start', { userId }, { silent: true });
-            const conversation = res.data;
-
-            // Refetch list to ensure we have the latest state including the new chat
-            const listRes = await api.get('/chat/conversations', { silent: true });
-            setConversations(listRes.data);
+            const conversation = await startConversation(userId);
+            const listResult = await refetchConversations();
+            const refreshedConversations = listResult.data || [];
 
             // Find and select
-            const target = listRes.data.find(c => c.id === conversation.id) || conversation;
+            const target = refreshedConversations.find(item => item.id === conversation.id) || conversation;
             setSelectedChat(target);
         } catch (error) {
             console.error(error);
             toast.error('Erro ao iniciar conversa');
         }
-    };
+    }, [refetchConversations, startConversation, viewMode]);
 
-    // Polling for messages
     useEffect(() => {
-        if (selectedChat) {
-            fetchMessages(selectedChat.id, true); // Initial load ALSO SILENT
-            const interval = setInterval(() => fetchMessages(selectedChat.id, true), 3000); // Silent poll
-            return () => clearInterval(interval);
-        }
-    }, [selectedChat]);
-
-    // Polling for conversations list
-    useEffect(() => {
-        const interval = setInterval(() => fetchConversations(true), 10000);
-        return () => clearInterval(interval);
-    }, [viewMode]);
+        const init = async () => {
+            await refetchConversations();
+            if (location.state?.startChatWith) {
+                await handleStartChat(location.state.startChatWith);
+            }
+        };
+        init();
+    }, [handleStartChat, location.state?.startChatWith, refetchConversations]);
 
     // Scroll handling
     const messagesContainerRef = useRef(null);
 
     useEffect(() => {
-        if (messages.length > 0) {
-            scrollToBottom();
-        }
+        if (messages.length === 0 || !messagesContainerRef.current) return;
+        const { scrollHeight, clientHeight } = messagesContainerRef.current;
+        messagesContainerRef.current.scrollTo({
+            top: scrollHeight - clientHeight,
+            behavior: 'smooth'
+        });
     }, [messages.length, selectedChat?.id]);
-
-    const scrollToBottom = () => {
-        if (messagesContainerRef.current) {
-            const { scrollHeight, clientHeight } = messagesContainerRef.current;
-            messagesContainerRef.current.scrollTo({
-                top: scrollHeight - clientHeight,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const fetchConversations = async (silent = false) => {
-        try {
-            const params = {};
-            if (viewMode === 'all') params.mode = 'all';
-
-            const res = await api.get('/chat/conversations', { params, silent });
-            setConversations(res.data);
-        } catch (error) {
-            console.error('Error fetching conversations:', error);
-        }
-    };
-
-    const fetchMessages = async (chatId, silent = false) => {
-        try {
-            const res = await api.get(`/chat/${chatId}/messages`, { silent });
-            setMessages(res.data);
-        } catch (error) {
-            console.error('Error fetching messages:', error);
-        }
-    };
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !selectedChat) return;
 
         try {
-            await api.post(`/chat/${selectedChat.id}/messages`, {
-                content: newMessage
-            }, { silent: true });
+            await sendMessage({ chatId: selectedChat.id, content: newMessage });
             setNewMessage('');
-            fetchMessages(selectedChat.id, true);
-            fetchConversations(true); // Update last message in list
         } catch (error) {
             console.error(error);
             toast.error('Erro ao enviar mensagem');
@@ -162,7 +99,6 @@ const ChatManager = ({ role }) => {
     const isSpectator = viewMode === 'all' && userRole === 'super_admin';
 
     // Helper to get user info locally
-    // const currentUser = JSON.parse(localStorage.getItem('user') || '{}'); // Moved to top
 
     return (
         // Changed outer height to simple h-full if parent controls it, or keep calc but ensure overflow hidden
@@ -199,19 +135,6 @@ const ChatManager = ({ role }) => {
                             </button>
                         </div>
                     )}
-                    <button
-                        onClick={async () => {
-                            const email = prompt("Digite o email do usuário para iniciar conversa:");
-                            if (email) {
-                                try {
-                                    // Logic handled by backend search usually, here relying on prompt MVP
-                                    toast.success('Buscando usuário...');
-                                } catch (e) { }
-                            }
-                        }}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition hidden"
-                    >
-                    </button>
                     {(userRole === 'admin' || userRole === 'super_admin') && (
                         <div className="text-xs text-blue-500 font-bold px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             Admin

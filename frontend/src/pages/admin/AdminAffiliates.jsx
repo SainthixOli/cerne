@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SkeletonRow from '../../components/SkeletonRow';
 import { Check, X, FileText, Search, RefreshCw, Download, MessageCircle, Megaphone, ArrowRightLeft, MessageCircleWarning, MoreVertical } from 'lucide-react';
 import api from '../../api';
+import { openProtectedFile } from '../../services/privateFiles';
 import ChatComponent from '../../components/ChatComponent';
 import { toast } from 'react-hot-toast';
 import confetti from 'canvas-confetti';
+import { useAuth } from '../../auth/useAuth';
+import { useAffiliations } from '../../hooks/useAffiliations';
 
 const AdminAffiliates = () => {
     const navigate = useNavigate();
-    const [affiliations, setAffiliations] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { affiliations, loading, refreshAffiliations } = useAffiliations();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('pendentes'); // 'pendentes' | 'aprovados' | 'meus_protocolos'
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const { user: currentUser } = useAuth();
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -55,26 +57,6 @@ const AdminAffiliates = () => {
         }
     };
 
-    const fetchAffiliations = async () => {
-        try {
-            setLoading(true);
-            // Artificial delay to prevent "flicker" and show skeleton
-            const [response] = await Promise.all([
-                api.get('/affiliations'),
-                new Promise(resolve => setTimeout(resolve, 600))
-            ]);
-            setAffiliations(response.data);
-        } catch (error) {
-            console.error('Error fetching affiliations:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchAffiliations();
-    }, []);
-
     const openModal = async (affiliation, action) => {
         setSelectedAffiliation(affiliation);
         setModalAction(action);
@@ -97,7 +79,7 @@ const AdminAffiliates = () => {
                 // Filter only active admins/super_admins
                 const availableAdmins = res.data.filter(u => u.status_conta === 'ativo' && (u.role === 'admin' || u.role === 'super_admin'));
                 setAdminsList(availableAdmins);
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao carregar lista de admins');
             }
         }
@@ -112,9 +94,9 @@ const AdminAffiliates = () => {
             const res = await api.post(`/affiliations/${selectedAffiliation.id}/transfer`, { targetAdminId: selectedAdminId });
             toast.success(res.data.message);
             setModalOpen(false);
-            fetchAffiliations();
+            refreshAffiliations();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Erro ao transferir.');
+            toast.error(error.message || 'Erro ao transferir.');
         }
     };
 
@@ -125,9 +107,9 @@ const AdminAffiliates = () => {
         try {
             const res = await api.post(`/affiliations/${id}/request-transfer`);
             toast.success(res.data.message);
-            fetchAffiliations();
+            refreshAffiliations();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Erro ao solicitar transferência.');
+            toast.error(error.message || 'Erro ao solicitar transferência.');
         }
     };
 
@@ -144,7 +126,7 @@ const AdminAffiliates = () => {
 
         toast.promise(promise, {
             loading: 'Processando solicitação...',
-            success: (response) => {
+            success: () => {
                 if (modalAction === 'approve') {
                     confetti({
                         particleCount: 150,
@@ -152,9 +134,6 @@ const AdminAffiliates = () => {
                         origin: { y: 0.6 },
                         colors: ['#3b82f6', '#10b981', '#ffffff']
                     });
-                    if (response.data.tempPassword) {
-                        return `Aprovado! Senha Temp: ${response.data.tempPassword}`;
-                    }
                     return 'Filiação aprovada com sucesso!';
                 }
                 return 'Filiação rejeitada com sucesso.';
@@ -168,8 +147,8 @@ const AdminAffiliates = () => {
         try {
             await promise;
             setModalOpen(false);
-            fetchAffiliations();
-        } catch (error) {
+            refreshAffiliations();
+        } catch {
             // Error is handled by toast.promise
         }
     };
@@ -180,7 +159,7 @@ const AdminAffiliates = () => {
             toast.success('Comunicado enviado com sucesso!');
             setModalOpen(false);
             setBroadcastData({ title: '', message: '', target_group: 'all' });
-        } catch (error) {
+        } catch {
             toast.error('Erro ao enviar comunicado');
         }
     };
@@ -189,9 +168,9 @@ const AdminAffiliates = () => {
         try {
             const response = await api.post(`/affiliations/${id}/assume`);
             toast.success(response.data.message);
-            fetchAffiliations();
+            refreshAffiliations();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Erro ao assumir protocolo');
+            toast.error(error.message || 'Erro ao assumir protocolo');
         }
     };
 
@@ -256,7 +235,7 @@ const AdminAffiliates = () => {
                     >
                         <Megaphone size={18} className="mr-2" /> Comunicado
                     </button>
-                    <button onClick={fetchAffiliations} className="glass px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center rounded-xl">
+                    <button onClick={() => refreshAffiliations()} className="glass px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center rounded-xl">
                         <RefreshCw size={18} className="mr-2" /> Atualizar
                     </button>
                     <button onClick={handleExportCSV} className="btn-primary flex items-center px-6 py-2">
@@ -561,11 +540,11 @@ const AdminAffiliates = () => {
                         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
                     >
                         <div className="p-1 space-y-1">
-                            {affiliation.url_arquivo && (
+                            {affiliation.document_id && (
                                 <button
                                     onClick={() => {
-                                        const filename = affiliation.url_arquivo.split('/').pop().split('\\').pop();
-                                        window.open(`http://localhost:3000/api/documents/${filename}`, '_blank');
+                                        openProtectedFile(`/documents/${affiliation.document_id}`)
+                                            .catch(() => toast.error('Não foi possível abrir o documento'));
                                         setActiveDropdownId(null);
                                     }}
                                     className="flex w-full items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg"
@@ -649,9 +628,9 @@ const AdminAffiliates = () => {
                                             try {
                                                 await api.post(`/affiliations/${affiliation.id}/deny-transfer`);
                                                 toast.success('Solicitação negada.');
-                                                fetchAffiliations();
+            refreshAffiliations();
                                                 setActiveDropdownId(null);
-                                            } catch (e) { toast.error('Erro ao negar.'); }
+                                            } catch { toast.error('Erro ao negar.'); }
                                         }}
                                         className="flex w-full items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                                     >

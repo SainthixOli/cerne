@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, Command, User, FileText, MessageCircle, LogOut, Moon, Sun } from 'lucide-react';
+import { useAuth } from '../auth/useAuth';
+
+const MotionDiv = motion.div;
 
 const CommandPalette = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -24,10 +28,12 @@ const CommandPalette = () => {
     }, []);
 
     const actions = [
-        { icon: <User size={18} />, label: 'Gerenciar Filiados', action: () => navigate('/admin/filiados') },
-        { icon: <FileText size={18} />, label: 'Meus Protocolos', action: () => navigate('/admin/filiados?filter=meus') },
+        ...(user?.role === 'admin' || user?.role === 'super_admin' ? [
+        { icon: <User size={18} />, label: 'Gerenciar Filiados', action: () => navigate('/admin/affiliates') },
+        { icon: <FileText size={18} />, label: 'Meus Protocolos', action: () => navigate('/admin/affiliates?filter=meus') },
         { icon: <MessageCircle size={18} />, label: 'Chat Administrativo', action: () => navigate('/admin/users') }, // Assuming users page for chhat
-        { icon: <LogOut size={18} />, label: 'Sair do Sistema', action: () => { localStorage.removeItem('token'); navigate('/login'); } },
+        ] : []),
+        { icon: <LogOut size={18} />, label: 'Sair do Sistema', action: async () => { await logout(); navigate('/login', { replace: true }); } },
     ];
 
     const filteredActions = actions.filter(action =>
@@ -38,7 +44,7 @@ const CommandPalette = () => {
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh] px-4">
-                    <motion.div
+                    <MotionDiv
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -46,7 +52,7 @@ const CommandPalette = () => {
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                     />
 
-                    <motion.div
+                    <MotionDiv
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -97,7 +103,7 @@ const CommandPalette = () => {
                                 <span className="font-bold">↵</span>
                             </div>
                         </div>
-                    </motion.div>
+                    </MotionDiv>
                 </div>
             )}
         </AnimatePresence>

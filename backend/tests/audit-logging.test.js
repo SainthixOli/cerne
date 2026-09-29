@@ -5,27 +5,40 @@
 
 const request = require('supertest');
 const app = require('../src/app');
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
+const knex = require('../src/config/connection');
 
 describe('Audit Logging', () => {
+    const tenantHeader = { 'X-Tenant-Slug': 'audit-test' };
+
+    beforeAll(async () => {
+        await knex('tenants').where({ slug: 'audit-test' }).del();
+        await knex('tenants').insert({ name: 'Audit Test', slug: 'audit-test', status: 'ATIVO' });
+    });
+
+    afterAll(async () => {
+        await knex('tenants').where({ slug: 'audit-test' }).del();
+    });
+
     describe('Login Attempts', () => {
         it('should log failed login attempt with CPF not found', async () => {
             const res = await request(app)
                 .post('/api/auth/login')
+                .set(tenantHeader)
                 .send({
                     cpf: '12345678901',
                     password: 'TestPass@123'
                 });
 
-            // 401 ou 403 (CSRF)
-            expect([401, 403]).toContain(res.statusCode);
+            expect(res.statusCode).toBe(401);
         });
 
         it('should log failed login with invalid password', async () => {
             // Assumindo que existe usuário com CPF 00000000000
             const res = await request(app)
                 .post('/api/auth/login')
+                .set(tenantHeader)
                 .send({
                     cpf: '00000000000',
                     password: 'WrongPassword123!'
@@ -38,6 +51,7 @@ describe('Audit Logging', () => {
         it('should not crash when receiving malicious CPF', async () => {
             const res = await request(app)
                 .post('/api/auth/login')
+                .set(tenantHeader)
                 .send({
                     cpf: '123<script>alert(1)</script>456789012',
                     password: 'Test@Pass123'
@@ -49,29 +63,18 @@ describe('Audit Logging', () => {
     });
 
     describe('Audit Logging Files', () => {
-        it('should create error log file', (done) => {
+        it('should create error log file', async () => {
             const errorLogPath = path.join(__dirname, '../logs/error.log');
-            
-            // Wait a bit para logs serem escritos
-            setTimeout(() => {
-                if (fs.existsSync(errorLogPath)) {
-                    const content = fs.readFileSync(errorLogPath, 'utf8');
-                    expect(content).toBeDefined();
-                }
-                done();
-            }, 100);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            await expect(fs.access(errorLogPath)).resolves.toBeUndefined();
+            await expect(fs.readFile(errorLogPath, 'utf8')).resolves.toBeDefined();
         });
 
-        it('should create combined log file', (done) => {
+        it('should create combined log file', async () => {
             const logPath = path.join(__dirname, '../logs/combined.log');
-            
-            setTimeout(() => {
-                if (fs.existsSync(logPath)) {
-                    const content = fs.readFileSync(logPath, 'utf8');
-                    expect(content).toBeDefined();
-                }
-                done();
-            }, 100);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            await expect(fs.access(logPath)).resolves.toBeUndefined();
+            await expect(fs.readFile(logPath, 'utf8')).resolves.toBeDefined();
         });
     });
 
@@ -79,6 +82,7 @@ describe('Audit Logging', () => {
         it('should include security events in logs', async () => {
             await request(app)
                 .post('/api/auth/login')
+                .set(tenantHeader)
                 .send({
                     cpf: '99999999999',
                     password: 'test'
@@ -86,13 +90,9 @@ describe('Audit Logging', () => {
 
             const logPath = path.join(__dirname, '../logs/combined.log');
             
-            setTimeout(() => {
-                if (fs.existsSync(logPath)) {
-                    const content = fs.readFileSync(logPath, 'utf8');
-                    // Should contain security tags
-                    expect(content).toMatch(/SECURITY|AUTH|LOGIN/);
-                }
-            }, 200);
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            await expect(fs.access(logPath)).resolves.toBeUndefined();
+            await expect(fs.readFile(logPath, 'utf8')).resolves.toMatch(/SECURITY|AUTH|LOGIN/);
         });
     });
 
@@ -100,6 +100,7 @@ describe('Audit Logging', () => {
         it('should mask CPF in security logs', async () => {
             await request(app)
                 .post('/api/auth/login')
+                .set(tenantHeader)
                 .send({
                     cpf: '12345678901',
                     password: 'wrongpass'

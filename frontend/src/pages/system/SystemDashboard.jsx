@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Server, Database, HardDrive, Activity, Users, FileText, AlertTriangle, BookOpen, Terminal, Power, RefreshCw, Trash2, X, Cpu, Layers, Shield } from 'lucide-react';
 import api from '../../api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../auth/useAuth';
+import { useSystemMonitor } from '../../hooks/useSystemMonitor';
 
 const SystemDashboard = () => {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [command, setCommand] = useState('');
     const [consoleHistory, setConsoleHistory] = useState([]);
-    const [healthLogs, setHealthLogs] = useState([]);
+    const { stats, loading, healthLogs } = useSystemMonitor();
     const [showManual, setShowManual] = useState(false);
     const navigate = useNavigate();
+    const { logout: endSession } = useAuth();
 
     const handleCommand = async (e) => {
         if (e.key === 'Enter') {
@@ -29,7 +30,7 @@ const SystemDashboard = () => {
             try {
                 const res = await api.post('/system/console', { command: cmd });
                 setConsoleHistory([...newHistory, { type: 'output', content: res.data.output }]);
-            } catch (error) {
+            } catch {
                 setConsoleHistory([...newHistory, { type: 'output', content: 'Error executing command.' }]);
             }
         }
@@ -42,71 +43,14 @@ const SystemDashboard = () => {
         try {
             const res = await api.post('/system/console', { command: cmd });
             setConsoleHistory([...newHistory, { type: 'output', content: res.data.output }]);
-        } catch (error) {
+        } catch {
             setConsoleHistory([...newHistory, { type: 'output', content: 'Error executing command.' }]);
         }
     };
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await api.get('/system/stats');
-                setStats(res.data);
-            } catch (error) {
-                console.error(error);
-                // alert('Erro ao carregar status do sistema'); // Remove alert to avoid spam
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const checkHealth = async () => {
-            try {
-                const start = Date.now();
-                const res = await api.get('/health');
-                const latency = Date.now() - start;
-                const timestamp = new Date().toLocaleTimeString();
-
-                const log = {
-                    time: timestamp,
-                    status: res.data.status,
-                    latency: `${latency}ms`,
-                    uptime: `${Math.floor(res.data.uptime)}s`,
-                    type: 'success'
-                };
-
-                setHealthLogs(prev => [log, ...prev].slice(0, 50)); // Keep last 50 logs
-            } catch (error) {
-                const timestamp = new Date().toLocaleTimeString();
-                const log = {
-                    time: timestamp,
-                    status: 'DOWN',
-                    latency: '-',
-                    uptime: '-',
-                    type: 'error'
-                };
-                setHealthLogs(prev => [log, ...prev].slice(0, 50));
-            }
-        };
-
-        fetchStats();
-        checkHealth();
-
-        // Poll stats every 30s
-        const statsInterval = setInterval(fetchStats, 30000);
-        // Poll health every 5s for "Matrix" feel
-        const healthInterval = setInterval(checkHealth, 5000);
-
-        return () => {
-            clearInterval(statsInterval);
-            clearInterval(healthInterval);
-        };
-    }, []);
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+    const logout = async () => {
+        await endSession();
+        navigate('/login', { replace: true });
     };
 
     if (loading) return (
@@ -144,11 +88,11 @@ const SystemDashboard = () => {
                     </h2>
                     <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                            <span className="text-gray-400 text-sm">Database (SQLite)</span>
+                            <span className="text-gray-400 text-sm">Banco PostgreSQL</span>
                             <span className="font-mono font-bold text-white">{stats?.storage.database}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
-                            <span className="text-gray-400 text-sm">Uploads (Docs)</span>
+                            <span className="text-gray-400 text-sm">Storage privado</span>
                             <span className="font-mono font-bold text-white">{stats?.storage.uploads}</span>
                         </div>
                         <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-4"></div>
@@ -350,8 +294,8 @@ const SystemDashboard = () => {
                                     <ul className="list-disc pl-5 space-y-2 text-sm">
                                         <li><strong>Frontend:</strong> React.js com TailwindCSS para estilização e Axios para comunicação HTTP.</li>
                                         <li><strong>Backend:</strong> Node.js com Express.</li>
-                                        <li><strong>Banco de Dados:</strong> SQLite (arquivo local `database.sqlite`) para persistência leve e rápida.</li>
-                                        <li><strong>Autenticação:</strong> JWT (JSON Web Tokens) com controle de sessão stateless.</li>
+                                        <li><strong>Banco de Dados:</strong> PostgreSQL com Knex, migrations e isolamento por tenant.</li>
+                                        <li><strong>Autenticação:</strong> sessão em cookie HttpOnly, com estado crítico revalidado no backend.</li>
                                     </ul>
                                 </div>
                             </section>
@@ -366,8 +310,8 @@ const SystemDashboard = () => {
                                     <div className="pl-4 border-l border-gray-700 ml-2">
                                         <div>├── <span className="text-yellow-400">src/controllers</span> <span className="text-gray-500">// Lógica de negócios</span></div>
                                         <div>├── <span className="text-yellow-400">src/routes</span> <span className="text-gray-500">// Definição de endpoints API</span></div>
-                                        <div>├── <span className="text-yellow-400">db/database.sqlite</span> <span className="text-gray-500">// Arquivo do banco de dados</span></div>
-                                        <div>└── <span className="text-yellow-400">uploads/</span> <span className="text-gray-500">// Armazenamento de documentos</span></div>
+                                        <div>├── <span className="text-yellow-400">db/migrations</span> <span className="text-gray-500">// Fonte do schema PostgreSQL</span></div>
+                                        <div>└── <span className="text-yellow-400">src/services</span> <span className="text-gray-500">// Adaptador de storage privado e outbox</span></div>
                                     </div>
                                     <div className="mt-4 mb-2"><span className="text-blue-400">/frontend</span></div>
                                     <div className="pl-4 border-l border-gray-700 ml-2">
@@ -386,12 +330,12 @@ const SystemDashboard = () => {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div className="bg-black/30 p-5 rounded-xl border border-white/5">
                                         <h4 className="font-bold text-white mb-2">Backup do Banco de Dados</h4>
-                                        <p className="text-sm mb-2">O banco SQLite é um arquivo único.</p>
-                                        <code className="block bg-black/50 p-2 rounded text-xs text-green-400">cp backend/db/database.sqlite backup/db_$(date +%F).sqlite</code>
+                                        <p className="text-sm mb-2">Use backup consistente do PostgreSQL e valide a restauração em ambiente isolado.</p>
+                                        <code className="block bg-black/50 p-2 rounded text-xs text-green-400">pg_dump --format=custom "$DATABASE_URL" --file=backup/cerne.dump</code>
                                     </div>
                                     <div className="bg-black/30 p-5 rounded-xl border border-white/5">
                                         <h4 className="font-bold text-white mb-2">Limpeza de Logs/Cache</h4>
-                                        <p className="text-sm mb-2">Use o botão "Limpar Cache" no painel para remover arquivos temporários da pasta `uploads/temp`.</p>
+                                        <p className="text-sm mb-2">Arquivos temporários devem permanecer apenas em memória; documentos persistentes ficam no object storage privado.</p>
                                     </div>
                                 </div>
                             </section>
@@ -413,7 +357,7 @@ const SystemDashboard = () => {
                                         </li>
                                         <li className="flex items-start">
                                             <span className="font-bold text-red-400 mr-2 min-w-[80px]">Upload Falhou:</span>
-                                            <span>Verifique as permissões da pasta `backend/uploads` e o limite de tamanho de arquivo no Nginx/Express.</span>
+                                            <span>Verifique a configuração do bucket privado e o limite de tamanho no proxy e no Express.</span>
                                         </li>
                                     </ul>
                                 </div>

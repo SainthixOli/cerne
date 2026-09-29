@@ -8,6 +8,10 @@ function validEnvironment(overrides = {}) {
     return {
         NODE_ENV: 'test',
         JWT_SECRET: crypto.randomBytes(32).toString('hex'),
+        DB_HOST: '127.0.0.1',
+        DB_NAME_TEST: 'cerne_test',
+        DB_USER: 'cerne_test',
+        DB_PASSWORD: 'test-only',
         ...overrides,
     };
 }

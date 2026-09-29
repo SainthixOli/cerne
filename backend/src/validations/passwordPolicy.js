@@ -2,6 +2,7 @@
  * Password Policy Validator
  * Enforça requisitos de força de senha seguindo NIST guidelines
  */
+const crypto = require('crypto');
 
 class PasswordPolicy {
     /**
@@ -106,7 +107,9 @@ class PasswordPolicy {
      * Verifica se duas senhas são iguais (para confirmar)
      */
     static validateConfirmation(password, confirmation) {
-        if (password !== confirmation) {
+        const passwordDigest = crypto.createHash('sha256').update(String(password)).digest();
+        const confirmationDigest = crypto.createHash('sha256').update(String(confirmation)).digest();
+        if (!crypto.timingSafeEqual(passwordDigest, confirmationDigest)) {
             return {
                 valid: false,
                 error: 'As senhas não correspondem'

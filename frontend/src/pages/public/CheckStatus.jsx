@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ArrowLeft, AlertCircle, CheckCircle, XCircle, MessageSquare, X } from 'lucide-react';
+import { Search, ArrowLeft, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import api from '../../api';
 import { maskCPF } from '../../utils/masks';
 import Loading from '../../components/Loading';
-import ChatComponent from '../../components/ChatComponent';
 import ThemeToggle from '../../components/ThemeToggle';
 
 const CheckStatus = () => {
@@ -12,21 +11,19 @@ const CheckStatus = () => {
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleCheck = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
         setStatusData(null);
-        setIsChatOpen(false);
 
         try {
             const response = await api.post('/affiliations/status', { cpf });
             setStatusData(response.data);
             // If there are messages and status is rejected/analysis, user might want to see them
         } catch (err) {
-            setError(err.response?.data?.error || 'Erro ao consultar status');
+            setError(err.message || 'Erro ao consultar status');
         } finally {
             setLoading(false);
         }
@@ -34,12 +31,6 @@ const CheckStatus = () => {
 
     const handleChange = (e) => {
         setCpf(maskCPF(e.target.value));
-    };
-
-    const toggleChat = () => {
-        if (statusData) {
-            setIsChatOpen(!isChatOpen);
-        }
     };
 
     return (
@@ -65,7 +56,7 @@ const CheckStatus = () => {
                 <div className="glass-panel overflow-hidden flex flex-col md:flex-row min-h-[500px]">
 
                     {/* Left Panel: Content */}
-                    <div className={`flex-1 p-8 md:p-10 flex flex-col ${isChatOpen ? 'md:w-1/2' : 'w-full'} transition-all duration-300`}>
+                    <div className="flex-1 p-8 md:p-10 flex flex-col w-full transition-all duration-300">
                         <div className="text-center mb-10">
                             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">CERNE System</h1>
                             <p className="text-blue-600 dark:text-blue-300 font-medium tracking-wide text-sm uppercase opacity-80">Portal de Transparência</p>
@@ -94,6 +85,7 @@ const CheckStatus = () => {
                                         <Search className="mr-2" size={22} /> Consultar Situação
                                     </button>
                                 </form>
+                                {error && <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
                                 <div className="mt-8 text-center">
                                     <Link to="/login" className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center justify-center transition-colors text-sm font-medium">
                                         <ArrowLeft size={16} className="mr-2" /> Voltar para o Login
@@ -109,26 +101,9 @@ const CheckStatus = () => {
                                         <p className="text-blue-600 dark:text-blue-300 text-sm">Atualizado recentemente</p>
                                     </div>
 
-                                    {/* Chat Icon Logic - Always Enabled */}
-                                    <div className="relative group">
-                                        <button
-                                            onClick={toggleChat}
-                                            className={`p-3 rounded-full transition-all duration-300 ${isChatOpen
-                                                ? 'bg-blue-600 text-white shadow-glow'
-                                                : statusData.message_count > 0
-                                                    ? 'bg-blue-100 text-blue-600 dark:bg-white/10 dark:text-white hover:bg-blue-200 animate-pulse-slow'
-                                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                                }`}
-                                            title={statusData.message_count > 0 ? `${statusData.message_count} novas mensagens` : "Abrir Suporte"}
-                                        >
-                                            <MessageSquare size={24} />
-                                            {statusData.message_count > 0 && !isChatOpen && (
-                                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800 font-bold">
-                                                    {statusData.message_count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    </div>
+                                    <Link to="/login" className="text-sm text-blue-600 dark:text-blue-300 hover:underline">
+                                        Entre na sua conta para acessar o chat
+                                    </Link>
                                 </div>
 
                                 {/* Status Card */}
@@ -184,7 +159,7 @@ const CheckStatus = () => {
                                     )}
 
                                     <button
-                                        onClick={() => { setStatusData(null); setIsChatOpen(false); }}
+                                        onClick={() => { setStatusData(null); setError(''); }}
                                         className="w-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white py-2 text-sm transition-colors"
                                     >
                                         Realizar Nova Consulta
@@ -194,28 +169,6 @@ const CheckStatus = () => {
                         )}
                     </div>
 
-                    {/* Right Panel: Mini Chat Drawer */}
-                    <div className={`bg-gray-50 dark:bg-gray-900/50 transition-all duration-500 ease-in-out border-l border-gray-200 dark:border-gray-700 flex flex-col ${isChatOpen ? 'w-full md:w-[400px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
-                        {statusData && isChatOpen && (
-                            <>
-                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm bg-white dark:bg-gray-800">
-                                    <div>
-                                        <h3 className="font-bold text-gray-800 dark:text-white">Suporte Online</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {statusData.protocolo ? `Protocolo: ${statusData.protocolo}` : `ID: ${String(statusData.id).slice(0, 8)}`}
-                                            {statusData.responsavel && <span className="block text-blue-600 dark:text-blue-400 font-semibold mt-0.5">Atendido por: {statusData.responsavel}</span>}
-                                        </p>
-                                    </div>
-                                    <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                        <X size={20} className="text-gray-500 dark:text-gray-400" />
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-black/20">
-                                    <ChatComponent filiacaoId={statusData.id} cpf={cpf} />
-                                </div>
-                            </>
-                        )}
-                    </div>
                 </div>
             </div>
         </div>

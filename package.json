@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/SainthixOli/filiacao_sindicato#readme",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.4"
   }
 }

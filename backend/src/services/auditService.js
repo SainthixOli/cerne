@@ -1,12 +1,14 @@
-const { getDb } = require('../config/database');
+const auditRepository = require('../repositories/auditRepository');
 
 exports.logAction = async (adminId, actionType, targetId, details, tenantId) => {
     try {
-        const db = await getDb();
-        await db.run(
-            `INSERT INTO audit_logs (admin_id, action_type, target_id, details, tenant_id) VALUES (?, ?, ?, ?, ?)`,
-            [adminId, actionType, targetId, JSON.stringify(details), tenantId]
-        );
+        await auditRepository.create({
+            admin_id: adminId,
+            action_type: actionType,
+            target_id: targetId,
+            details: JSON.stringify(details),
+            tenant_id: tenantId
+        });
     } catch (error) {
         console.error('Failed to log audit action:', error);
         // Don't throw, we don't want to break the main flow if logging fails
@@ -14,12 +16,7 @@ exports.logAction = async (adminId, actionType, targetId, details, tenantId) => 
 };
 
 exports.getLogs = async (tenantId) => {
-    const db = await getDb();
-    return await db.all(`
-        SELECT a.*, p.nome_completo as admin_name 
-        FROM audit_logs a
-        LEFT JOIN profiles p ON a.admin_id = p.id AND p.tenant_id = ?
-        WHERE a.tenant_id = ?
-        ORDER BY a.created_at DESC
-    `, [tenantId, tenantId]);
+    return auditRepository.list(tenantId);
 };
+
+exports.getLogsForAdmin = async (adminId, tenantId) => auditRepository.listForAdmin(adminId, tenantId);

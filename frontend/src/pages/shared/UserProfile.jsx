@@ -3,12 +3,17 @@ import { User, Mail, Phone, Briefcase, Save, Edit2, Camera, Shield, BadgeCheck }
 import api from '../../api';
 import toast from 'react-hot-toast';
 import EvaluationHistory from '../../components/EvaluationHistory';
+import usePrivatePhoto from '../../hooks/usePrivatePhoto';
+import { useAuth } from '../../auth/useAuth';
 
 const UserProfile = () => {
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(true);
+    const [photoRevision, setPhotoRevision] = useState(0);
+    const privatePhotoUrl = usePrivatePhoto(Boolean(user?.photo_url), photoRevision);
+    const { updateUser } = useAuth();
 
     useEffect(() => {
         fetchProfile();
@@ -33,8 +38,14 @@ const UserProfile = () => {
 
     const handleSave = async () => {
         try {
-            await api.put('/profile', formData);
-            setUser(formData);
+            const changes = {
+                nome_completo: formData.nome_completo,
+                telefone: formData.telefone,
+                email: formData.email,
+                matricula_funcional: formData.matricula_funcional
+            };
+            await api.put('/profile', changes);
+            setUser({ ...user, ...changes });
             setIsEditing(false);
             toast.success('Perfil atualizado com sucesso!');
         } catch (error) {
@@ -53,35 +64,20 @@ const UserProfile = () => {
         try {
             const response = await api.post('/profile/photo', data);
 
-            // The backend returns { message, photoUrl: 'uploads/filename.jpg' }
-            // We need to ensure we save it correctly in state and localStorage
             const photoPath = response.data.photoUrl;
 
             // Update local state
             const updatedUser = { ...user, photo_url: photoPath };
             setUser(updatedUser);
+            setPhotoRevision((revision) => revision + 1);
 
-            // Safe Update localStorage
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            localStorage.setItem('user', JSON.stringify({ ...storedUser, photo_url: photoPath }));
-
-            // Force a custom event to notify other components (like Sidebar) if they listen to visible changes
-            window.dispatchEvent(new Event('storage'));
+            updateUser({ photo_url: photoPath });
 
             toast.success('Foto atualizada!');
         } catch (error) {
             console.error('Error uploading photo:', error);
             toast.error('Erro ao atualizar foto');
         }
-    };
-
-    // Helper to get image URL
-    const getPhotoUrl = (path) => {
-        if (!path) return null;
-        if (path.startsWith('http')) return path;
-        // Adjust this if your backend port is different or environment specific
-        // Since we are likely proxying /api, we might need to proxy /uploads or use full URL
-        return `http://localhost:3000/${path.replace(/\\/g, '/')}`;
     };
 
     if (loading) return (
@@ -116,8 +112,8 @@ const UserProfile = () => {
                         <div className="relative group">
                             <div className="w-32 h-32 rounded-full p-1.5 glass bg-white/10 backdrop-blur-md shadow-2xl">
                                 <div className="w-full h-full rounded-full overflow-hidden bg-gray-800 relative">
-                                    {user.photo_url ? (
-                                        <img src={getPhotoUrl(user.photo_url)} alt="Profile" className="w-full h-full object-cover" />
+                                    {privatePhotoUrl ? (
+                                        <img src={privatePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900 text-4xl font-bold text-white uppercase">
                                             {user.nome_completo?.charAt(0)}

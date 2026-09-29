@@ -2,16 +2,15 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
-const { getDb } = require('../config/database');
+const settingsRepository = require('../repositories/settingsRepository');
 
-exports.generateAffiliationPDF = async (data, res) => {
+exports.generateAffiliationPDF = async (data, res, tenantId) => {
     const doc = new PDFDocument();
-    const db = await getDb();
 
     // Fetch dynamic terms
     let terms = 'Eu, {{NOME}}, solicito minha filiação.'; // Fallback
     try {
-        const setting = await db.get("SELECT value FROM system_settings WHERE key = 'affiliation_terms'");
+        const setting = await settingsRepository.find('affiliation_terms', tenantId);
         if (setting) terms = setting.value;
     } catch (err) {
         console.error("Error fetching terms:", err);

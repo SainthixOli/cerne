@@ -3,53 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { User, CreditCard, ChevronRight, ShieldCheck, AlertCircle, Clock, XCircle } from 'lucide-react';
 import api from '../../api';
 import ChatComponent from '../../components/ChatComponent';
+import { useAuth } from '../../auth/useAuth';
 
 const MemberHome = () => {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const { user: sessionUser } = useAuth();
+    const user = sessionUser ? { ...sessionUser, status_conta: sessionUser.status } : null;
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            if (!storedUser) {
-                navigate('/login');
-                return;
-            }
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-
-            // Buscar Status
-            if (parsedUser.cpf) {
-                api.post('/affiliations/status', { cpf: parsedUser.cpf })
-                    .then(res => {
-                        setStatusData(res.data);
-                        setLoading(false);
-
-                        // Sync localStorage if status changed (e.g. Active -> Inactive)
-                        if (res.data.status_conta && res.data.status_conta !== parsedUser.status_conta) {
-                            const updatedUser = { ...parsedUser, status_conta: res.data.status_conta };
-                            localStorage.setItem('user', JSON.stringify(updatedUser));
-                            setUser(updatedUser); // Update local state
-
-                            // Dispatch storage event to notify other components (like Sidebar if it listens)
-                            window.dispatchEvent(new Event('storage'));
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Error fetching status:", err);
-                        setLoading(false);
-                    });
-            } else {
-                setLoading(false);
-            }
-        } catch (error) {
-            console.error("Error initializing user:", error);
-            localStorage.removeItem('user');
-            navigate('/login');
-        }
-    }, [navigate]);
+        if (!sessionUser) return;
+        api.get(`/affiliations/${sessionUser.id}/history`, { silent: true })
+            .then((response) => {
+                const latest = response.data?.[0] || null;
+                setStatusData(latest ? { ...latest, status_conta: sessionUser.status } : null);
+            })
+            .catch((error) => console.error('Error fetching status:', error))
+            .finally(() => setLoading(false));
+    }, [sessionUser]);
 
     if (!user) return null;
 
@@ -66,7 +38,7 @@ const MemberHome = () => {
             );
         }
 
-        const { status, observacoes, created_at, filiacao_id } = statusData;
+        const { status, observacoes } = statusData;
 
         let colorClass = 'bg-blue-100 text-blue-600';
         let icon = <Clock size={28} />;
@@ -130,7 +102,7 @@ const MemberHome = () => {
                                         await api.post('/affiliations/request-reactivation');
                                         setStatusData({ ...statusData, status: 'solicitando_reativacao' });
                                         alert('Solicitação enviada! Aguarde a aprovação.');
-                                    } catch (e) { alert('Erro ao solicitar.'); }
+                                    } catch { alert('Erro ao solicitar.'); }
                                 }}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold transition shadow-lg shadow-blue-500/30"
                             >
@@ -157,7 +129,7 @@ const MemberHome = () => {
 
                 {/* Seção de Chat */}
                 {statusData.id && (
-                    <ChatComponent filiacaoId={statusData.id} cpf={user.cpf} />
+                    <ChatComponent filiacaoId={statusData.id} />
                 )}
             </div>
         );
@@ -202,7 +174,7 @@ const MemberHome = () => {
                                         window.location.reload();
                                     } catch (e) {
                                         console.error(e);
-                                        alert('Erro ao solicitar reativação: ' + (e.response?.data?.error || 'Erro desconhecido'));
+                                        alert('Erro ao solicitar reativação: ' + (e.message || 'Erro desconhecido'));
                                     }
                                 }}
                                 className="whitespace-nowrap bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg w-full md:w-auto text-center"

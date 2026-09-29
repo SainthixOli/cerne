@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Upload, Check, AlertCircle, ArrowLeft, HelpCircle, FileText, PenTool, Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import api from '../../api';
 import Loading from '../../components/Loading';
-import { maskCPF, maskPhone } from '../../utils/masks';
 import ThemeToggle from '../../components/ThemeToggle';
+import {
+    INITIAL_REGISTRATION_DATA,
+    normalizeRegistrationField,
+    validateRegistration,
+    validateRegistrationField
+} from '../../features/registration/validation';
 
 const Register = () => {
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({
-        nome: '', cpf: '', email: '', telefone: '', matricula: '',
-        rg: '', orgao_emissor: '', nacionalidade: '', estado_civil: '',
-        cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', uf: ''
-    });
+    const [formData, setFormData] = useState({ ...INITIAL_REGISTRATION_DATA });
     const [file, setFile] = useState(null);
-    const [idFile, setIdFile] = useState(null); // For manual signature
+    const [uploadToken, setUploadToken] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [signatureType, setSignatureType] = useState('digital'); // 'digital' | 'manual'
-    const navigate = useNavigate();
 
     useEffect(() => {
         if (step === 3) {
@@ -50,38 +50,15 @@ const Register = () => {
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
 
-    // Simple validation logic
-    const validate = (fieldName, value) => {
-        let errorMsg = '';
-        if (!value) return ''; // Don't validate empty unless required check
-
-        switch (fieldName) {
-            case 'email':
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(value)) errorMsg = 'Email inválido';
-                break;
-            case 'cpf':
-                if (value.length < 14) errorMsg = 'CPF incompleto';
-                break;
-            case 'nome':
-                if (value.split(' ').length < 2) errorMsg = 'Digite seu nome completo';
-                break;
-            default:
-                break;
-        }
-        return errorMsg;
-    };
-
     const handleChange = (e) => {
         let { name, value } = e.target;
-        if (name === 'cpf') value = maskCPF(value);
-        if (name === 'telefone') value = maskPhone(value);
+        value = normalizeRegistrationField(name, value);
 
         setFormData({ ...formData, [name]: value });
 
         // Inline validation
         if (touched[name]) {
-            const errorMsg = validate(name, value);
+            const errorMsg = validateRegistrationField(name, value);
             setErrors(prev => ({ ...prev, [name]: errorMsg }));
         }
     };
@@ -89,7 +66,7 @@ const Register = () => {
     const handleBlur = (e) => {
         const { name, value } = e.target;
         setTouched(prev => ({ ...prev, [name]: true }));
-        const errorMsg = validate(name, value);
+        const errorMsg = validateRegistrationField(name, value);
         setErrors(prev => ({ ...prev, [name]: errorMsg }));
     }
 
@@ -97,11 +74,7 @@ const Register = () => {
         e.preventDefault();
 
         // Final validation check
-        const newErrors = {};
-        Object.keys(formData).forEach(key => {
-            const error = validate(key, formData[key]);
-            if (error) newErrors[key] = error;
-        });
+        const newErrors = validateRegistration(formData);
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -113,6 +86,9 @@ const Register = () => {
         setLoading(true);
         try {
             const response = await api.post('/register', formData, { responseType: 'blob' });
+            const issuedToken = response.headers['x-upload-token'];
+            if (!issuedToken) throw new Error('Autorização de upload não recebida');
+            setUploadToken(issuedToken);
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -121,7 +97,7 @@ const Register = () => {
             link.click();
             setStep(2);
         } catch (err) {
-            setError(err.response?.data?.message || 'Erro ao registrar. Verifique os dados.');
+            setError(err.message || 'Erro ao registrar. Verifique os dados.');
         } finally {
             setLoading(false);
         }
@@ -133,7 +109,6 @@ const Register = () => {
         setLoading(true);
         const data = new FormData();
         data.append('file', file);
-        data.append('cpf', formData.cpf);
         // If manual, we might upload ID too, but let's keep it simple for now or assume they merged it?
         // Or we can add a second endpoint or handle multiple files.
         // For simplicity now, let's assume they upload the signed doc. 
@@ -143,9 +118,10 @@ const Register = () => {
         // but simplest is just checking the signed doc for now or updating backend to accept 'identity_doc'.
 
         try {
-            await api.post('/upload', data);
+            await api.post('/upload', data, { headers: { 'X-Upload-Token': uploadToken } });
+            setUploadToken(null);
             setStep(3);
-        } catch (err) {
+        } catch {
             setError('Erro ao enviar arquivo.');
         } finally {
             setLoading(false);

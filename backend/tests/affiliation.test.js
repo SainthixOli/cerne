@@ -1,14 +1,13 @@
 const request = require('supertest');
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const knex = require('../src/config/connection');
+const uploadGrant = require('../src/services/uploadGrant');
 
 describe('Affiliation Flow Endpoints', () => {
-    const uploadsDir = path.resolve(__dirname, '../uploads');
-    const sampleFilename = 'test-private-doc.txt';
-    const sampleFilePath = path.join(uploadsDir, sampleFilename);
+    const sampleStorageKey = `${'a'.repeat(48)}.pdf`;
+    const validPdf = Buffer.from('%PDF-1.4\n1 0 obj\nendobj\n%%EOF');
+    const tenantHeader = { 'X-Tenant-Slug': 'affiliation-test' };
 
     const userId = 'aff-user-1';
     const otherUserId = 'aff-user-2';
@@ -20,27 +19,22 @@ describe('Affiliation Flow Endpoints', () => {
     let otherUserToken;
     let adminToken;
     let superAdminToken;
+    let tenantId;
 
     beforeAll(async () => {
         await knex.migrate.latest();
 
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        fs.writeFileSync(sampleFilePath, 'private test file');
-    });
-
-    afterAll(async () => {
-        if (fs.existsSync(sampleFilePath)) {
-            fs.unlinkSync(sampleFilePath);
-        }
     });
 
     beforeEach(async () => {
+        await knex('affiliation_upload_tokens').del();
         await knex('filiation_chat').del();
         await knex('documentos').del();
         await knex('filiacoes').del();
         await knex('profiles').del();
+        await knex('tenant_super_admins').del();
+        await knex('tenants').del();
+        [{ id: tenantId }] = await knex('tenants').insert({ name: 'Affiliation Test', slug: 'affiliation-test', status: 'ATIVO' }).returning('id');
 
         await knex('profiles').insert([
             {
@@ -49,7 +43,8 @@ describe('Affiliation Flow Endpoints', () => {
                 cpf: userCpf,
                 email: 'user1@example.com',
                 status_conta: 'pendente_docs',
-                role: 'professor'
+                role: 'professor',
+                tenant_id: tenantId
             },
             {
                 id: otherUserId,
@@ -57,7 +52,8 @@ describe('Affiliation Flow Endpoints', () => {
                 cpf: '98765432100',
                 email: 'user2@example.com',
                 status_conta: 'ativo',
-                role: 'professor'
+                role: 'professor',
+                tenant_id: tenantId
             },
             {
                 id: adminId,
@@ -65,7 +61,8 @@ describe('Affiliation Flow Endpoints', () => {
                 cpf: '11122233344',
                 email: 'admin@example.com',
                 status_conta: 'ativo',
-                role: 'admin'
+                role: 'admin',
+                tenant_id: tenantId
             },
             {
                 id: superAdminId,
@@ -73,19 +70,21 @@ describe('Affiliation Flow Endpoints', () => {
                 cpf: '55566677788',
                 email: 'superadmin@example.com',
                 status_conta: 'ativo',
-                role: 'super_admin'
+                role: 'super_admin',
+                tenant_id: tenantId
             }
         ]);
 
-        userToken = jwt.sign({ id: userId, role: 'professor', nome: 'User One' }, process.env.JWT_SECRET);
-        otherUserToken = jwt.sign({ id: otherUserId, role: 'professor', nome: 'User Two' }, process.env.JWT_SECRET);
-        adminToken = jwt.sign({ id: adminId, role: 'admin', nome: 'Admin One' }, process.env.JWT_SECRET);
-        superAdminToken = jwt.sign({ id: superAdminId, role: 'super_admin', nome: 'Super Admin' }, process.env.JWT_SECRET);
+        userToken = jwt.sign({ id: userId, role: 'professor', nome: 'User One', tenantId }, process.env.JWT_SECRET);
+        otherUserToken = jwt.sign({ id: otherUserId, role: 'professor', nome: 'User Two', tenantId }, process.env.JWT_SECRET);
+        adminToken = jwt.sign({ id: adminId, role: 'admin', nome: 'Admin One', tenantId }, process.env.JWT_SECRET);
+        superAdminToken = jwt.sign({ id: superAdminId, role: 'super_admin', nome: 'Super Admin', tenantId }, process.env.JWT_SECRET);
     });
 
     it('register should create affiliation and return PDF', async () => {
         const res = await request(app)
             .post('/api/register')
+            .set(tenantHeader)
             .send({
                 nome: 'User One',
                 cpf: userCpf,
@@ -108,13 +107,18 @@ describe('Affiliation Flow Endpoints', () => {
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#PROTO123',
-            status_atendimento: 'aberto'
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
         });
+
+        const grant = await uploadGrant.issue(knex,
+            (await knex('filiacoes').where({ user_id: userId }).first()).id, tenantId);
 
         const res = await request(app)
             .post('/api/upload')
-            .field('cpf', userCpf)
-            .attach('file', Buffer.from('signed form content'), 'signed-form.pdf');
+            .set(tenantHeader)
+            .set('X-Upload-Token', grant)
+            .attach('file', validPdf, 'signed-form.pdf');
 
         expect(res.statusCode).toBe(200);
 
@@ -127,12 +131,13 @@ describe('Affiliation Flow Endpoints', () => {
     });
 
     it('approve should conclude affiliation and not expose temp password', async () => {
-        const [filiacaoId] = await knex('filiacoes').insert({
+        const [{ id: filiacaoId }] = await knex('filiacoes').insert({
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#APR12345',
-            status_atendimento: 'aberto'
-        });
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
+        }).returning('id');
 
         const res = await request(app)
             .post(`/api/affiliations/${filiacaoId}/approve`)
@@ -152,12 +157,13 @@ describe('Affiliation Flow Endpoints', () => {
     });
 
     it('reject should set affiliation rejected and profile pendente_docs', async () => {
-        const [filiacaoId] = await knex('filiacoes').insert({
+        const [{ id: filiacaoId }] = await knex('filiacoes').insert({
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#REJ12345',
-            status_atendimento: 'aberto'
-        });
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
+        }).returning('id');
 
         const res = await request(app)
             .post(`/api/affiliations/${filiacaoId}/reject`)
@@ -178,11 +184,13 @@ describe('Affiliation Flow Endpoints', () => {
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#STAT1234',
-            status_atendimento: 'aberto'
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
         });
 
         const res = await request(app)
             .post('/api/affiliations/status')
+            .set(tenantHeader)
             .send({ cpf: userCpf });
 
         expect(res.statusCode).toBe(200);
@@ -191,29 +199,31 @@ describe('Affiliation Flow Endpoints', () => {
     });
 
     it('documents route should require auth and block non-owner user', async () => {
-        await knex('documentos').insert({
+        const [{ id: documentId }] = await knex('documentos').insert({
             user_id: userId,
             filiacao_id: null,
-            url_arquivo: `uploads/${sampleFilename}`,
-            tipo_documento: 'outro'
-        });
+            url_arquivo: sampleStorageKey,
+            tipo_documento: 'outro',
+            tenant_id: tenantId
+        }).returning('id');
 
-        const unauthenticated = await request(app).get(`/api/documents/${sampleFilename}`);
+        const unauthenticated = await request(app).get(`/api/documents/${documentId}`);
         expect(unauthenticated.statusCode).toBe(401);
 
         const forbidden = await request(app)
-            .get(`/api/documents/${sampleFilename}`)
+            .get(`/api/documents/${documentId}`)
             .set('Authorization', `Bearer ${otherUserToken}`);
         expect(forbidden.statusCode).toBe(403);
     });
 
     it('assume and transfer flow should enforce roles and update assignee', async () => {
-        const [filiacaoId] = await knex('filiacoes').insert({
+        const [{ id: filiacaoId }] = await knex('filiacoes').insert({
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#FLOW1234',
-            status_atendimento: 'aberto'
-        });
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
+        }).returning('id');
 
         const assume = await request(app)
             .post(`/api/affiliations/${filiacaoId}/assume`)
@@ -242,12 +252,14 @@ describe('Affiliation Flow Endpoints', () => {
     });
 
     it('chat should allow owner access and block profanity', async () => {
-        const [filiacaoId] = await knex('filiacoes').insert({
+        const [{ id: filiacaoId }] = await knex('filiacoes').insert({
             user_id: userId,
             status: 'em_processamento',
             protocolo: '#CHAT1234',
-            status_atendimento: 'aberto'
-        });
+            status_atendimento: 'aberto',
+            tenant_id: tenantId
+        }).returning('id');
+        await knex('profiles').where({ id: userId }).update({ status_conta: 'ativo' });
 
         const sendByOwner = await request(app)
             .post(`/api/affiliations/${filiacaoId}/chat`)
@@ -270,12 +282,13 @@ describe('Affiliation Flow Endpoints', () => {
     });
 
     it('disaffiliation and reactivation flow should update account lifecycle', async () => {
-        const [filiacaoId] = await knex('filiacoes').insert({
+        const [{ id: filiacaoId }] = await knex('filiacoes').insert({
             user_id: userId,
             status: 'concluido',
             protocolo: '#LIFE1234',
-            status_atendimento: 'concluido'
-        });
+            status_atendimento: 'concluido',
+            tenant_id: tenantId
+        }).returning('id');
         await knex('profiles').where({ id: userId }).update({ status_conta: 'ativo' });
 
         const requestDisaffiliation = await request(app)
@@ -294,7 +307,9 @@ describe('Affiliation Flow Endpoints', () => {
         const requestReactivation = await request(app)
             .post('/api/affiliations/request-reactivation')
             .set('Authorization', `Bearer ${userToken}`);
-        expect(requestReactivation.statusCode).toBe(200);
+        expect(requestReactivation.statusCode).toBe(401);
+
+        await knex('filiacoes').where({ id: filiacaoId }).update({ status: 'solicitando_reativacao' });
 
         const approveReactivation = await request(app)
             .post(`/api/affiliations/${filiacaoId}/approve-reactivation`)

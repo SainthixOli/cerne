@@ -1,6 +1,9 @@
-const { getDb } = require('../config/database');
 const pdfService = require('../services/pdfService');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const knex = require('../config/connection');
+const storage = require('../services/localStorage');
+const uploadGrant = require('../services/uploadGrant');
 const { approveAffiliation: approveAffiliationService, rejectAffiliation: rejectAffiliationService, ServiceError } = require('../services/affiliationReviewService');
 const {
     assumeAffiliation: assumeAffiliationService,
@@ -11,163 +14,149 @@ const {
 } = require('../services/affiliationTransferService');
 const { checkStatusByCpf, getAffiliationHistory: getAffiliationHistoryService, QueryServiceError } = require('../services/affiliationQueryService');
 const { getChatMessages: getChatMessagesService, sendChatMessage: sendChatMessageService, ChatServiceError } = require('../services/affiliationChatService');
+const { sendError } = require('../utils/apiResponse');
+const affiliationRepository = require('../repositories/affiliationRepository');
 
 exports.register = async (req, res) => {
     try {
-        const data = req.body;
-        const db = await getDb();
-        const tenantId = 1;  // ✅ NOVO: Default tenant para endpoints públicos
-
-        // 1. Verificar se o perfil existe por CPF OU Email
-        // Isso permite vincular "Frank Ocean" (CPF errado) a "Frank Ocean" (CPF correto) se o email for o mesmo.
-        const existingProfile = await db.get(
-            'SELECT * FROM profiles WHERE cpf = ? OR email = ? AND tenant_id = ?',
-            [data.cpf, data.email, tenantId]
-        );
-
-        let profileId;
-
-        if (existingProfile) {
-            profileId = existingProfile.id;
-            // Atualizar perfil com informações completas
-            await db.run(
-                `UPDATE profiles SET 
-                    nome_completo = ?, cpf = ?, telefone = ?, matricula_funcional = ?,
-                    rg = ?, orgao_emissor = ?, nacionalidade = ?, estado_civil = ?,
-                    cep = ?, endereco = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?,
-                    status_conta = 'pendente_docs' 
-                WHERE id = ? AND tenant_id = ?`,
-                [
-                    data.nome, data.cpf, data.telefone || '', data.matricula || '',
-                    data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
-                    data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
-                    data.bairro || '', data.cidade || '', data.uf || '',
-                    profileId, tenantId
-                ]
-            );
-        } else {
-            profileId = uuidv4();
-            await db.run(
-                `INSERT INTO profiles(
-                    id, nome_completo, cpf, email, telefone, matricula_funcional, 
-                    rg, orgao_emissor, nacionalidade, estado_civil,
-                    cep, endereco, numero, complemento, bairro, cidade, uf,
-                    role, status_conta, tenant_id
-                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'professor', 'pendente_docs', ?)`,
-                [
-                    profileId, data.nome, data.cpf, data.email, data.telefone || '', data.matricula || '',
-                    data.rg || '', data.orgao_emissor || '', data.nacionalidade || '', data.estado_civil || '',
-                    data.cep || '', data.endereco || '', data.numero || '', data.complemento || '',
-                    data.bairro || '', data.cidade || '', data.uf || '', tenantId
-                ]
-            );
+        const data = {
+            ...req.body,
+            cpf: req.body?.cpf?.replace(/\D/g, ''),
+            email: req.body?.email?.trim().toLowerCase()
+        };
+        if (!/^\d{11}$/.test(data.cpf || '') || !data.email) {
+            return res.status(400).json({ error: 'CPF e email são obrigatórios.' });
         }
+        const tenantId = req.tenantId;
+        const result = await knex.transaction(async (trx) => {
+            const matchingProfiles = await trx('profiles')
+                .where('tenant_id', tenantId)
+                .andWhere((builder) => builder
+                    .whereRaw("REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?", [data.cpf])
+                    .orWhereRaw('LOWER(email) = ?', [data.email]));
+            if (matchingProfiles.length > 1) {
+                const error = new Error('Cadastro ambíguo neste tenant.');
+                error.statusCode = 409;
+                throw error;
+            }
+            const existingProfile = matchingProfiles[0];
+            if (existingProfile && (existingProfile.cpf.replace(/\D/g, '') !== data.cpf ||
+                existingProfile.email?.toLowerCase() !== data.email || existingProfile.status_conta === 'ativo')) {
+                const error = new Error('Cadastro já existente ou dados divergentes neste tenant.');
+                error.statusCode = 409;
+                throw error;
+            }
 
-        // 2. Criar NOVA Solicitação de Filiação (Histórico)
-        // Sempre criamos uma nova solicitação se eles estiverem se registrando novamente.
-        // Mas talvez devêssemos verificar se já existe uma PENDENTE?
-        // Se houver uma pendente, talvez apenas atualizá-la?
-        // Usuário disse: "Linha do histórico... eu rejeitei... eu fiz um novo".
-        // Então devemos permitir múltiplos.
+            const profileId = existingProfile?.id || uuidv4();
+            const profile = {
+                nome_completo: data.nome,
+                cpf: data.cpf,
+                email: data.email,
+                telefone: data.telefone || '',
+                matricula_funcional: data.matricula || '',
+                rg: data.rg || '',
+                orgao_emissor: data.orgao_emissor || '',
+                nacionalidade: data.nacionalidade || '',
+                estado_civil: data.estado_civil || '',
+                cep: data.cep || '',
+                endereco: data.endereco || '',
+                numero: data.numero || '',
+                complemento: data.complemento || '',
+                bairro: data.bairro || '',
+                cidade: data.cidade || '',
+                uf: data.uf || '',
+                status_conta: 'pendente_docs',
+                tenant_id: tenantId
+            };
+            if (existingProfile) await trx('profiles').where({ id: profileId, tenant_id: tenantId }).update(profile);
+            else await trx('profiles').insert({ id: profileId, role: 'professor', ...profile });
 
-        // Generate Protocol (Simple 8-char alphanumeric, uppercase)
-        const protocol = '#' + Math.random().toString(36).substring(2, 10).toUpperCase();
+            const protocol = `#${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+            const inserted = await trx('filiacoes').insert({
+                user_id: profileId,
+                status: 'em_processamento',
+                protocolo: protocol,
+                status_atendimento: 'aberto',
+                tenant_id: tenantId
+            }, ['id']);
+            const affiliationId = typeof inserted[0] === 'object' ? inserted[0].id : inserted[0];
+            const uploadToken = await uploadGrant.issue(trx, affiliationId, tenantId);
+            return { uploadToken };
+        });
 
-        await db.run(
-            `INSERT INTO filiacoes (user_id, status, protocolo, status_atendimento, tenant_id) VALUES (?, 'em_processamento', ?, 'aberto', ?)`,
-            [profileId, protocol, tenantId]
-        );
+        const uploadToken = result.uploadToken;
+        res.setHeader('X-Upload-Token', uploadToken);
+        res.setHeader('Cache-Control', 'no-store');
 
         // Gerar PDF
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=filiacao_${data.nome}.pdf`);
 
-        pdfService.generateAffiliationPDF(data, res);
+        pdfService.generateAffiliationPDF(data, res, tenantId);
 
     } catch (error) {
+        if (error.statusCode === 409) return res.status(409).json({ error: error.message });
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'REGISTRATION_FAILED');
     }
 };
 
 exports.uploadSignedForm = async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Arquivo obrigatório' });
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
+        const grant = req.uploadGrant;
+        const now = new Date().toISOString();
+        const documentId = await knex.transaction(async (trx) => {
+            const consumed = await trx('affiliation_upload_tokens')
+                .where({ token_hash: grant.tokenHash, filiacao_id: grant.affiliationId, tenant_id: req.tenantId })
+                .whereNull('used_at').where('expires_at', '>', now)
+                .update({ used_at: now });
+            if (consumed !== 1) {
+                const error = new Error('Invalid upload grant');
+                error.invalidGrant = true;
+                throw error;
+            }
+            const affiliation = await trx('filiacoes as f')
+                .join('profiles as p', 'p.id', 'f.user_id')
+                .select('f.id', 'f.user_id')
+                .where('f.id', grant.affiliationId)
+                .where('f.tenant_id', req.tenantId)
+                .where('p.tenant_id', req.tenantId)
+                .where('f.user_id', grant.userId)
+                .where('f.status', 'em_processamento')
+                .first();
+            if (!affiliation) {
+                const error = new Error('Invalid affiliation');
+                error.invalidGrant = true;
+                throw error;
+            }
+            const [{ id }] = await trx('documentos').insert({
+                user_id: grant.userId,
+                filiacao_id: grant.affiliationId,
+                url_arquivo: req.file.storageKey,
+                tipo_documento: 'ficha_assinada',
+                tenant_id: req.tenantId
+            }).returning('id');
+            await trx('profiles').where({ id: grant.userId, tenant_id: req.tenantId })
+                .update({ status_conta: 'em_analise' });
+            return id;
+        });
 
-        const db = await getDb();
-        const cpf = req.body.cpf; // Precisamos identificar o usuário
-        const tenantId = 1;  // ✅ NOVO: Default tenant para endpoints públicos
-
-        // Encontrar usuário por CPF
-        const profile = await db.get('SELECT id FROM profiles WHERE cpf = ? AND tenant_id = ?', [cpf, tenantId]);
-
-        if (!profile) {
-            return res.status(404).json({ error: 'User not found. Please register first.' });
-        }
-
-        // Encontrar última filiação
-        const filiacao = await db.get('SELECT id FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY data_solicitacao DESC LIMIT 1', [profile.id, tenantId]);
-
-        if (!filiacao) {
-            return res.status(404).json({ error: 'Affiliation request not found.' });
-        }
-
-        // Inserir Documento
-        await db.run(
-            `INSERT INTO documentos (user_id, filiacao_id, url_arquivo, tipo_documento, tenant_id) VALUES (?, ?, ?, 'ficha_assinada', ?)`,
-            [profile.id, filiacao.id, req.file.path, tenantId]
-        );
-
-        // Atualizar Status do Perfil
-        await db.run('UPDATE profiles SET status_conta = ? WHERE id = ? AND tenant_id = ?', ['em_analise', profile.id, tenantId]);
-
-        res.status(200).json({ message: 'File uploaded successfully', filename: req.file.filename });
+        return res.status(200).json({ message: 'File uploaded successfully', documentId });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        await storage.remove(req.file.storageKey).catch(() => {});
+        if (error.invalidGrant) return res.status(403).json({ error: 'Autorização de upload inválida' });
+        return res.status(500).json({ error: 'Erro ao salvar documento' });
     }
 };
 
 exports.getAllAffiliations = async (req, res) => {
     try {
-        const db = await getDb();
-        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        // Queremos listar USUÁRIOS, mostrando seu status de filiação mais recente, mas também sabendo se têm histórico.
-        // Ou listamos Filiações?
-        // Usuário quer: "Frank Ocean (+2)". Isso implica que listamos Usuários (ou a solicitação mais recente de cada um).
-
-        const rows = await db.all(`
-            SELECT 
-                p.id as user_id,
-                p.nome_completo as nome, 
-                p.cpf, 
-                p.status_conta,
-                f.id as id,
-                f.status, 
-                f.data_solicitacao, 
-                f.observacoes_admin,
-                f.protocolo,
-                f.responsavel_admin_id,
-                f.status_atendimento,
-                f.transfer_status,
-                d.url_arquivo,
-                (SELECT COUNT(*) FROM filiacoes WHERE user_id = p.id AND tenant_id = ?) as total_requests
-            FROM filiacoes f
-            JOIN profiles p ON f.user_id = p.id AND p.tenant_id = ?
-            LEFT JOIN documentos d ON f.id = d.filiacao_id AND d.tipo_documento = 'ficha_assinada' AND d.tenant_id = ?
-            WHERE f.tenant_id = ? AND f.id = (SELECT MAX(id) FROM filiacoes WHERE user_id = p.id AND tenant_id = ?)
-            ORDER BY f.data_solicitacao DESC
-        `, [tenantId, tenantId, tenantId, tenantId, tenantId]);
-
-        // Também podemos querer buscar o histórico COMPLETO para a visualização de detalhes.
-        // Por enquanto, retornamos o estado "Mais Recente" para a lista, e o frontend pode solicitar detalhes.
-        // Retornar "Mais Recente" por usuário é mais limpo para a tabela principal.
+        const rows = await affiliationRepository.listLatestByTenant(req.tenantId);
 
         res.status(200).json(rows);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_LIST_FAILED');
     }
 };
 
@@ -217,7 +206,7 @@ exports.rejectAffiliation = async (req, res) => {
             return res.status(error.statusCode).json({ error: error.message });
         }
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_REJECTION_FAILED');
     }
 };
 
@@ -245,7 +234,7 @@ exports.assumeAffiliation = async (req, res) => {
             return res.status(error.statusCode).json({ error: error.message });
         }
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_ASSIGNMENT_FAILED');
     }
 };
 
@@ -262,7 +251,7 @@ exports.requestTransfer = async (req, res) => {
         if (error instanceof TransferServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'TRANSFER_REQUEST_FAILED');
     }
 };
 
@@ -285,7 +274,7 @@ exports.denyTransferRequest = async (req, res) => {
         if (error instanceof TransferServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'TRANSFER_DENIAL_FAILED');
     }
 };
 
@@ -312,21 +301,21 @@ exports.transferAffiliation = async (req, res) => {
             return res.status(error.statusCode).json({ error: error.message });
         }
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_TRANSFER_FAILED');
     }
 };
 
 exports.checkStatus = async (req, res) => {
     const { cpf } = req.body;
     try {
-        const payload = await checkStatusByCpf(cpf);
+        const payload = await checkStatusByCpf(cpf, req.tenantId);
         res.json(payload);
     } catch (error) {
         if (error instanceof QueryServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_STATUS_FAILED');
     }
 };
 
@@ -340,21 +329,20 @@ exports.getAffiliationHistory = async (req, res) => {
         if (error instanceof QueryServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'AFFILIATION_HISTORY_FAILED');
     }
 };
 
 exports.getCertificate = async (req, res) => {
     try {
-        const db = await getDb();
         const userId = req.user.id;
-        const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const user = await db.get('SELECT * FROM profiles WHERE id = ? AND tenant_id = ?', [userId, tenantId]);
+        const tenantId = req.tenantId;
+        const user = await affiliationRepository.getUserById(userId, tenantId);
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=carteirinha_${user.cpf}.pdf`);
+        res.setHeader('Content-Disposition', 'attachment; filename=carteirinha.pdf');
 
         pdfService.generateCertificate(user, res);
     } catch (error) {
@@ -365,36 +353,32 @@ exports.getCertificate = async (req, res) => {
 
 exports.getChatMessages = async (req, res) => {
     const { id } = req.params; // id da filiação
-    const cpfHeader = req.headers['x-cpf'];
 
     try {
         const messages = await getChatMessagesService({
             affiliationId: id,
-            cpfHeader,
             reqUser: req.user,
-            tenantId: req.user?.tenantId  // ✅ NOVO: passar tenantId se autenticado
+            tenantId: req.tenantId
         });
         res.json(messages);
     } catch (error) {
         if (error instanceof ChatServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'CHAT_READ_FAILED');
     }
 };
 
 exports.sendChatMessage = async (req, res) => {
     const { id } = req.params; // id da filiação
     const { message } = req.body;
-    const cpfHeader = req.headers['x-cpf'];
 
     try {
         await sendChatMessageService({
             affiliationId: id,
             message,
-            cpfHeader,
             reqUser: req.user,
-            tenantId: req.user?.tenantId  // ✅ NOVO: passar tenantId se autenticado
+            tenantId: req.tenantId
         });
 
         res.json({ message: 'Message sent' });
@@ -402,7 +386,7 @@ exports.sendChatMessage = async (req, res) => {
         if (error instanceof ChatServiceError) {
             return res.status(error.statusCode).json({ error: error.message });
         }
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'CHAT_SEND_FAILED');
     }
 };
 
@@ -413,20 +397,19 @@ exports.requestDisaffiliation = async (req, res) => {
         const userId = req.user.id;
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
-        const db = await getDb();
-        // Buscar afiliação ativa
-        const lastAffiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY id DESC LIMIT 1', [userId, tenantId]);
+        const lastAffiliation = await affiliationRepository.getLatestAffiliationByUserId(userId, tenantId);
 
         if (!lastAffiliation) return res.status(404).json({ error: 'Afiliação não encontrada' });
 
-        await db.run('UPDATE filiacoes SET status = ?, status_atendimento = ? WHERE id = ? AND tenant_id = ?',
-            ['solicitando_desfiliacao', 'em_andamento', lastAffiliation.id, tenantId]);
+        await affiliationRepository.updateAffiliationStatus(lastAffiliation.id, tenantId,
+            'solicitando_desfiliacao', 'em_andamento');
 
-        await auditService.logAction(userId, 'REQUEST_DISAFFILIATION', lastAffiliation.id, { reason: 'Solicitado pelo usuário' });
+        await auditService.logAction(userId, 'REQUEST_DISAFFILIATION', lastAffiliation.id,
+            { reason: 'Solicitado pelo usuário' }, tenantId);
 
         res.json({ message: 'Solicitação de desfiliação enviada.' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'DISAFFILIATION_REQUEST_FAILED');
     }
 };
 
@@ -434,23 +417,20 @@ exports.approveDisaffiliation = async (req, res) => {
     try {
         const { id } = req.params;
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
+        await knex.transaction(async (trx) => {
+            const affiliation = await trx('filiacoes').select('user_id')
+                .where({ id, tenant_id: tenantId }).first();
+            if (!affiliation) throw new ServiceError('Affiliation not found', 404);
+            await trx('filiacoes').where({ id, tenant_id: tenantId })
+                .update({ status: 'desfiliado', status_atendimento: 'concluido' });
+            await trx('profiles').where({ id: affiliation.user_id, tenant_id: tenantId })
+                .update({ status_conta: 'inativo' });
+        });
 
-        await db.run(`
-            UPDATE filiacoes 
-            SET status = 'desfiliado', status_atendimento = 'concluido' 
-            WHERE id = ? AND tenant_id = ?
-        `, [id, tenantId]);
-
-        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ? AND tenant_id = ?', [id, tenantId]);
-        if (affiliation) {
-            await db.run("UPDATE profiles SET status_conta = 'inativo' WHERE id = ? AND tenant_id = ?", [affiliation.user_id, tenantId]);
-        }
-
-        await auditService.logAction(req.user.id, 'APPROVE_DISAFFILIATION', id, {});
+        await auditService.logAction(req.user.id, 'APPROVE_DISAFFILIATION', id, {}, tenantId);
         res.json({ message: 'Desfiliação concluída.' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'DISAFFILIATION_APPROVAL_FAILED');
     }
 };
 
@@ -458,21 +438,16 @@ exports.requestReactivation = async (req, res) => {
     try {
         const userId = req.user.id;
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
-
-        const affiliation = await db.get('SELECT * FROM filiacoes WHERE user_id = ? AND tenant_id = ? ORDER BY id DESC LIMIT 1', [userId, tenantId]);
+        const affiliation = await affiliationRepository.getLatestAffiliationByUserId(userId, tenantId);
         if (!affiliation) return res.status(404).json({ error: 'Registro não encontrado' });
 
-        await db.run(`
-            UPDATE filiacoes 
-            SET status = 'solicitando_reativacao', status_atendimento = 'em_andamento' 
-            WHERE id = ? AND tenant_id = ?
-        `, [affiliation.id, tenantId]);
+        await affiliationRepository.updateAffiliationStatus(affiliation.id, tenantId,
+            'solicitando_reativacao', 'em_andamento');
 
-        await auditService.logAction(userId, 'REQUEST_REACTIVATION', affiliation.id, {});
+        await auditService.logAction(userId, 'REQUEST_REACTIVATION', affiliation.id, {}, tenantId);
         res.json({ message: 'Solicitação de reativação enviada.' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'REACTIVATION_REQUEST_FAILED');
     }
 };
 
@@ -480,22 +455,19 @@ exports.approveReactivation = async (req, res) => {
     try {
         const { id } = req.params;
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
+        await knex.transaction(async (trx) => {
+            const affiliation = await trx('filiacoes').select('user_id')
+                .where({ id, tenant_id: tenantId }).first();
+            if (!affiliation) throw new ServiceError('Affiliation not found', 404);
+            await trx('filiacoes').where({ id, tenant_id: tenantId })
+                .update({ status: 'concluido', status_atendimento: 'concluido' });
+            await trx('profiles').where({ id: affiliation.user_id, tenant_id: tenantId })
+                .update({ status_conta: 'ativo' });
+        });
 
-        await db.run(`
-            UPDATE filiacoes 
-            SET status = 'concluido', status_atendimento = 'concluido' 
-            WHERE id = ? AND tenant_id = ?
-        `, [id, tenantId]);
-
-        const affiliation = await db.get('SELECT user_id FROM filiacoes WHERE id = ? AND tenant_id = ?', [id, tenantId]);
-        if (affiliation) {
-            await db.run("UPDATE profiles SET status_conta = 'ativo' WHERE id = ? AND tenant_id = ?", [affiliation.user_id, tenantId]);
-        }
-
-        await auditService.logAction(req.user.id, 'APPROVE_REACTIVATION', id, {});
+        await auditService.logAction(req.user.id, 'APPROVE_REACTIVATION', id, {}, tenantId);
         res.json({ message: 'Conta reativada com sucesso.' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'REACTIVATION_APPROVAL_FAILED');
     }
 };

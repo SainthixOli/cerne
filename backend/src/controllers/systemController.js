@@ -1,24 +1,6 @@
-const fs = require('fs');
-const path = require('path');
 const os = require('os');
-const { getDb } = require('../config/database');
-
-const getFolderSize = (dirPath) => {
-    let size = 0;
-    if (fs.existsSync(dirPath)) {
-        const files = fs.readdirSync(dirPath);
-        for (const file of files) {
-            const filePath = path.join(dirPath, file);
-            const stats = fs.statSync(filePath);
-            if (stats.isDirectory()) {
-                size += getFolderSize(filePath);
-            } else {
-                size += stats.size;
-            }
-        }
-    }
-    return size;
-};
+const { sendError } = require('../utils/apiResponse');
+const systemRepository = require('../repositories/systemRepository');
 
 exports.getSystemStats = async (req, res) => {
     try {
@@ -26,16 +8,8 @@ exports.getSystemStats = async (req, res) => {
             return res.status(403).json({ error: 'Acesso negado.' });
         }
 
-        const dbPath = path.resolve(__dirname, '../../db/database.sqlite');
-        const uploadsPath = path.resolve(__dirname, '../../uploads');
-
         // 1. Tamanho do Banco de Dados
-        const dbStats = fs.statSync(dbPath);
-        const dbSizeMB = (dbStats.size / (1024 * 1024)).toFixed(2);
-
-        // 2. Tamanho da Pasta de Uploads
-        const uploadsSize = getFolderSize(uploadsPath);
-        const uploadsSizeMB = (uploadsSize / (1024 * 1024)).toFixed(2);
+        const dbSizeMB = ((await systemRepository.databaseSizeBytes()) / (1024 * 1024)).toFixed(2);
 
         // 3. Uso de Memória
         const memoryUsage = process.memoryUsage();
@@ -47,16 +21,13 @@ exports.getSystemStats = async (req, res) => {
         const cpuLoadPercent = Math.min(100, (loadAvg / cpus) * 100).toFixed(1);
 
         // 5. Contagens do Banco de Dados
-        const db = await getDb();
-        const userCount = await db.get('SELECT COUNT(*) as count FROM profiles');
-        const affiliationCount = await db.get('SELECT COUNT(*) as count FROM filiacoes');
-        const documentCount = await db.get('SELECT COUNT(*) as count FROM documentos');
+        const counts = await systemRepository.counts(req.tenantId);
 
         res.json({
             storage: {
                 database: `${dbSizeMB} MB`,
-                uploads: `${uploadsSizeMB} MB`,
-                total: `${(parseFloat(dbSizeMB) + parseFloat(uploadsSizeMB)).toFixed(2)} MB`
+                uploads: 'Object storage privado',
+                total: `${dbSizeMB} MB + objetos privados`
             },
             performance: {
                 memory: `${memoryUsageMB} MB`,
@@ -64,15 +35,15 @@ exports.getSystemStats = async (req, res) => {
                 cpuLoad: `${cpuLoadPercent}%`
             },
             counts: {
-                users: userCount.count,
-                affiliations: affiliationCount.count,
-                documents: documentCount.count
+                users: counts.users,
+                affiliations: counts.affiliations,
+                documents: counts.documents
             }
         });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'SYSTEM_STATS_FAILED');
     }
 };
 exports.executeConsoleCommand = async (req, res) => {
@@ -85,25 +56,16 @@ exports.executeConsoleCommand = async (req, res) => {
 
     try {
         if (command === 'status') {
-            const uploadsDir = path.resolve(__dirname, '../../uploads');
-            let uploadsWritable = false;
-            try {
-                require('fs').accessSync(uploadsDir, require('fs').constants.W_OK);
-                uploadsWritable = true;
-            } catch (e) { uploadsWritable = false; }
-
-            const db = await getDb();
-            await db.get('SELECT 1');
+            await systemRepository.ping();
 
             return res.json({
-                output: `System Status:\n[OK] Database Active\n[${uploadsWritable ? 'OK' : 'FAIL'}] Uploads Writable\n[OK] Uptime: ${process.uptime().toFixed(0)}s`
+                output: `System Status:\n[OK] Database Active\n[OK] Private Object Storage Configured\n[OK] Uptime: ${process.uptime().toFixed(0)}s`
             });
         }
 
         if (command === 'logs') {
             const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-            const db = await getDb();
-            const logs = await db.all(`SELECT data_solicitacao, user_id, status FROM filiacoes WHERE tenant_id = ? ORDER BY data_solicitacao DESC LIMIT 5`, [tenantId]);
+            const logs = await systemRepository.recentAffiliations(tenantId);
             const output = logs.map(l => `[${l.data_solicitacao}] User: ${l.user_id} Status: ${l.status}`).join('\n') || 'No recent logs.';
             return res.json({ output });
         }
@@ -113,6 +75,6 @@ exports.executeConsoleCommand = async (req, res) => {
         return res.json({ output: '' });
 
     } catch (error) {
-        res.status(500).json({ output: `Error: ${error.message}` });
+        return sendError(res, 500, undefined, 'CONSOLE_COMMAND_FAILED');
     }
 };

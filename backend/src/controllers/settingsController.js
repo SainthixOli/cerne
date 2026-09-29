@@ -1,9 +1,8 @@
-const { getDb } = require('../config/database');
+const settingsRepository = require('../repositories/settingsRepository');
 
 exports.getSettings = async (req, res) => {
     try {
-        const db = await getDb();
-        const settings = await db.all('SELECT * FROM system_settings');
+        const settings = await settingsRepository.list(req.tenantId);
 
         // Convert array to object key-value for easier frontend usage
         const formattedSettings = settings.reduce((acc, curr) => {
@@ -27,11 +26,7 @@ exports.updateSetting = async (req, res) => {
     }
 
     try {
-        const db = await getDb();
-        await db.run(
-            'INSERT INTO system_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP',
-            [key, value, value]
-        );
+        await settingsRepository.upsert(key, value, req.tenantId);
 
         res.json({ message: 'Configuração atualizada com sucesso.', key, value });
     } catch (error) {

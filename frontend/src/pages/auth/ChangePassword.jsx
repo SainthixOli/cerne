@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle } from 'lucide-react';
 import api from '../../api';
+import { useAuth } from '../../auth/useAuth';
+import { homeForRole } from '../../auth/roleRoutes';
 
 const ChangePassword = () => {
     const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
@@ -9,6 +11,7 @@ const ChangePassword = () => {
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { refreshSession } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -16,8 +19,8 @@ const ChangePassword = () => {
             setError('As senhas não coincidem.');
             return;
         }
-        if (passwords.newPassword.length < 6) {
-            setError('A senha deve ter pelo menos 6 caracteres.');
+        if (passwords.newPassword.length < 12) {
+            setError('A senha deve ter pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo.');
             return;
         }
 
@@ -25,21 +28,16 @@ const ChangePassword = () => {
         setError('');
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
             await api.post('/auth/change-password', {
-                userId: user.id,
-                newPassword: passwords.newPassword
+                newPassword: passwords.newPassword,
+                confirmPassword: passwords.confirmPassword
             });
 
             setSuccess(true);
-            // Update local storage to remove flag
-            user.changePasswordRequired = false;
-            localStorage.setItem('user', JSON.stringify(user));
+            const user = await refreshSession();
 
             setTimeout(() => {
-                if (user.role === 'admin' || user.role === 'super_admin') navigate('/admin');
-                else if (user.role === 'system_manager') navigate('/system');
-                else navigate('/professor');
+                navigate(homeForRole(user.role), { replace: true });
             }, 2000);
 
         } catch (err) {

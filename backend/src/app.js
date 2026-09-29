@@ -1,13 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
-const path = require('path');
 
 const helmet = require('helmet');
 const { csrfProtection } = require('./middlewares/csrf');
 const { sanitizationMiddleware } = require('./middlewares/sanitization');
 const { auditMiddleware } = require('./middlewares/audit');
 const { auditAccessDeniedMiddleware } = require('./middlewares/auditAccessDenied');
+const { allowPublic } = require('./middlewares/requireRole');
+const { globalLimiter } = require('./middlewares/rateLimiting');
+const normalizeErrors = require('./middlewares/normalizeErrors');
 
 // Security Detection Middleware (Phase 2 - Alerts System)
 const {
@@ -32,7 +34,8 @@ app.use(cors({
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Slug', 'X-Upload-Token'],
+    exposedHeaders: ['X-Upload-Token']
 }));
 
 // CSRF Protection: Proteção leve contra CSRF
@@ -40,6 +43,8 @@ app.use(csrfProtection);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(normalizeErrors);
+app.use(globalLimiter);
 
 // Security Detection: Anomaly detection for real-time alerts
 app.use(detectSQLInjectionAnomalies);
@@ -57,16 +62,15 @@ app.use(auditMiddleware);
 // Audit Access Denied: Log 401/403 responses
 app.use(auditAccessDeniedMiddleware);
 
-// Static Files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
 // Rotas
 app.use('/api', routes);
 
 const errorHandler = require('./middlewares/errorHandler');
-app.get('/', (req, res) => {
+app.get('/', allowPublic, (req, res) => {
     res.send('API CERNE System is running');
 });
+
+app.use((req, res) => res.status(404).json({ error: 'Rota não encontrada', code: 'NOT_FOUND' }));
 
 // Global Error Handler
 app.use(errorHandler);

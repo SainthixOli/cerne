@@ -1,69 +1,41 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const knex = require('../src/config/connection');
 const { assertScriptSecret, requireScriptEnv } = require('./scriptEnv');
+const { tenantFromEnvironment } = require('./userProvisioning');
 
-const dbPath = path.resolve(__dirname, '../db/database.sqlite');
-const db = new sqlite3.Database(dbPath);
-
-function loadUsers() {
-    const serializedUsers = requireScriptEnv('CERNE_SEED_USERS_JSON');
-    let users;
-
+async function main() {
     try {
-        users = JSON.parse(serializedUsers);
-    } catch {
-        throw new Error('CERNE_SEED_USERS_JSON must contain a valid JSON array');
+        const tenantId = await tenantFromEnvironment();
+        const users = JSON.parse(requireScriptEnv('CERNE_SEED_USERS_JSON'));
+        if (!Array.isArray(users) || users.length === 0) throw new Error('CERNE_SEED_USERS_JSON deve ser um array não vazio');
+        await knex.transaction(async (trx) => {
+            for (const user of users) {
+                for (const field of ['name', 'cpf', 'email', 'role', 'password']) {
+                    if (!user[field]) throw new Error(`Usuário sem campo obrigatório: ${field}`);
+                }
+                assertScriptSecret(user.password, 'seed user password');
+                const record = {
+                    id: uuidv4(), tenant_id: tenantId, nome_completo: user.name, cpf: user.cpf,
+                    email: user.email, role: user.role, status_conta: 'ativo',
+                    password_hash: await bcrypt.hash(user.password, 10)
+                };
+                await trx('profiles').insert(record).onConflict(['tenant_id', 'cpf']).merge({
+                    nome_completo: record.nome_completo,
+                    email: record.email,
+                    role: record.role,
+                    password_hash: record.password_hash,
+                    status_conta: record.status_conta
+                });
+            }
+        });
+        console.log('Seed concluído.');
+    } catch (error) {
+        console.error(error.message);
+        process.exitCode = 1;
+    } finally {
+        await knex.destroy();
     }
-
-    if (!Array.isArray(users) || users.length === 0) {
-        throw new Error('CERNE_SEED_USERS_JSON must contain at least one user');
-    }
-
-    for (const user of users) {
-        const requiredFields = ['name', 'cpf', 'email', 'role', 'password'];
-        if (requiredFields.some((field) => !user[field])) {
-            throw new Error('Each seed user must define name, cpf, email, role and password');
-        }
-        assertScriptSecret(user.password, 'seed user password');
-    }
-
-    return users;
 }
 
-const seed = async () => {
-    const users = loadUsers();
-    console.log('Seeding users...');
-
-    for (const user of users) {
-        const hashedPassword = await bcrypt.hash(user.password, 10);
-        const id = uuidv4();
-
-        db.run(
-            `INSERT OR REPLACE INTO profiles (id, nome_completo, cpf, email, role, password_hash, status_conta)
-             VALUES (?, ?, ?, ?, ?, ?, 'ativo')`,
-            [id, user.name, user.cpf, user.email, user.role, hashedPassword],
-            (error) => {
-                if (error) {
-                    console.error('Error inserting seed user:', error.message);
-                } else {
-                    console.log('Seed user inserted or updated successfully.');
-                }
-            }
-        );
-    }
-};
-
-db.serialize(() => {
-    seed().then(() => {
-        setTimeout(() => {
-            console.log('Seeding complete.');
-            db.close();
-        }, 1000);
-    }).catch((error) => {
-        console.error(error.message);
-        db.close();
-        process.exitCode = 1;
-    });
-});
+main();

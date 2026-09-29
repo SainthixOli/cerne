@@ -18,7 +18,7 @@ const ForgotPassword = () => {
         try {
             await api.post('/auth/forgot-password', { cpf });
             setSuccess(true);
-        } catch (err) {
+        } catch {
             setError('Erro ao processar solicitação. Tente novamente.');
         } finally {
             setLoading(false);

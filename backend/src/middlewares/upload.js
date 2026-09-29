@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
-const crypto = require('crypto');
-const fs = require('fs');
+const storageService = require('../services/localStorage');
 
 // ==========================================
 // CONFIGURAÇÃO DE SEGURANÇA DO UPLOAD
@@ -31,9 +30,6 @@ const SIZE_LIMITS = {
 
 const storage = multer.memoryStorage();
 
-// Buffer temporário para validação de magic bytes
-let uploadBuffer = null;
-
 // ==========================================
 // VALIDAÇÃO DE ARQUIVO
 // ==========================================
@@ -50,10 +46,9 @@ const fileFilter = (req, file, cb) => {
         if (!Object.keys(ALLOWED_MIME_TYPES).includes(file.mimetype)) {
             return cb(new Error(`Tipo de arquivo não permitido: ${file.mimetype}`));
         }
-
-        // 3. Store buffer for magic bytes check later
-        // (será validado após o arquivo ser carregado)
-        uploadBuffer = null;
+        const validExtensions = file.mimetype === 'application/pdf' ? ['.pdf'] :
+            file.mimetype === 'image/png' ? ['.png'] : ['.jpg', '.jpeg'];
+        if (!validExtensions.includes(ext)) return cb(new Error('Extensão e MIME incompatíveis'));
         cb(null, true);
 
     } catch (error) {
@@ -82,7 +77,7 @@ const upload = multer({
  * Valida magic bytes e salva arquivo com nome aleatório
  * Use após o multer ter carregado o arquivo
  */
-const validateAndSaveUpload = (fieldName = 'file', sizeLimit = SIZE_LIMITS.DOCUMENT) => {
+const validateAndSaveUpload = (fieldName = 'file', sizeLimit = SIZE_LIMITS.DOCUMENT, allowedMimeTypes = Object.keys(ALLOWED_MIME_TYPES)) => {
     return (req, res, next) => {
         if (!req.file) {
             return next();  // Sem arquivo é ok, handler faz validação
@@ -90,6 +85,10 @@ const validateAndSaveUpload = (fieldName = 'file', sizeLimit = SIZE_LIMITS.DOCUM
 
         try {
             const file = req.file;
+
+            if (!allowedMimeTypes.includes(file.mimetype)) {
+                throw new Error('Tipo de arquivo não permitido para este campo');
+            }
 
             // 1. Validar tamanho
             if (file.size > sizeLimit) {
@@ -122,15 +121,6 @@ const validateAndSaveUpload = (fieldName = 'file', sizeLimit = SIZE_LIMITS.DOCUM
                 );
             }
 
-            // 3. Gerar nome aleatório e seguro
-            const randomName = crypto.randomBytes(16).toString('hex');
-            const ext = path.extname(file.originalname).toLowerCase();
-            const finalFilename = `${randomName}${ext}`;
-
-            // 4. Preparar objeto de arquivo para save
-            req.file.finalFilename = finalFilename;
-            req.file.uploadedAt = new Date();
-
             next();
 
         } catch (error) {
@@ -143,41 +133,26 @@ const validateAndSaveUpload = (fieldName = 'file', sizeLimit = SIZE_LIMITS.DOCUM
 };
 
 // ==========================================
-// SALVAMENTO EM DISCO (após validação)
+// PERSISTÊNCIA NO STORAGE PRIVADO (após validação)
 // ==========================================
 
 /**
- * Salva arquivo validado em disco
+ * Persiste o arquivo validado usando uma chave opaca de storage.
  * Deve ser usado APÓS validateAndSaveUpload
  */
-const saveUploadToDisk = (uploadDir = 'uploads') => {
-    return (req, res, next) => {
+const saveUploadToStorage = () => {
+    return async (req, res, next) => {
         if (!req.file || !req.file.buffer) {
             return next();
         }
 
         try {
-            // Criar diretório se não existir
-            const fullUploadDir = path.join(__dirname, '../../', uploadDir);
-            if (!fs.existsSync(fullUploadDir)) {
-                fs.mkdirSync(fullUploadDir, { recursive: true, mode: 0o755 });
-            }
-
-            // Salvar arquivo
-            const filepath = path.join(fullUploadDir, req.file.finalFilename);
-            fs.writeFileSync(filepath, req.file.buffer, { mode: 0o644 });
-
-            // Atualizar path para o controller
-            req.file.path = filepath;
-            req.file.filename = req.file.finalFilename;
-
-            next();
-
+            req.file.storageKey = await storageService.save(req.file.buffer, req.file.mimetype, req.tenantId);
+            return next();
         } catch (error) {
             console.error('Error saving upload:', error);
             return res.status(500).json({ 
-                error: 'Erro ao salvar arquivo',
-                details: error.message 
+                error: 'Erro ao salvar arquivo'
             });
         }
     };
@@ -186,9 +161,8 @@ const saveUploadToDisk = (uploadDir = 'uploads') => {
 module.exports = {
     upload,
     validateAndSaveUpload,
-    saveUploadToDisk,
+    saveUploadToStorage,
     SIZE_LIMITS,
     ALLOWED_MIME_TYPES,
     ALLOWED_EXTENSIONS,
 };
-

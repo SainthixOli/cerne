@@ -47,7 +47,9 @@ const EvaluationHistory = ({ userId }) => {
         return 'text-red-500 from-red-500 to-orange-500';
     };
 
-    const ProgressBar = ({ value, label, icon: Icon, colorClass }) => (
+    const ProgressBar = ({ value, label, icon, colorClass }) => {
+        const Icon = icon;
+        return (
         <div>
             <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -62,7 +64,8 @@ const EvaluationHistory = ({ userId }) => {
                 ></div>
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="space-y-6">

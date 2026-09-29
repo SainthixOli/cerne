@@ -1,10 +1,12 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const emailService = require('../services/emailService');
-const User = require('../models/User');
+const knex = require('../config/connection');
+const outboxService = require('../services/outboxService');
+const authRepository = require('../repositories/authRepository');
 const AuditLogger = require('../config/auditLogger');
-const { getDb } = require('../config/database');
+const { findAccountByCpfInTenant, TenantContextError } = require('../services/tenantContext');
+const { setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
 
 const SECRET_KEY = process.env.JWT_SECRET;
 if (!SECRET_KEY) {
@@ -14,10 +16,13 @@ if (!SECRET_KEY) {
 exports.login = async (req, res) => {
     try {
         const { cpf, password } = req.body;
+        if (typeof password !== 'string' || password.length === 0) {
+            return res.status(400).json({ error: 'Credenciais inválidas' });
+        }
         const ip = req.ip;
         const userAgent = req.get('user-agent') || 'unknown';
 
-        const user = await User.findByCpf(cpf);
+        const user = await findAccountByCpfInTenant(cpf, req.tenantId);
 
         if (!user) {
             // Log falha de autenticação
@@ -26,7 +31,7 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
 
-        if (!user.password_hash) {
+        if (!user.password_hash || user.status_conta !== 'ativo') {
             AuditLogger.authFailure(user.id, ip, 'Password not set', '/auth/login');
             AuditLogger.loginAttempt(cpf, ip, userAgent, false, 'no_password');
             return res.status(401).json({ error: 'Conta ainda não aprovada ou sem senha definida.' });
@@ -44,13 +49,7 @@ exports.login = async (req, res) => {
         // Login bem-sucedido - registrar
         AuditLogger.loginAttempt(cpf, ip, userAgent, true, 'success');
 
-        // 🏢 NOVO: Buscar tenantId do usuário
-        const db = await getDb();
-        const tenantRecord = await db.get(
-            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
-            [user.id]
-        );
-        const tenantId = tenantRecord?.tenant_id || 1; // Default: tenant 1
+        const tenantId = req.tenantId;
 
         const token = jwt.sign(
             { 
@@ -63,8 +62,9 @@ exports.login = async (req, res) => {
             { expiresIn: '1d' }
         );
 
-        res.json({
-            token,
+        setSessionCookie(res, token);
+        res.setHeader('Cache-Control', 'no-store');
+        const response = {
             user: {
                 id: user.id,
                 name: user.nome_completo,
@@ -72,13 +72,37 @@ exports.login = async (req, res) => {
                 tenantId: tenantId,  // ✅ NOVO: retornar tenantId na resposta
                 changePasswordRequired: !!user.change_password_required
             }
-        });
+        };
+        // Compatibilidade temporária para clientes não-web durante a migração para cookie HttpOnly.
+        if (process.env.LEGACY_BEARER_TOKEN_RESPONSE === 'true') response.token = token;
+        res.json(response);
 
     } catch (error) {
+        if (error instanceof TenantContextError) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
         console.error(error);
         AuditLogger.authFailure('unknown', req.ip, 'Server error', '/auth/login');
         res.status(500).json({ error: 'Erro interno no servidor' });
     }
+};
+
+exports.session = async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ user: {
+        id: req.user.id,
+        name: req.user.name,
+        role: req.user.role,
+        tenantId: req.user.tenantId,
+        status: req.user.status,
+        changePasswordRequired: req.user.changePasswordRequired
+    } });
+};
+
+exports.logout = async (_req, res) => {
+    clearSessionCookie(res);
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(204).end();
 };
 
 exports.changePassword = async (req, res) => {
@@ -86,12 +110,13 @@ exports.changePassword = async (req, res) => {
         const { newPassword } = req.body;
         // SECURITY FIX: Use ID from token, not body
         const userId = req.user.id;
-        const tenantId = req.user.tenantId;  // ✅ NOVO: tenantId do JWT
+        const tenantId = req.user.profileTenantId;
         const ip = req.ip;
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await User.updatePassword(userId, hashedPassword, tenantId);  // ✅ NOVO: passar tenantId
+        const updated = await authRepository.updatePassword(userId, hashedPassword, tenantId);
+        if (updated !== 1) return res.status(401).json({ error: 'Credenciais inválidas' });
 
         // Log mudança de senha bem-sucedida
         AuditLogger.passwordChange(userId, ip, true, 'success');
@@ -108,8 +133,9 @@ exports.forgotPassword = async (req, res) => {
     try {
         const { cpf } = req.body;
 
-        const user = await User.findByCpf(cpf);
-        if (!user) {
+        const tenantId = req.tenantId;
+        const user = await findAccountByCpfInTenant(cpf, tenantId);
+        if (!user || user.tenant_id !== tenantId || user.status_conta !== 'ativo' || !user.email) {
             // Segurança: não revelar se o usuário existe
             return res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
         }
@@ -118,22 +144,25 @@ exports.forgotPassword = async (req, res) => {
         const resetToken = uuidv4();
         const expires = new Date(Date.now() + 3600000); // 1 hora
 
-        // ✅ NOVO: Buscar tenantId do usuário
-        const db = await getDb();
-        const tenantRecord = await db.get(
-            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
-            [user.id]
-        );
-        const tenantId = tenantRecord?.tenant_id || 1;  // Default: tenant 1
-
-        await User.setResetToken(user.id, resetToken, expires, tenantId);  // ✅ NOVO: passar tenantId
-
-        // Enviar Email
-        const userEmail = user.email || `${user.cpf}@empresax.com`; // Fallback se não houver email
-        await emailService.sendResetPasswordEmail(userEmail, resetToken);
+        await knex.transaction(async (trx) => {
+            const updated = await trx('profiles').where({ id: user.id, tenant_id: tenantId }).update({
+                reset_token: resetToken,
+                reset_token_expires: expires
+            });
+            if (updated !== 1) throw new Error('Reset token update failed');
+            await outboxService.enqueue({
+                tenantId,
+                eventType: 'PASSWORD_RESET',
+                payload: { recipient: user.email, resetToken },
+                transaction: trx
+            });
+        });
 
         res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
     } catch (error) {
+        if (error instanceof TenantContextError) {
+            return res.json({ message: 'Se o CPF estiver cadastrado, você receberá um email.' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Erro ao processar solicitação' });
     }
@@ -142,24 +171,21 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
+        if (typeof token !== 'string' || !token || typeof newPassword !== 'string' || !newPassword) {
+            return res.status(400).json({ error: 'Token ou senha inválidos.' });
+        }
 
-        const user = await User.findByResetToken(token);
+        const tenantId = req.tenantId;
+        const user = await authRepository.findByResetToken(token, tenantId);
 
-        if (!user) {
+        if (!user || user.status_conta !== 'ativo') {
             return res.status(400).json({ error: 'Token inválido ou expirado.' });
         }
 
-        // ✅ NOVO: Buscar tenantId do usuário
-        const db = await getDb();
-        const tenantRecord = await db.get(
-            'SELECT tenant_id FROM tenant_super_admins WHERE user_id = ? LIMIT 1',
-            [user.id]
-        );
-        const tenantId = tenantRecord?.tenant_id || 1;  // Default: tenant 1
-
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await User.clearResetTokenAndSetPassword(user.id, hashedPassword, tenantId);  // ✅ NOVO: passar tenantId
+        const updated = await authRepository.clearResetTokenAndSetPassword(user.id, token, hashedPassword, tenantId);
+        if (updated !== 1) return res.status(400).json({ error: 'Token inválido ou expirado.' });
 
         res.json({ message: 'Senha redefinida com sucesso! Agora você pode fazer login.' });
     } catch (error) {

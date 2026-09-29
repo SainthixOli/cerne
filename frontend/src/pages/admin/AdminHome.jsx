@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Users, FileText, AlertCircle, TrendingUp, Activity, HardDrive, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
+import { useAuth } from '../../auth/useAuth';
 
 const AdminHome = () => {
     const [stats, setStats] = useState({
@@ -11,7 +12,7 @@ const AdminHome = () => {
         today: 0
     });
     const [recentActivity, setRecentActivity] = useState([]);
-    const [user] = useState(() => JSON.parse(localStorage.getItem('user')));
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -157,7 +158,7 @@ const PendingTasksWidget = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         setLoading(true);
         try {
             let combinedTasks = [];
@@ -199,7 +200,7 @@ const PendingTasksWidget = ({ user }) => {
                         target: n.target_group
                     }));
                     combinedTasks = [...combinedTasks, ...notificationTasks];
-                } catch (e) { console.warn('Failed to fetch pending notifications'); }
+                } catch { console.warn('Failed to fetch pending notifications'); }
             }
 
             setTasks(combinedTasks);
@@ -208,18 +209,18 @@ const PendingTasksWidget = ({ user }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user.id, user.role]);
 
     useEffect(() => {
         loadTasks();
-    }, [user.id]);
+    }, [loadTasks]);
 
     const handleApproveBroadcast = async (id) => {
         try {
             await api.post(`/notifications/${id}/approve`);
             alert('Notificação aprovada!');
             loadTasks();
-        } catch (error) {
+        } catch {
             alert('Erro ao aprovar');
         }
     };

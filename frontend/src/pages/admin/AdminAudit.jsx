@@ -57,7 +57,7 @@ const AdminAudit = () => {
                     ))}
                 </div>
             );
-        } catch (e) {
+        } catch {
             return <p className="text-gray-600 dark:text-gray-300">{detailsString}</p>;
         }
     };

@@ -1,5 +1,7 @@
-const { getDb } = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
+const { sendError } = require('../utils/apiResponse');
+const knex = require('../config/connection');
+const chatRepository = require('../repositories/chatRepository');
 
 // Iniciar ou Obter Conversa Existente
 // Iniciar ou Obter Conversa Existente
@@ -10,7 +12,6 @@ exports.startConversation = async (req, res) => {
     const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
-        const db = await getDb();
         let adminId, targetUserId;
 
         if (role === 'admin' || role === 'super_admin') {
@@ -26,25 +27,23 @@ exports.startConversation = async (req, res) => {
             return res.status(400).json({ error: "IDs inválidos para iniciar conversa." });
         }
 
-        // Verificar se já existe conversa entre eles
-        let conversation = await db.get(
-            `SELECT * FROM conversations WHERE admin_id = ? AND user_id = ? AND tenant_id = ?`,
-            [adminId, targetUserId, tenantId]
-        );
-
-        if (!conversation) {
-            const id = uuidv4();
-            await db.run(
-                `INSERT INTO conversations (id, admin_id, user_id, tenant_id) VALUES (?, ?, ?, ?)`,
-                [id, adminId, targetUserId, tenantId]
-            );
-            conversation = { id, admin_id: adminId, user_id: targetUserId, tenant_id: tenantId };
+        const participants = await chatRepository.findParticipants([adminId, targetUserId], tenantId);
+        const admin = participants.find((profile) => profile.id === adminId);
+        const member = participants.find((profile) => profile.id === targetUserId);
+        if (!admin || !['admin', 'super_admin'].includes(admin.role) ||
+            !member || member.role !== 'professor') {
+            return res.status(403).json({ error: 'Participantes inválidos para este tenant' });
         }
+
+        // Verificar se já existe conversa entre eles
+        const conversation = await knex.transaction(async (trx) =>
+            (await chatRepository.findConversation(adminId, targetUserId, tenantId, trx)) ||
+            chatRepository.createConversation(uuidv4(), adminId, targetUserId, tenantId, trx));
 
         res.json(conversation);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'CONVERSATION_START_FAILED');
     }
 };
 
@@ -54,54 +53,11 @@ exports.listConversations = async (req, res) => {
     const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
-        const db = await getDb();
-        let query = '';
-        let params = [];
         const { mode } = req.query; // 'all' for spectator, undefined/null for personal
-
-        // If Super Admin AND specifically asking for all chats (Monitor Mode)
-        if (role === 'super_admin' && mode === 'all') {
-            query = `
-                SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
-                (SELECT content FROM messages WHERE conversation_id = c.id AND tenant_id = ? ORDER BY created_at DESC LIMIT 1) as last_message,
-                admin_p.nome_completo as admin_name
-                FROM conversations c
-                JOIN profiles p ON c.user_id = p.id AND p.tenant_id = ?
-                LEFT JOIN profiles admin_p ON c.admin_id = admin_p.id AND admin_p.tenant_id = ?
-                WHERE c.tenant_id = ?
-                ORDER BY c.last_updated DESC
-            `;
-            params = [tenantId, tenantId, tenantId, tenantId];
-        }
-        // Admin OR (Super Admin in Personal Mode)
-        else if (role === 'admin' || role === 'super_admin') {
-            // See their OWN conversations
-            query = `
-                SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
-                (SELECT content FROM messages WHERE conversation_id = c.id AND tenant_id = ? ORDER BY created_at DESC LIMIT 1) as last_message
-                FROM conversations c
-                JOIN profiles p ON c.user_id = p.id AND p.tenant_id = ?
-                WHERE c.admin_id = ? AND c.tenant_id = ?
-                ORDER BY c.last_updated DESC
-            `;
-            params = [tenantId, tenantId, userId, tenantId];
-        } else {
-            // Member
-            query = `
-                SELECT c.*, p.nome_completo as peer_name, p.role as peer_role,
-                (SELECT content FROM messages WHERE conversation_id = c.id AND tenant_id = ? ORDER BY created_at DESC LIMIT 1) as last_message
-                FROM conversations c
-                JOIN profiles p ON c.admin_id = p.id AND p.tenant_id = ?
-                WHERE c.user_id = ? AND c.tenant_id = ?
-                ORDER BY c.last_updated DESC
-            `;
-            params = [tenantId, tenantId, userId, tenantId];
-        }
-
-        const conversations = await db.all(query, params);
+        const conversations = await chatRepository.listConversations(userId, role, tenantId, mode);
         res.json(conversations);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'CONVERSATION_LIST_FAILED');
     }
 };
 
@@ -110,22 +66,11 @@ exports.getMessages = async (req, res) => {
     const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
 
     try {
-        const db = await getDb();
-
-        // Auto-clean: Deletar mensagens com mais de 7 dias (opcional, manter se user pediu, mas não pediu agora)
-        // await db.run(`DELETE FROM messages WHERE conversation_id = ? AND tenant_id = ? AND created_at < date('now', '-7 days')`, [conversationId, tenantId]);
-
-        const messages = await db.all(`
-            SELECT m.*, p.nome_completo as sender_name 
-            FROM messages m
-            JOIN profiles p ON m.sender_id = p.id AND p.tenant_id = ?
-            WHERE m.conversation_id = ? AND m.tenant_id = ?
-            ORDER BY m.created_at ASC
-        `, [tenantId, conversationId, tenantId]);
+        const messages = await chatRepository.listMessages(conversationId, tenantId);
 
         res.json(messages);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'MESSAGE_LIST_FAILED');
     }
 };
 
@@ -143,30 +88,21 @@ exports.sendMessage = async (req, res) => {
     }
 
     try {
-        const db = await getDb();
         const id = uuidv4();
-
-        await db.run(
-            `INSERT INTO messages (id, conversation_id, sender_id, content, tenant_id) VALUES (?, ?, ?, ?, ?)`,
-            [id, conversationId, senderId, content, tenantId]
-        );
-
-        // Atualizar last_updated da conversa
-        await db.run(`UPDATE conversations SET last_updated = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?`, [conversationId, tenantId]);
+        await chatRepository.createMessage({ id, conversationId, senderId, content, tenantId });
 
         res.json({ id, content, created_at: new Date() });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'MESSAGE_SEND_FAILED');
     }
 };
 
 exports.getAvailableAdmins = async (req, res) => {
     try {
         const tenantId = req.tenantId;  // ✅ NOVO: tenantId do middleware
-        const db = await getDb();
-        const admins = await db.all("SELECT id, nome_completo, role FROM profiles WHERE role IN ('admin', 'super_admin') AND status_conta = 'ativo' AND tenant_id = ?", [tenantId]);
+        const admins = await chatRepository.listAvailableAdmins(tenantId);
         res.json(admins);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, undefined, 'ADMIN_LIST_FAILED');
     }
 };

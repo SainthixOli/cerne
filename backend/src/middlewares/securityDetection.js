@@ -20,7 +20,8 @@ const detectLoginAnomalies = (req, res, next) => {
             const cpf = req.body?.cpf;
 
             // Detecta brute force
-            const bruteForceAlert = SecurityAlertService.detectBruteForceLogin(ip, cpf, success);
+            const bruteForceAlert = SecurityAlertService.detectBruteForceLogin(
+                ip, cpf, success, req.tenantId || req.user?.tenantId);
             if (bruteForceAlert) {
                 logger.warn('BRUTE_FORCE_DETECTED', {
                     ip: ip,
@@ -45,7 +46,8 @@ const detectAccessAnomalies = (req, res, next) => {
     res.json = function(data) {
         if (res.statusCode === 401 || res.statusCode === 403) {
             const ip = req.ip;
-            const accessDeniedAlert = SecurityAlertService.detectUnauthorizedAccessSpike(ip);
+            const accessDeniedAlert = SecurityAlertService.detectUnauthorizedAccessSpike(
+                ip, req.tenantId || req.user?.tenantId);
 
             if (accessDeniedAlert) {
                 logger.warn('ACCESS_DENIED_SPIKE', {
@@ -90,7 +92,8 @@ const detectXSSAnomalies = (req, res, next) => {
         if (typeof value === 'string') {
             for (const pattern of xssPatterns) {
                 if (pattern.test(value)) {
-                    const xssAlert = SecurityAlertService.detectXSSAttempt(ip, userId, value);
+                    const xssAlert = SecurityAlertService.detectXSSAttempt(
+                        ip, userId, value, req.tenantId || req.user?.tenantId);
                     logger.warn('XSS_ATTEMPT_DETECTED', {
                         ip: ip,
                         userId: userId,
@@ -130,7 +133,8 @@ const detectSQLInjectionAnomalies = (req, res, next) => {
         if (typeof value === 'string') {
             for (const pattern of sqlPatterns) {
                 if (pattern.test(value)) {
-                    const sqlAlert = SecurityAlertService.detectSQLInjection(ip, userId, key, value);
+                    const sqlAlert = SecurityAlertService.detectSQLInjection(
+                        ip, userId, key, value, req.tenantId || req.user?.tenantId);
                     logger.error('SQL_INJECTION_ATTEMPT', {
                         ip: ip,
                         userId: userId,
@@ -162,7 +166,8 @@ const detectTokenAnomalies = (req, res, next) => {
 
     res.json = function(data) {
         if (res.statusCode === 401 && (data?.error === 'Invalid token' || data?.error === 'Token expired')) {
-            const tokenAlert = SecurityAlertService.detectTokenAbuse(ip, data.error);
+            const tokenAlert = SecurityAlertService.detectTokenAbuse(
+                ip, data.error, req.tenantId || req.user?.tenantId);
 
             if (tokenAlert) {
                 logger.warn('TOKEN_ABUSE_PATTERN', {

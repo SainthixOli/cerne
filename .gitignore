@@ -3,6 +3,9 @@ node_modules/
 dist/
 build/
 coverage/
+playwright-report/
+test-results/
+blob-report/
 
 # Environment files (examples remain versioned)
 .env

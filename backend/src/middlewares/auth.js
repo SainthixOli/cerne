@@ -1,46 +1,42 @@
 const jwt = require('jsonwebtoken');
+const { validateAuthenticatedAccount, TenantContextError } = require('../services/tenantContext');
 const SECRET_KEY = process.env.JWT_SECRET;
+const { sendError } = require('../utils/apiResponse');
+const { getSessionToken } = require('../utils/sessionCookie');
 if (!SECRET_KEY) throw new Error('JWT_SECRET missing in env');
 
-exports.authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+async function resolveToken(token) {
+    const claims = jwt.verify(token, SECRET_KEY);
+    return validateAuthenticatedAccount(claims);
+}
 
-    if (token == null) return res.sendStatus(401);
-
-    jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
+exports.authenticateToken = async (req, res, next) => {
+    const token = req.get('Authorization')?.match(/^Bearer (\S+)$/)?.[1] || getSessionToken(req);
+    if (!token) return sendError(res, 401, 'Não autenticado', 'UNAUTHENTICATED');
+    try {
+        req.user = await resolveToken(token);
+        return next();
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError || error instanceof TenantContextError) {
+            return sendError(res, 401, 'Não autenticado', 'UNAUTHENTICATED');
+        }
+        return next(error);
+    }
 };
 
-exports.authenticateTokenOptional = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (token == null) {
+exports.authenticateTokenOptional = async (req, res, next) => {
+    const token = req.get('Authorization')?.match(/^Bearer (\S+)$/)?.[1] || getSessionToken(req);
+    if (!token) {
         req.user = null;
         return next();
     }
-
-    jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) {
-            req.user = null;
-        } else {
-            req.user = user;
+    try {
+        req.user = await resolveToken(token);
+    } catch (error) {
+        if (!(error instanceof jwt.JsonWebTokenError || error instanceof TenantContextError)) {
+            return next(error);
         }
-        next();
-    });
-};
-
-// ✅ NOVO: Middleware para verificar se usuário é admin
-exports.checkAdmin = (req, res, next) => {
-    if (!req.user) {
-        return res.status(401).json({ error: 'Não autenticado' });
+        req.user = null;
     }
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-        return res.status(403).json({ error: 'Acesso negado: requer privilégios de admin' });
-    }
-    next();
+    return next();
 };

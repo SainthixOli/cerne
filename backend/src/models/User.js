@@ -1,11 +1,6 @@
 const knex = require('../config/connection');
 
 class User {
-    // Tenant-agnostic: used during login to find user by CPF before tenant context
-    static async findByCpf(cpf) {
-        return knex('profiles').where({ cpf }).first();
-    }
-
     // Tenant-aware: requires tenantId for data isolation
     static async findById(id, tenantId) {
         return knex('profiles')
@@ -51,9 +46,11 @@ class User {
     }
 
     // Tenant-aware: requires tenantId for data isolation
-    static async clearResetTokenAndSetPassword(id, hashedPassword, tenantId) {
+    static async clearResetTokenAndSetPassword(id, token, hashedPassword, tenantId) {
         return knex('profiles')
             .where({ id, tenant_id: tenantId })
+            .where({ reset_token: token })
+            .where('reset_token_expires', '>', new Date().toISOString())
             .update({
                 password_hash: hashedPassword,
                 reset_token: null,
@@ -62,10 +59,9 @@ class User {
             });
     }
 
-    // Tenant-agnostic: used to find user by reset token (password reset flow)
-    static async findByResetToken(token) {
+    static async findByResetToken(token, tenantId) {
         return knex('profiles')
-            .where({ reset_token: token })
+            .where({ reset_token: token, tenant_id: tenantId })
             .where('reset_token_expires', '>', new Date().toISOString())
             .first();
     }

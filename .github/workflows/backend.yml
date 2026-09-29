@@ -1,0 +1,44 @@
+name: backend
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cerne_test
+          POSTGRES_USER: cerne_test
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cerne_test -d cerne_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME_TEST: cerne_test
+      DB_USER: cerne_test
+      DB_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Gerar segredo JWT efêmero
+        run: node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(48).toString('hex'))" >> "$GITHUB_ENV"
+      - run: npm install
+      - run: npm run db:cycle
+      - run: npm test -- --runInBand --detectOpenHandles
+      - run: npm run lint

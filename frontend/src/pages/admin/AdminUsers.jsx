@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, UserPlus, MessageCircle } from 'lucide-react';
 import api from '../../api';
 import { maskCPF } from '../../utils/masks';
+import { useAuth } from '../../auth/useAuth';
 
 const AdminUsers = () => {
     const [admins, setAdmins] = useState([]);
@@ -10,7 +11,7 @@ const AdminUsers = () => {
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', password: '' });
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { user } = useAuth();
     const isSuperAdmin = user.role === 'super_admin';
 
     useEffect(() => {
@@ -38,7 +39,7 @@ const AdminUsers = () => {
             setFormData({ nome: '', cpf: '', email: '', password: '' });
             fetchAdmins();
         } catch (error) {
-            alert(error.response?.data?.error || 'Erro ao criar admin');
+            alert(error.message || 'Erro ao criar admin');
         }
     };
 

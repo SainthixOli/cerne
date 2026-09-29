@@ -8,22 +8,23 @@ const auditMiddleware = (req, res, next) => {
     // Armazenar método original e dados originais
     const originalJson = res.json.bind(res);
     const originalSend = res.send.bind(res);
-    const requestStartTime = Date.now();
+    const auditOnce = (data) => {
+        if (res.statusCode < 400 && req.body && !res.locals.auditLogged) {
+            res.locals.auditLogged = true;
+            auditCheckAndLog(req, res.statusCode, data);
+        }
+    };
 
     // Interceptar resposta JSON
     res.json = function(data) {
         // Registrar operações sensíveis se bem-sucedidas
-        if (res.statusCode < 400 && req.body) {
-            auditCheckAndLog(req, res.statusCode, data);
-        }
+        auditOnce(data);
         return originalJson(data);
     };
 
     // Interceptar resposta plain text
     res.send = function(data) {
-        if (res.statusCode < 400 && req.body) {
-            auditCheckAndLog(req, res.statusCode, data);
-        }
+        auditOnce(data);
         return originalSend(data);
     };
 
